@@ -1,0 +1,57 @@
+---
+project_name: gpbackman
+
+builds:
+  - env: 
+      - CGO_ENABLED=1
+    goos: 
+      - linux
+    goarch:
+      - amd64
+    flags: 
+      - -trimpath
+      - -mod=vendor
+    ldflags: "-s -w -X main.version={{ .Version }}"
+    main: .
+
+archives:
+  - id: gpbackman
+    files:
+      - LICENSE
+    format: tar.gz
+    name_template: '{{ .Binary }}-{{ .Version }}-{{ if eq .Os "darwin" }}macos{{ else }}{{ .Os }}{{ end }}-{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}'
+    wrap_in_directory: true
+    rlcp: true
+
+nfpms:
+  - id: gpbackman
+    package_name: gpbackman
+    builds:
+      - gpbackman
+    homepage: https://github.com/woblerr/gpbackman
+    maintainer: Anton Kurochkin
+    description: gpBackMan - utility for managing backups created by gpbackup.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+    file_name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}'
+    dependencies:
+      - musl-dev
+    overrides:
+      deb:
+        dependencies:
+          - musl-dev
+      rpm:
+        dependencies:
+          - musl-devel
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+
+release:
+  draft: true
+
+changelog:
+  skip: true

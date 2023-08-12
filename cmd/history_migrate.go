@@ -1,0 +1,72 @@
+package cmd
+
+import (
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpbackup/history"
+	"github.com/spf13/cobra"
+	"github.com/woblerr/gpbackman/errtext"
+	"github.com/woblerr/gpbackman/gpbckpconfig"
+)
+
+var historyMigrateCmd = &cobra.Command{
+	Use:   "history-migrate",
+	Short: "Migrate data from gpbackup_history.yaml to gpbackup_history.db SQLite history database",
+	Long: `Migrate data from gpbackup_history.yaml to gpbackup_history.db SQLite history database.
+
+The data from the gpbackup_history.yaml file will be uploaded to gpbackup_history.db SQLite history database.
+If the gpbackup_history.db file does not exist, it will be created.
+The gpbackup_history.yaml file will be renamed to gpbackup_history.yaml.migrated.
+
+The gpbackup_history.db file location can be set using the  --history-db option.
+Can be specified only once.
+
+The gpbackup_history.yaml file location can be set using the  --history-file option.
+Can only be specified multiple times.
+
+If no --history-file and/or --history-db options are specified, the files will be searched in the current directory.
+
+If you use the --history-file option to specify additional history files, you should include each file's full pathname.`,
+	Args: cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		doRootFlagValidation(cmd.Flags())
+		doMigrateHistory()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(historyMigrateCmd)
+}
+
+func doMigrateHistory() {
+	logHeadersInfo()
+	logHeadersDebug()
+	hDB, err := history.InitializeHistoryDatabase(getHistoryDBPath(rootHistoryDB))
+	if err != nil {
+		gplog.Error(errtext.ErrorTextUnableInitHistoryDB(err))
+	}
+	for _, historyFile := range rootHistoryFiles {
+		hFile := getHistoryFilePath(historyFile)
+		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
+		if err != nil {
+			gplog.Error(errtext.ErrorTextUnableReadHistoryFile(err))
+			continue
+		}
+		parseHData, err := gpbckpconfig.ParseResult(historyData)
+		if err != nil {
+			gplog.Error(errtext.ErrorTextUnableParseHistoryFile(err))
+			continue
+		}
+		for _, backupConfig := range parseHData.BackupConfigs {
+			hBackupConfig := gpbckpconfig.ConvertToHistoryBackupConfig(backupConfig)
+			err = history.StoreBackupHistory(hDB, &hBackupConfig)
+			if err != nil {
+				gplog.Error(errtext.ErrorTextUnableWriteIntoHistoryDB(err))
+			}
+		}
+		err = renameHistoryFile(hFile)
+		if err != nil {
+			gplog.Error(errtext.ErrorTextUnableRenameHistoryFile(err))
+		}
+	}
+	hDB.Close()
+}
