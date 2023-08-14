@@ -95,10 +95,10 @@ func ErrorTextUnableValidateFlag(value, flag string, err error) string {
 		"Unable to validate value %s for flag %s. Error: %v", value, flag, err)
 }
 
-func ErrorTextUnableCompatibleFlags(err error, flagNames ...string) string {
+func ErrorTextUnableCompatibleFlags(err error, values ...string) string {
 	return fmt.Sprintf(
 		"Unable to use the following flags together: %s. Error: %v",
-		strings.Join(flagNames, ", "), err)
+		strings.Join(values, ", "), err)
 }
 
 func ErrorTextUnableCompatibleFlagsValues(err error, values ...string) string {
