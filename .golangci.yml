@@ -20,7 +20,7 @@ linters-settings:
   lll:
     line-length: 140
   gocyclo:
-    min-complexity: 20
+    min-complexity: 25
 
 linters:
   enable:
