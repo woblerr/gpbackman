@@ -119,29 +119,8 @@ func backupInfoDB() {
 			continue
 		}
 		backupData := gpbckpconfig.ConvertFromHistoryBackupConfig(hBackupData)
-		backupDate, err := backupData.GetBackupDate()
-		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableGetBackupDate(backupName, err))
-		}
-		backupDuration, err := backupData.GetBackupDuration()
-		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableGetBackupDuration(backupName, err))
-		}
-		backupDateDeleted, err := backupData.GetBackupDateDeleted()
-		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableGetBackupDateDeletion(backupName, err))
-		}
-		t.AppendRow([]interface{}{
-			backupData.Timestamp,
-			backupDate,
-			backupData.Status,
-			backupData.DatabaseName,
-			backupData.GetBackupType(),
-			backupData.GetObjectFilteringInfo(),
-			backupData.Plugin,
-			backupDuration,
-			backupDateDeleted,
-		})
+		addBackupToTable(backupData, t)
+
 	}
 	hDB.Close()
 	t.Render()
@@ -154,41 +133,23 @@ func backupInfoFile() {
 		hFile := getHistoryFilePath(historyFile)
 		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableReadHistoryFile(err))
+			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("read", err))
 			continue
 		}
 		parseHData, err := gpbckpconfig.ParseResult(historyData)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableParseHistoryFile(err))
+			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("parse", err))
+			continue
 		}
 		if len(parseHData.BackupConfigs) != 0 {
 			for _, backupData := range parseHData.BackupConfigs {
-				backupName := backupData.Timestamp
 				backupDateDeleted, err := backupData.GetBackupDateDeleted()
 				if err != nil {
-					gplog.Error(errtext.ErrorTextUnableGetBackupDateDeletion(backupName, err))
+					gplog.Error(errtext.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
 				}
 				validBackup := getBackupNameFile(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, backupData.Status, backupDateDeleted)
 				if validBackup {
-					backupDate, err := backupData.GetBackupDate()
-					if err != nil {
-						gplog.Error(errtext.ErrorTextUnableGetBackupDate(backupName, err))
-					}
-					backupDuration, err := backupData.GetBackupDuration()
-					if err != nil {
-						gplog.Error(errtext.ErrorTextUnableGetBackupDuration(backupName, err))
-					}
-					t.AppendRow([]interface{}{
-						backupData.Timestamp,
-						backupDate,
-						backupData.Status,
-						backupData.DatabaseName,
-						backupData.GetBackupType(),
-						backupData.GetObjectFilteringInfo(),
-						backupData.Plugin,
-						backupDuration,
-						backupDateDeleted,
-					})
+					addBackupToTable(backupData, t)
 				}
 			}
 		}
@@ -274,4 +235,38 @@ func initTable(t table.Writer) {
 		"date deleted",
 	})
 	t.SortBy([]table.SortBy{{Name: "timestamp", Mode: table.Dsc}})
+}
+
+func addBackupToTable(backupData gpbckpconfig.BackupConfig, t table.Writer) {
+	backupDate, err := backupData.GetBackupDate()
+	if err != nil {
+		gplog.Error(errtext.ErrorTextUnableGetBackupValue("date", backupData.Timestamp, err))
+	}
+	backupType, err := backupData.GetBackupType()
+	if err != nil {
+		gplog.Error(errtext.ErrorTextUnableGetBackupValue("type", backupData.Timestamp, err))
+	}
+	backupFilter, err := backupData.GetObjectFilteringInfo()
+	if err != nil {
+		gplog.Error(errtext.ErrorTextUnableGetBackupValue("object filtering", backupData.Timestamp, err))
+	}
+	backupDuration, err := backupData.GetBackupDuration()
+	if err != nil {
+		gplog.Error(errtext.ErrorTextUnableGetBackupValue("duration", backupData.Timestamp, err))
+	}
+	backupDateDeleted, err := backupData.GetBackupDateDeleted()
+	if err != nil {
+		gplog.Error(errtext.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
+	}
+	t.AppendRow([]interface{}{
+		backupData.Timestamp,
+		backupDate,
+		backupData.Status,
+		backupData.DatabaseName,
+		backupType,
+		backupFilter,
+		backupData.Plugin,
+		backupDuration,
+		backupDateDeleted,
+	})
 }

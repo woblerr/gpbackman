@@ -48,12 +48,12 @@ func doMigrateHistory() {
 		hFile := getHistoryFilePath(historyFile)
 		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableReadHistoryFile(err))
+			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("read", err))
 			continue
 		}
 		parseHData, err := gpbckpconfig.ParseResult(historyData)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableParseHistoryFile(err))
+			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("parse", err))
 			continue
 		}
 		for _, backupConfig := range parseHData.BackupConfigs {
@@ -65,7 +65,7 @@ func doMigrateHistory() {
 		}
 		err = renameHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableRenameHistoryFile(err))
+			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("rename", err))
 		}
 	}
 	hDB.Close()
