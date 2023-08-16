@@ -1,0 +1,371 @@
+package gpbckpconfig
+
+import (
+	"testing"
+)
+
+func TestGetBackupType(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  BackupConfig
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Test incremental backup",
+			config: BackupConfig{
+				Incremental:  true,
+				DataOnly:     false,
+				MetadataOnly: false,
+			},
+			want:    backupTypeIncremental,
+			wantErr: false,
+		},
+		{
+			name: "Test data-only backup",
+			config: BackupConfig{
+				Incremental:  false,
+				DataOnly:     true,
+				MetadataOnly: false,
+			},
+			want:    backupTypeDataOnly,
+			wantErr: false,
+		},
+		{
+			name: "Test metadata-only backup",
+			config: BackupConfig{
+				Incremental:  false,
+				DataOnly:     false,
+				MetadataOnly: true,
+			},
+			want:    backupTypeMetadataOnly,
+			wantErr: false,
+		},
+		{
+			name: "Test full backup",
+			config: BackupConfig{
+				Incremental:  false,
+				DataOnly:     false,
+				MetadataOnly: false,
+			},
+			want:    backupTypeFull,
+			wantErr: false,
+		},
+		{
+			name: "Test invalid backup case 1",
+			config: BackupConfig{
+				Incremental:  true,
+				DataOnly:     true,
+				MetadataOnly: false,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Test invalid backup case 2",
+			config: BackupConfig{
+				Incremental:  false,
+				DataOnly:     true,
+				MetadataOnly: true,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Test invalid backup case 3",
+			config: BackupConfig{
+				Incremental:  true,
+				DataOnly:     true,
+				MetadataOnly: true,
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.config.GetBackupType()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nGetBackupType() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetObjectFilteringInfo(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  BackupConfig
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Test IncludeSchemaFiltered",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  false,
+			},
+			want:    objectFilteringIncludeSchema,
+			wantErr: false,
+		},
+		{
+			name: "Test ExcludeSchemaFiltered",
+			config: BackupConfig{
+				IncludeSchemaFiltered: false,
+				ExcludeSchemaFiltered: true,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  false,
+			},
+			want:    objectFilteringExcludeSchema,
+			wantErr: false,
+		},
+		{
+			name: "Test IncludeTableFiltered",
+			config: BackupConfig{
+				IncludeSchemaFiltered: false,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  true,
+				ExcludeTableFiltered:  false,
+			},
+			want:    objectFilteringIncludeTable,
+			wantErr: false,
+		},
+		{
+			name: "Test ExcludeTableFiltered",
+			config: BackupConfig{
+				IncludeSchemaFiltered: false,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  true,
+			},
+			want:    objectFilteringExcludeTable,
+			wantErr: false,
+		},
+		{
+			name: "Test NoFiltering",
+			config: BackupConfig{
+				IncludeSchemaFiltered: false,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  false,
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "Test InvalidFiltering",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: true,
+				IncludeTableFiltered:  true,
+				ExcludeTableFiltered:  true,
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.config.GetObjectFilteringInfo()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nGetObjectFilteringInfo() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetBackupDate(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  BackupConfig
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "Test valid timestamp",
+			config:  BackupConfig{Timestamp: "20220401102430"},
+			want:    "Fri Apr 01 2022 10:24:30",
+			wantErr: false,
+		},
+		{
+			name:    "Test invalid timestamp",
+			config:  BackupConfig{Timestamp: "invalid"},
+			want:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.config.GetBackupDate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nGetBackupDate() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetBackupDuration(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  BackupConfig
+		want    float64
+		wantErr bool
+	}{
+		{
+			name: "Test valid timestamps",
+			config: BackupConfig{
+				Timestamp: "20220401102430",
+				EndTime:   "20220401115502",
+			},
+			want:    5432,
+			wantErr: false,
+		},
+		{
+			name: "invalid start timestamp",
+			config: BackupConfig{
+				Timestamp: "invalid",
+				EndTime:   "20220401115502",
+			},
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name: "invalid end timestamp",
+			config: BackupConfig{
+				Timestamp: "20220401102430",
+				EndTime:   "invalid",
+			},
+			want:    0,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.config.GetBackupDuration()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nGetBackupDuration() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetBackupDateDeleted(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  BackupConfig
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "Test empty",
+			config:  BackupConfig{DateDeleted: ""},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name:    "Test in progress",
+			config:  BackupConfig{DateDeleted: dateDeletedInProgress},
+			want:    dateDeletedInProgress,
+			wantErr: false,
+		},
+		{
+			name:    "Test plugin backup delete failed",
+			config:  BackupConfig{DateDeleted: dateDeletedPluginFailed},
+			want:    dateDeletedPluginFailed,
+			wantErr: false,
+		},
+		{
+			name:    "Test local delete failed",
+			config:  BackupConfig{DateDeleted: dateDeletedLocalFailed},
+			want:    dateDeletedLocalFailed,
+			wantErr: false,
+		},
+		{
+			name:    "Test valid date",
+			config:  BackupConfig{DateDeleted: "20220401102430"},
+			want:    "Fri Apr 01 2022 10:24:30",
+			wantErr: false,
+		},
+		{
+			name:    "Test invalid date",
+			config:  BackupConfig{DateDeleted: "InvalidDate"},
+			want:    "InvalidDate",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.config.GetBackupDateDeleted()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nGetBackupDateDeleted() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsSuccess(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  BackupConfig
+		want    bool
+		wantErr bool
+	}{
+		{
+			name:    "Test success status",
+			config:  BackupConfig{Status: backupStatusSuccess},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:    "Test Failure status",
+			config:  BackupConfig{Status: backupStatusFailure},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:    "Test Unknown status",
+			config:  BackupConfig{Status: "unknown"},
+			want:    false,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.config.IsSuccess()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nIsSuccess() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}

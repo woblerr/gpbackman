@@ -59,8 +59,8 @@ const (
 	backupTypeDataOnly     = "data-only"
 	backupTypeMetadataOnly = "metadata-only"
 	// Backup statuses.
-	backupStatusSucceed = "Success"
-	backupStatusFailed  = "Failure"
+	backupStatusSuccess = "Success"
+	backupStatusFailure = "Failure"
 	// Object filtering types.
 	objectFilteringIncludeSchema = "include-schema"
 	objectFilteringExcludeSchema = "exclude-schema"
@@ -78,21 +78,25 @@ const (
 //   - incremental – contains user data, all global and local metadata changed since a previous full backup;
 //   - metadata-only – contains only global and local metadata for the database;
 //   - data-only – contains only user data from the database.
-func (backupConfig BackupConfig) GetBackupType() string {
-	var backupType string
-	// For gpbackup you cannot combine --data-only or --metadata-only with --incremental (see docs).
-	// So these flags cannot be set at the same time.
+//
+// For gpbackup you cannot combine --data-only or --metadata-only with --incremental (see docs).
+// So these options cannot be set at the same time.
+// If not one of the -data-only, --metadata-only and--incremental flags is not set,
+// the full value is returned.
+// In all other cases, an error is returned.
+func (backupConfig BackupConfig) GetBackupType() (string, error) {
 	switch {
-	case backupConfig.Incremental:
-		backupType = backupTypeIncremental
-	case backupConfig.DataOnly:
-		backupType = backupTypeDataOnly
-	case backupConfig.MetadataOnly:
-		backupType = backupTypeMetadataOnly
+	case !(backupConfig.Incremental || backupConfig.DataOnly || backupConfig.MetadataOnly):
+		return backupTypeFull, nil
+	case backupConfig.Incremental && !(backupConfig.DataOnly || backupConfig.MetadataOnly):
+		return backupTypeIncremental, nil
+	case backupConfig.DataOnly && !(backupConfig.Incremental || backupConfig.MetadataOnly):
+		return backupTypeDataOnly, nil
+	case backupConfig.MetadataOnly && !(backupConfig.Incremental || backupConfig.DataOnly):
+		return backupTypeMetadataOnly, nil
 	default:
-		backupType = backupTypeFull
+		return "", errors.New("backup type does not match any of the available values")
 	}
-	return backupType
 }
 
 // GetObjectFilteringInfo Get object filtering information.
@@ -102,25 +106,42 @@ func (backupConfig BackupConfig) GetBackupType() string {
 //   - include-table – at least one "--include-table" option was specified;
 //   - exclude-table – at least one "--exclude-table" option was specified;
 //   - "" - no options was specified.
-func (backupConfig BackupConfig) GetObjectFilteringInfo() string {
-	var objectFiltering string
+//
+// For gpbackup only one type of filters can be used (see docs).
+// So these options cannot be set at the same time.
+// If not one of these flags is not set,
+// the "" value is returned.
+// In all other cases, an error is returned.
+func (backupConfig BackupConfig) GetObjectFilteringInfo() (string, error) {
 	switch {
-	case backupConfig.IncludeSchemaFiltered:
-		objectFiltering = objectFilteringIncludeSchema
-	case backupConfig.ExcludeSchemaFiltered:
-		objectFiltering = objectFilteringExcludeSchema
-	case backupConfig.IncludeTableFiltered:
-		objectFiltering = objectFilteringIncludeTable
-	case backupConfig.ExcludeTableFiltered:
-		objectFiltering = objectFilteringExcludeTable
+	case backupConfig.IncludeSchemaFiltered && !(backupConfig.ExcludeSchemaFiltered ||
+		backupConfig.IncludeTableFiltered ||
+		backupConfig.ExcludeTableFiltered):
+		return objectFilteringIncludeSchema, nil
+	case backupConfig.ExcludeSchemaFiltered && !(backupConfig.IncludeSchemaFiltered ||
+		backupConfig.IncludeTableFiltered ||
+		backupConfig.ExcludeTableFiltered):
+		return objectFilteringExcludeSchema, nil
+	case backupConfig.IncludeTableFiltered && !(backupConfig.IncludeSchemaFiltered ||
+		backupConfig.ExcludeSchemaFiltered ||
+		backupConfig.ExcludeTableFiltered):
+		return objectFilteringIncludeTable, nil
+	case backupConfig.ExcludeTableFiltered && !(backupConfig.IncludeSchemaFiltered ||
+		backupConfig.ExcludeSchemaFiltered ||
+		backupConfig.IncludeTableFiltered):
+		return objectFilteringExcludeTable, nil
+	case !(backupConfig.ExcludeTableFiltered ||
+		backupConfig.IncludeSchemaFiltered ||
+		backupConfig.ExcludeSchemaFiltered ||
+		backupConfig.IncludeTableFiltered):
+		return "", nil
 	default:
-		objectFiltering = ""
+		return "", errors.New("backup filtering type does not match any of the available values")
 	}
-	return objectFiltering
 }
 
 // GetBackupDate Get backup date.
-// If an error occurs when parsing the date, the empty string is returned.
+// If an error occurs when parsing the date, the empty string and error are returned.
 func (backupConfig BackupConfig) GetBackupDate() (string, error) {
 	var date string
 	t, err := time.Parse(Layout, backupConfig.Timestamp)
@@ -131,8 +152,8 @@ func (backupConfig BackupConfig) GetBackupDate() (string, error) {
 	return date, nil
 }
 
-// GetBackupDuration Get backup duration.
-// If an error occurs when parsing the date, the zero duration is returned.
+// GetBackupDuration Get backup duration in seconds.
+// If an error occurs when parsing the date, the zero duration and error are returned.
 func (backupConfig BackupConfig) GetBackupDuration() (float64, error) {
 	var zeroDuration float64 = 0
 	startTime, err := time.Parse(Layout, backupConfig.Timestamp)
@@ -153,15 +174,11 @@ func (backupConfig BackupConfig) GetBackupDuration() (float64, error) {
 //   - Local Delete Failed - if the value is set to "Local Delete Failed";
 //   - "" - if backup is active;
 //   - date  in format "Mon Jan 02 2006 15:04:05" - if backup is deleted and deletion timestamp is set.
+//
+// In all other cases, an error is returned.
 func (backupConfig BackupConfig) GetBackupDateDeleted() (string, error) {
 	switch backupConfig.DateDeleted {
-	case "":
-		return backupConfig.DateDeleted, nil
-	case dateDeletedInProgress:
-		return backupConfig.DateDeleted, nil
-	case dateDeletedPluginFailed:
-		return backupConfig.DateDeleted, nil
-	case dateDeletedLocalFailed:
+	case "", dateDeletedInProgress, dateDeletedPluginFailed, dateDeletedLocalFailed:
 		return backupConfig.DateDeleted, nil
 	default:
 		t, err := time.Parse(Layout, backupConfig.DateDeleted)
@@ -172,27 +189,40 @@ func (backupConfig BackupConfig) GetBackupDateDeleted() (string, error) {
 	}
 }
 
-func (backupConfig BackupConfig) Failed() bool {
-	return backupConfig.Status == backupStatusFailed
+// IsSuccess Check backup status.
+// Returns:
+//   - true  - if backup is successful,
+//   - false - false if backup is not successful.
+//
+// In all other cases, an error is returned.
+func (backupConfig BackupConfig) IsSuccess() (bool, error) {
+	switch backupConfig.Status {
+	case backupStatusSuccess:
+		return true, nil
+	case backupStatusFailure:
+		return false, nil
+	default:
+		return false, errors.New("backup status does not match any of the available values")
+	}
 }
 
 func (history *History) FindBackupConfig(timestamp string) (BackupConfig, error) {
 	for _, backupConfig := range history.BackupConfigs {
-		if backupConfig.Timestamp == timestamp && !backupConfig.Failed() {
+		if backupConfig.Timestamp == timestamp {
 			return backupConfig, nil
 		}
 	}
-	return BackupConfig{}, errors.New("timestamp doesn't match any existing backups")
+	return BackupConfig{}, errors.New("backup timestamp doesn't match any existing backups")
 }
 
 func (history *History) UpdateBackupConfigDateDeleted(timestamp string, dataDeleted string) error {
 	for idx, backupConfig := range history.BackupConfigs {
-		if backupConfig.Timestamp == timestamp && !backupConfig.Failed() {
+		if backupConfig.Timestamp == timestamp {
 			history.BackupConfigs[idx].DateDeleted = dataDeleted
 			return nil
 		}
 	}
-	return errors.New("timestamp doesn't match any existing backups")
+	return errors.New("backup timestamp doesn't match any existing backups")
 }
 
 func (history *History) UpdateHistoryFile(historyFile string) error {
@@ -205,19 +235,6 @@ func (history *History) UpdateHistoryFile(historyFile string) error {
 	}()
 	err = history.WriteToFileAndMakeReadOnly(historyFile)
 	return err
-}
-
-func lockHistoryFile(historyFile string) (lockfile.Lockfile, error) {
-	lock, err := lockfile.New(historyFile + ".lck")
-	if err != nil {
-		return lock, err
-	}
-	err = lock.TryLock()
-	for err != nil {
-		time.Sleep(60 * time.Millisecond)
-		err = lock.TryLock()
-	}
-	return lock, err
 }
 
 func (history *History) WriteToFileAndMakeReadOnly(filename string) error {
@@ -234,4 +251,17 @@ func (history *History) WriteToFileAndMakeReadOnly(filename string) error {
 		return err
 	}
 	return utils.WriteToFileAndMakeReadOnly(filename, historyFileContents)
+}
+
+func lockHistoryFile(historyFile string) (lockfile.Lockfile, error) {
+	lock, err := lockfile.New(historyFile + ".lck")
+	if err != nil {
+		return lock, err
+	}
+	err = lock.TryLock()
+	for err != nil {
+		time.Sleep(60 * time.Millisecond)
+		err = lock.TryLock()
+	}
+	return lock, err
 }
