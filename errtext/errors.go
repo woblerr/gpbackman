@@ -28,20 +28,8 @@ func ErrorTextUnableInitHistoryDB(err error) string {
 
 // Errors that occur when working with a history db.
 
-func ErrorTextUnableReadHistoryFile(err error) string {
-	return fmt.Sprintf("Unable to read history file. Error: %v", err)
-}
-
-func ErrorTextUnableParseHistoryFile(err error) string {
-	return fmt.Sprintf("Unable to parse history file. Error: %v", err)
-}
-
-func ErrorTextUnableRenameHistoryFile(err error) string {
-	return fmt.Sprintf("Unable to rename history file. Error: %v", err)
-}
-
-func ErrorTextUnableUpdateHistoryFile(err error) string {
-	return fmt.Sprintf("Unable to update history file. Error: %v", err)
+func ErrorTextUnableActionHistoryFile(value string, err error) string {
+	return fmt.Sprintf("Unable to %s history file. Error: %v", value, err)
 }
 
 // Errors that occur when working with a backup data.
@@ -50,20 +38,12 @@ func ErrorTextUnableGetBackupInfo(backupName string, err error) string {
 	return fmt.Sprintf("Unable to get info for backup %s. Error: %v", backupName, err)
 }
 
-func ErrorTextUnableGetBackupDate(backupName string, err error) string {
-	return fmt.Sprintf("Unable to get backup date for backup %s. Error: %v", backupName, err)
+func ErrorTextUnableGetBackupValue(value, backupName string, err error) string {
+	return fmt.Sprintf("Unable to get backup %s for backup %s. Error: %v", value, backupName, err)
 }
 
-func ErrorTextUnableGetBackupDuration(backupName string, err error) string {
-	return fmt.Sprintf("Unable to get backup duration for backup %s. Error: %v", backupName, err)
-}
-
-func ErrorTextUnableGetBackupDateDeletion(backupName string, err error) string {
-	return fmt.Sprintf("Unable to get backup date deletion for backup %s. Error: %v", backupName, err)
-}
-
-func ErrorTextUnableSetBackupStatus(status, backupName string, err error) string {
-	return fmt.Sprintf("Unable to set %s status for backup %s. Error: %v", status, backupName, err)
+func ErrorTextUnableSetBackupStatus(value, backupName string, err error) string {
+	return fmt.Sprintf("Unable to set %s status for backup %s. Error: %v", value, backupName, err)
 }
 
 func ErrorTextUnableDeleteBackup(backupName string, err error) string {

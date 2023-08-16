@@ -38,30 +38,6 @@ func TestErrorTextFunctionsErrorOnly(t *testing.T) {
 			want:     "Unable to initialize history db. Error: test error",
 		},
 		{
-			name:     "Test ErrorTextUnableReadHistoryFile",
-			testErr:  testError,
-			function: ErrorTextUnableReadHistoryFile,
-			want:     "Unable to read history file. Error: test error",
-		},
-		{
-			name:     "Test ErrorTextUnableParseHistoryFile",
-			testErr:  testError,
-			function: ErrorTextUnableParseHistoryFile,
-			want:     "Unable to parse history file. Error: test error",
-		},
-		{
-			name:     "Test ErrorTextUnableRenameHistoryFile",
-			testErr:  testError,
-			function: ErrorTextUnableRenameHistoryFile,
-			want:     "Unable to rename history file. Error: test error",
-		},
-		{
-			name:     "Test ErrorTextUnableUpdateHistoryFile",
-			testErr:  testError,
-			function: ErrorTextUnableUpdateHistoryFile,
-			want:     "Unable to update history file. Error: test error",
-		},
-		{
 			name:     "Test ErrorTextUnableReadPluginConfigFile",
 			testErr:  testError,
 			function: ErrorTextUnableReadPluginConfigFile,
@@ -95,27 +71,6 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			want:     "Unable to get info for backup TestBackup. Error: test error",
 		},
 		{
-			name:     "Test ErrorTextUnableGetBackupDate",
-			value:    testBackupName,
-			testErr:  testError,
-			function: ErrorTextUnableGetBackupDate,
-			want:     "Unable to get backup date for backup TestBackup. Error: test error",
-		},
-		{
-			name:     "Test ErrorTextUnableGetBackupDuration",
-			value:    testBackupName,
-			testErr:  testError,
-			function: ErrorTextUnableGetBackupDuration,
-			want:     "Unable to get backup duration for backup TestBackup. Error: test error",
-		},
-		{
-			name:     "Test ErrorTextUnableGetBackupDateDeletion",
-			value:    testBackupName,
-			testErr:  testError,
-			function: ErrorTextUnableGetBackupDateDeletion,
-			want:     "Unable to get backup date deletion for backup TestBackup. Error: test error",
-		},
-		{
 			name:     "Test ErrorTextUnableDeleteBackup",
 			value:    testBackupName,
 			testErr:  testError,
@@ -142,6 +97,13 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			testErr:  testError,
 			function: ErrorTextBackupInProgress,
 			want:     "Backup TestBackup in progress. Wait for the backup to finish or check actual status manually. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableActionHistoryFile",
+			value:    "do something with",
+			testErr:  testError,
+			function: ErrorTextUnableActionHistoryFile,
+			want:     "Unable to do something with history file. Error: test error",
 		},
 	}
 	for _, tt := range tests {
@@ -178,6 +140,14 @@ func TestErrorTextFunctionsErrorAndTwoArgs(t *testing.T) {
 			testErr:  testError,
 			function: ErrorTextUnableValidateFlag,
 			want:     "Unable to validate value TestValue for flag TestFlag. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableGetBackupValue",
+			value1:   "test parameter",
+			value2:   "TestBackup",
+			testErr:  testError,
+			function: ErrorTextUnableGetBackupValue,
+			want:     "Unable to get backup test parameter for backup TestBackup. Error: test error",
 		},
 	}
 	for _, tt := range tests {

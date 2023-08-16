@@ -17,6 +17,12 @@ func TestWarnTextFunctionsWarnOnly(t *testing.T) {
 			function: WarnTextBackupAlreadyDeleted,
 			want:     "Backup TestBackup has already been deleted.",
 		},
+		{
+			name:     "Test WarnTextBackupUnableDeleteFailed",
+			value:    "TestBackup",
+			function: WarnTextBackupUnableDeleteFailed,
+			want:     "Backup TestBackup has failed status. Nothing to delete.",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
