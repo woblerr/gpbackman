@@ -5,10 +5,6 @@ const (
 
 	deleteBackupPluginCommand = "delete_backup"
 
-	deleteStatusInProgress   = "In progress"
-	deleteStatusPluginFailed = "Plugin Backup Delete Failed"
-	deleteStatusLocalFailed  = "Local Delete Failed"
-
 	failureStatus = "Failure"
 
 	historyFileNameBaseConst           = "gpbackup_history"

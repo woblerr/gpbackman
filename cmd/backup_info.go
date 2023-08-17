@@ -166,18 +166,18 @@ func getBackupNames(showD, showF, sAll bool, historyDB *sql.DB) ([]string, error
 	case showD:
 		getBackupsQuery += " WHERE status != '" + failureStatus + "'" +
 			" AND date_deleted NOT IN ('', '" +
-			deleteStatusInProgress + "', '" +
-			deleteStatusPluginFailed + "', '" +
-			deleteStatusLocalFailed + "')" + orderBy
+			gpbckpconfig.DateDeletedInProgress + "', '" +
+			gpbckpconfig.DateDeletedPluginFailed + "', '" +
+			gpbckpconfig.DateDeletedLocalFailed + "')" + orderBy
 
 	case showF:
 		getBackupsQuery += " WHERE status = '" + failureStatus + "'" + orderBy
 	default:
 		getBackupsQuery += " WHERE status != '" + failureStatus + "'" +
 			" AND date_deleted IN ('', '" +
-			deleteStatusInProgress + "', '" +
-			deleteStatusPluginFailed + "', '" +
-			deleteStatusLocalFailed + "')" + orderBy
+			gpbckpconfig.DateDeletedInProgress + "', '" +
+			gpbckpconfig.DateDeletedPluginFailed + "', '" +
+			gpbckpconfig.DateDeletedLocalFailed + "')" + orderBy
 	}
 	backupListRow, err := historyDB.Query(getBackupsQuery)
 	if err != nil {

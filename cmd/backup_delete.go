@@ -188,9 +188,9 @@ func backupDeleteDBPluginFunc(backupName string, backupData gpbckpconfig.BackupC
 			gplog.Error(stderr)
 		}
 		if errdel != nil {
-			err = updateDeleteStatus(backupName, deleteStatusPluginFailed, hDB)
+			err = updateDeleteStatus(backupName, gpbckpconfig.DateDeletedPluginFailed, hDB)
 			if err != nil {
-				gplog.Error(errtext.ErrorTextUnableSetBackupStatus(deleteStatusPluginFailed, backupName, err))
+				gplog.Error(errtext.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedPluginFailed, backupName, err))
 			}
 			gplog.Error(errtext.ErrorTextUnableDeleteBackup(backupName, errdel))
 			return errdel
@@ -202,7 +202,7 @@ func backupDeleteDBPluginFunc(backupName string, backupData gpbckpconfig.BackupC
 			return errdel
 		}
 	} else {
-		if backupDateDeleted == deleteStatusInProgress {
+		if backupDateDeleted == gpbckpconfig.DateDeletedInProgress {
 			gplog.Warn(errtext.ErrorTextBackupInProgress(backupName, errtext.ErrorBackupDeleteInProgressError()))
 			return errtext.ErrorBackupDeleteInProgressError()
 		} else {
@@ -296,21 +296,21 @@ func backupDeleteFilePluginFunc(backupData gpbckpconfig.BackupConfig, parseHData
 			gplog.Error(stderr)
 		}
 		if errdel != nil {
-			err = parseHData.UpdateBackupConfigDateDeleted(backupData.Timestamp, deleteStatusPluginFailed)
+			err = parseHData.UpdateBackupConfigDateDeleted(backupData.Timestamp, gpbckpconfig.DateDeletedPluginFailed)
 			if err != nil {
-				gplog.Error(errtext.ErrorTextUnableSetBackupStatus(deleteStatusPluginFailed, backupData.Timestamp, err))
+				gplog.Error(errtext.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedPluginFailed, backupData.Timestamp, err))
 			}
 			gplog.Error(errtext.ErrorTextUnableDeleteBackup(backupData.Timestamp, errdel))
 			return errdel
 		}
 		gplog.Info(stdout)
-		err = parseHData.UpdateBackupConfigDateDeleted(backupData.Timestamp, deleteStatusPluginFailed)
+		err = parseHData.UpdateBackupConfigDateDeleted(backupData.Timestamp, gpbckpconfig.DateDeletedPluginFailed)
 		if err != nil {
 			gplog.Error(errtext.ErrorTextUnableSetBackupStatus(dateDeleted, backupData.Timestamp, err))
 			return err
 		}
 	} else {
-		if backupDateDeleted == deleteStatusInProgress {
+		if backupDateDeleted == gpbckpconfig.DateDeletedInProgress {
 			gplog.Warn(errtext.ErrorTextBackupInProgress(backupData.Timestamp, errtext.ErrorBackupDeleteInProgressError()))
 			return errtext.ErrorBackupDeleteInProgressError()
 		} else {

@@ -67,9 +67,9 @@ const (
 	objectFilteringIncludeTable  = "include-table"
 	objectFilteringExcludeTable  = "exclude-table"
 	// Date deleted types.
-	dateDeletedInProgress   = "In progress"
-	dateDeletedPluginFailed = "Plugin Backup Delete Failed"
-	dateDeletedLocalFailed  = "Local Delete Failed"
+	DateDeletedInProgress   = "In progress"
+	DateDeletedPluginFailed = "Plugin Backup Delete Failed"
+	DateDeletedLocalFailed  = "Local Delete Failed"
 )
 
 // GetBackupType Get backup type.
@@ -178,7 +178,7 @@ func (backupConfig BackupConfig) GetBackupDuration() (float64, error) {
 // In all other cases, an error is returned.
 func (backupConfig BackupConfig) GetBackupDateDeleted() (string, error) {
 	switch backupConfig.DateDeleted {
-	case "", dateDeletedInProgress, dateDeletedPluginFailed, dateDeletedLocalFailed:
+	case "", DateDeletedInProgress, DateDeletedPluginFailed, DateDeletedLocalFailed:
 		return backupConfig.DateDeleted, nil
 	default:
 		t, err := time.Parse(Layout, backupConfig.DateDeleted)

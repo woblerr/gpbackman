@@ -115,7 +115,7 @@ func getCurrentTimestamp() string {
 }
 
 func isBackupActive(dateDeleted string) bool {
-	return (dateDeleted != "" || dateDeleted == deleteStatusPluginFailed || dateDeleted == deleteStatusLocalFailed)
+	return (dateDeleted != "" || dateDeleted == gpbckpconfig.DateDeletedPluginFailed || dateDeleted == gpbckpconfig.DateDeletedLocalFailed)
 }
 
 func checkFullPath(path string) error {
