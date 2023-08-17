@@ -1,6 +1,7 @@
 package gpbckpconfig
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -285,20 +286,20 @@ func TestGetBackupDateDeleted(t *testing.T) {
 		},
 		{
 			name:    "Test in progress",
-			config:  BackupConfig{DateDeleted: dateDeletedInProgress},
-			want:    dateDeletedInProgress,
+			config:  BackupConfig{DateDeleted: DateDeletedInProgress},
+			want:    DateDeletedInProgress,
 			wantErr: false,
 		},
 		{
 			name:    "Test plugin backup delete failed",
-			config:  BackupConfig{DateDeleted: dateDeletedPluginFailed},
-			want:    dateDeletedPluginFailed,
+			config:  BackupConfig{DateDeleted: DateDeletedPluginFailed},
+			want:    DateDeletedPluginFailed,
 			wantErr: false,
 		},
 		{
 			name:    "Test local delete failed",
-			config:  BackupConfig{DateDeleted: dateDeletedLocalFailed},
-			want:    dateDeletedLocalFailed,
+			config:  BackupConfig{DateDeleted: DateDeletedLocalFailed},
+			want:    DateDeletedLocalFailed,
 			wantErr: false,
 		},
 		{
@@ -355,7 +356,6 @@ func TestIsSuccess(t *testing.T) {
 			wantErr: true,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.config.IsSuccess()
@@ -365,6 +365,110 @@ func TestIsSuccess(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFindBackupConfig(t *testing.T) {
+	historyTest := &History{
+		BackupConfigs: []BackupConfig{
+			{Timestamp: "20220401102430"},
+		},
+	}
+	tests := []struct {
+		name    string
+		history History
+		value   string
+		want    BackupConfig
+		wantErr bool
+	}{
+		{
+			name:    "Test existed timestamp",
+			history: *historyTest,
+			value:   "20220401102430",
+			want:    BackupConfig{Timestamp: "20220401102430"},
+			wantErr: false,
+		},
+		{
+			name:    "Test unknown timestamp",
+			history: *historyTest,
+			value:   "unknown",
+			want:    BackupConfig{},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.history.FindBackupConfig(tt.value)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nFindBackupConfig() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUpdateBackupConfigDateDeleted(t *testing.T) {
+	tests := []struct {
+		name      string
+		timestamp string
+		value     string
+		want      History
+		wantErr   bool
+	}{
+		{
+			name:      "Test existed timestamp and date deleted",
+			timestamp: "20220401102430",
+			value:     "20220401112430",
+			want: History{BackupConfigs: []BackupConfig{
+				{Timestamp: "20220401092430", DateDeleted: ""},
+				{Timestamp: "20220401102430", DateDeleted: "20220401112430"},
+			},
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Test existed timestamp and some text",
+			timestamp: "20220401102430",
+			value:     DateDeletedPluginFailed,
+			want: History{BackupConfigs: []BackupConfig{
+				{Timestamp: "20220401092430", DateDeleted: ""},
+				{Timestamp: "20220401102430", DateDeleted: DateDeletedPluginFailed},
+			},
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Test unknown timestamp",
+			timestamp: "unknown",
+			value:     "unknown",
+			want: History{BackupConfigs: []BackupConfig{
+				{Timestamp: "20220401092430", DateDeleted: ""},
+				{Timestamp: "20220401102430", DateDeleted: ""},
+			},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			historyTest := History{
+				BackupConfigs: []BackupConfig{
+					{Timestamp: "20220401092430", DateDeleted: ""},
+					{Timestamp: "20220401102430", DateDeleted: ""},
+				},
+			}
+			err := historyTest.UpdateBackupConfigDateDeleted(tt.timestamp, tt.value)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nUpdateBackupConfigDateDeleted() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(historyTest, tt.want) {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", historyTest, tt.want)
 			}
 		})
 	}
