@@ -45,7 +45,7 @@ func ConvertFromHistoryBackupConfig(hBackupConfig history.BackupConfig) BackupCo
 // convertFromHistoryRestorePlan converts a slice of history.RestorePlanEntry to a slice of RestorePlanEntry.
 // It iterates over the input slice and calls convertFromHistoryRestorePlanEntry for each entry.
 func convertFromHistoryRestorePlan(hRestorePlan []history.RestorePlanEntry) []RestorePlanEntry {
-	restorePlan := make([]RestorePlanEntry, len(hRestorePlan))
+	restorePlan := make([]RestorePlanEntry, 0, len(hRestorePlan))
 	for _, hRestorePlanEntry := range hRestorePlan {
 		restorePlan = append(restorePlan, convertFromHistoryRestorePlanEntry(hRestorePlanEntry))
 	}
@@ -98,7 +98,7 @@ func ConvertToHistoryBackupConfig(backupConfig BackupConfig) history.BackupConfi
 // convertToHistoryRestorePlan converts a slice of RestorePlanEntry to a slice of history.RestorePlanEntry.
 // It iterates over the input slice and calls convertToHistoryRestorePlanEntry for each entry.
 func convertToHistoryRestorePlan(restorePlan []RestorePlanEntry) []history.RestorePlanEntry {
-	hRestorePlan := make([]history.RestorePlanEntry, len(restorePlan))
+	hRestorePlan := make([]history.RestorePlanEntry, 0, len(restorePlan))
 	for _, restorePlanEntry := range restorePlan {
 		hRestorePlan = append(hRestorePlan, convertToHistoryRestorePlanEntry(restorePlanEntry))
 	}
