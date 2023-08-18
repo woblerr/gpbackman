@@ -30,7 +30,25 @@ var backupDeleteCmd = &cobra.Command{
 	Short: "Delete a specific backup set",
 	Long: `Delete a specific backup set.
 
-Delete specific backup.`,
+The --timestamp option must be specified. It could be specified multiple times.
+
+By default, the existence of dependent backups is checked and deletion process is not performed,
+unless the --cascade option is passed in.
+
+By default, he deletion will be performed for local backup (in development).
+
+The storage plugin config file location can be set using the --plugin-config option.
+The full path to the file is required. In this case, the deletion will be performed using the storage plugin.
+
+The gpbackup_history.db file location can be set using the --history-db option.
+Can be specified only once. The full path to the file is required.
+
+The gpbackup_history.yaml file location can be set using the --history-file option.
+Can only be specified multiple times. The full path to the file is required.
+
+If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
+
+Only --history-file or --history-db option can be specified, not both.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags())
@@ -61,6 +79,7 @@ func init() {
 		false,
 		"delete all dependent backups for the specified backup timestamp",
 	)
+	backupDeleteCmd.MarkPersistentFlagRequired(backupDeleteTimestampFlagName)
 }
 
 // These flag checks are applied only for backup-delete command.

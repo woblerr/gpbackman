@@ -28,8 +28,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   commandName,
-	Short: "gpBackMan - utility for managing backups created by gpbackup.",
-	Long:  ``,
+	Short: "gpBackMan - utility for managing backups created by gpbackup",
 	Args:  cobra.NoArgs,
 }
 
