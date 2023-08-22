@@ -52,6 +52,7 @@ Only --history-file or --history-db option can be specified, not both.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags())
+		doRootBackupFlagValidation(cmd.Flags())
 		doDeleteBackupFlagValidation(cmd.Flags())
 		doDeleteBackup()
 	},
@@ -323,7 +324,7 @@ func backupDeleteFilePluginFunc(backupData gpbckpconfig.BackupConfig, parseHData
 			return errdel
 		}
 		gplog.Info(stdout)
-		err = parseHData.UpdateBackupConfigDateDeleted(backupData.Timestamp, gpbckpconfig.DateDeletedPluginFailed)
+		err = parseHData.UpdateBackupConfigDateDeleted(backupData.Timestamp, dateDeleted)
 		if err != nil {
 			gplog.Error(errtext.ErrorTextUnableSetBackupStatus(dateDeleted, backupData.Timestamp, err))
 			return err
