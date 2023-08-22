@@ -5,8 +5,6 @@ const (
 
 	deleteBackupPluginCommand = "delete_backup"
 
-	failureStatus = "Failure"
-
 	historyFileNameBaseConst           = "gpbackup_history"
 	historyFileNameSuffixConst         = ".yaml"
 	historyFileNameMigratedSuffixConst = ".migrated"

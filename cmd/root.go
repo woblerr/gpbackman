@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/woblerr/gpbackman/errtext"
+	"github.com/woblerr/gpbackman/gpbckpconfig"
 )
 
 const (
@@ -84,7 +85,7 @@ func doRootFlagValidation(flags *pflag.FlagSet) {
 	var err error
 	// If history-db flag is specified and full path.
 	if flags.Changed(rootHistoryDBFlagName) {
-		err = checkFullPath(rootHistoryDB)
+		err = gpbckpconfig.CheckFullPath(rootHistoryDB)
 		if err != nil {
 			gplog.Error(errtext.ErrorTextUnableValidateFlag(rootHistoryDB, rootHistoryDBFlagName, err))
 			execOSExit(exitErrorCode)
@@ -93,7 +94,7 @@ func doRootFlagValidation(flags *pflag.FlagSet) {
 	// If history-file flag is specified and full path.
 	if flags.Changed(rootHistoryFilesFlagName) {
 		for _, hFile := range rootHistoryFiles {
-			err = checkFullPath(hFile)
+			err = gpbckpconfig.CheckFullPath(hFile)
 			if err != nil {
 				gplog.Error(errtext.ErrorTextUnableValidateFlag(hFile, rootHistoryFilesFlagName, err))
 				execOSExit(exitErrorCode)

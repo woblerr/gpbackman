@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"database/sql"
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gpbackup/history"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -102,23 +100,22 @@ func doBackupInfo() {
 }
 
 func backupInfoDB() {
-	hDB, err := openHistoryDB(getHistoryDBPath(rootHistoryDB))
+	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
 		gplog.Error(errtext.ErrorTextUnableOpenHistoryDB(err))
 	}
-	backupList, err := getBackupNames(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, hDB)
+	backupList, err := gpbckpconfig.GetBackupNamesDB(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, hDB)
 	if err != nil {
 		gplog.Error(errtext.ErrorTextUnableReadHistoryDB(err))
 	}
 	t := table.NewWriter()
 	initTable(t)
 	for _, backupName := range backupList {
-		hBackupData, err := history.GetMainBackupInfo(backupName, hDB)
+		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 		if err != nil {
 			gplog.Error(errtext.ErrorTextUnableGetBackupInfo(backupName, err))
 			continue
 		}
-		backupData := gpbckpconfig.ConvertFromHistoryBackupConfig(hBackupData)
 		addBackupToTable(backupData, t)
 
 	}
@@ -147,7 +144,7 @@ func backupInfoFile() {
 				if err != nil {
 					gplog.Error(errtext.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
 				}
-				validBackup := getBackupNameFile(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, backupData.Status, backupDateDeleted)
+				validBackup := gpbckpconfig.GetBackupNameFile(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, backupData.Status, backupDateDeleted)
 				if validBackup {
 					addBackupToTable(backupData, t)
 				}
@@ -155,68 +152,6 @@ func backupInfoFile() {
 		}
 	}
 	t.Render()
-}
-
-func getBackupNames(showD, showF, sAll bool, historyDB *sql.DB) ([]string, error) {
-	orderBy := " ORDER BY timestamp DESC;"
-	getBackupsQuery := "SELECT timestamp FROM backups"
-	switch {
-	case sAll:
-		getBackupsQuery += orderBy
-	case showD:
-		getBackupsQuery += " WHERE status != '" + failureStatus + "'" +
-			" AND date_deleted NOT IN ('', '" +
-			gpbckpconfig.DateDeletedInProgress + "', '" +
-			gpbckpconfig.DateDeletedPluginFailed + "', '" +
-			gpbckpconfig.DateDeletedLocalFailed + "')" + orderBy
-
-	case showF:
-		getBackupsQuery += " WHERE status = '" + failureStatus + "'" + orderBy
-	default:
-		getBackupsQuery += " WHERE status != '" + failureStatus + "'" +
-			" AND date_deleted IN ('', '" +
-			gpbckpconfig.DateDeletedInProgress + "', '" +
-			gpbckpconfig.DateDeletedPluginFailed + "', '" +
-			gpbckpconfig.DateDeletedLocalFailed + "')" + orderBy
-	}
-	backupListRow, err := historyDB.Query(getBackupsQuery)
-	if err != nil {
-		return nil, err
-	}
-	defer backupListRow.Close()
-	var backupList []string
-	for backupListRow.Next() {
-		var b string
-		err := backupListRow.Scan(&b)
-		if err != nil {
-			return nil, err
-		}
-		backupList = append(backupList, b)
-	}
-	if err := backupListRow.Err(); err != nil {
-		return nil, err
-	}
-	return backupList, nil
-}
-
-func getBackupNameFile(showD, showF, sAll bool, status, dateDeleted string) bool {
-	switch {
-	case sAll:
-		return true
-	case showD:
-		if dateDeleted != "" {
-			return true
-		}
-	case showF:
-		if status == failureStatus {
-			return true
-		}
-	default:
-		if status != failureStatus && dateDeleted == "" {
-			return true
-		}
-	}
-	return false
 }
 
 func initTable(t table.Writer) {

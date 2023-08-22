@@ -1,15 +1,12 @@
 package cmd
 
 import (
-	"database/sql"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gpbackup/history"
 	"github.com/spf13/pflag"
 	"github.com/woblerr/gpbackman/errtext"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
@@ -65,14 +62,6 @@ func setLogLevelFile(level string) error {
 	return nil
 }
 
-func openHistoryDB(historyDBPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", historyDBPath)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
 func getHistoryFilePath(historyFilePath string) string {
 	var historyFileName = historyFileNameConst
 	if historyFilePath != "" {
@@ -87,14 +76,6 @@ func getHistoryDBPath(historyDBPath string) string {
 		return historyDBPath
 	}
 	return historyDBName
-}
-
-func getBackupDataDB(backupName string, hDB *sql.DB) (gpbckpconfig.BackupConfig, error) {
-	hBackupData, err := history.GetMainBackupInfo(backupName, hDB)
-	if err != nil {
-		return gpbckpconfig.BackupConfig{}, err
-	}
-	return gpbckpconfig.ConvertFromHistoryBackupConfig(hBackupData), nil
 }
 
 func renameHistoryFile(filename string) error {
@@ -112,25 +93,6 @@ func renameHistoryFile(filename string) error {
 
 func getCurrentTimestamp() string {
 	return time.Now().Format(gpbckpconfig.Layout)
-}
-
-func isBackupActive(dateDeleted string) bool {
-	return (dateDeleted != "" || dateDeleted == gpbckpconfig.DateDeletedPluginFailed || dateDeleted == gpbckpconfig.DateDeletedLocalFailed)
-}
-
-func checkFullPath(path string) error {
-	if len(path) > 0 && !filepath.IsAbs(path) {
-		return errtext.ErrorValidationFullPath()
-	}
-	return nil
-}
-
-func checkTimestamp(timestamp string) error {
-	timestampFormat := regexp.MustCompile(`^([0-9]{14})$`)
-	if !timestampFormat.MatchString(timestamp) {
-		return errtext.ErrorValidationTimestamp()
-	}
-	return nil
 }
 
 func checkCompatibleFlags(flags *pflag.FlagSet, flagNames ...string) error {

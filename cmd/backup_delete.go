@@ -88,7 +88,7 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 	// If timestamps are specified and have correct values.
 	if flags.Changed(backupDeleteTimestampFlagName) {
 		for _, timestamp := range backupDeleteTimestamp {
-			err = checkTimestamp(timestamp)
+			err = gpbckpconfig.CheckTimestamp(timestamp)
 			if err != nil {
 				gplog.Error(errtext.ErrorTextUnableValidateFlag(timestamp, backupDeleteTimestampFlagName, err))
 				execOSExit(exitErrorCode)
@@ -97,7 +97,7 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 	}
 	// If plugin-config flag is specified and full path.
 	if flags.Changed(backupDeletePluginConfigFileFlagName) {
-		err = checkFullPath(backupDeletePluginConfigFile)
+		err = gpbckpconfig.CheckFullPath(backupDeletePluginConfigFile)
 		if err != nil {
 			gplog.Error(errtext.ErrorTextUnableValidateFlag(backupDeletePluginConfigFile, backupDeletePluginConfigFileFlagName, err))
 			execOSExit(exitErrorCode)
@@ -135,13 +135,13 @@ func doDeleteBackup() {
 }
 
 func backupDeleteDBPlugin(pluginConfig *utils.PluginConfig) {
-	hDB, err := openHistoryDB(getHistoryDBPath(rootHistoryDB))
+	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
 		gplog.Error(errtext.ErrorTextUnableOpenHistoryDB(err))
 		execOSExit(exitErrorCode)
 	}
 	for _, backupName := range backupDeleteTimestamp {
-		backupData, err := getBackupDataDB(backupName, hDB)
+		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 		if err != nil {
 			gplog.Error(errtext.ErrorTextUnableGetBackupInfo(backupName, err))
 			continue
@@ -180,7 +180,7 @@ func backupDeleteDBPlugin(pluginConfig *utils.PluginConfig) {
 func backupDeleteDBCascade(restorePlanEntry []gpbckpconfig.RestorePlanEntry, hDB *sql.DB, pluginConfig *utils.PluginConfig) error {
 	for _, restorePlanData := range restorePlanEntry {
 		backupNameRestorePlan := restorePlanData.Timestamp
-		backupDataRestorePlan, err := getBackupDataDB(backupNameRestorePlan, hDB)
+		backupDataRestorePlan, err := gpbckpconfig.GetBackupDataDB(backupNameRestorePlan, hDB)
 		if err != nil {
 			gplog.Error(errtext.ErrorTextUnableGetBackupInfo(backupNameRestorePlan, err))
 			return err
@@ -200,7 +200,7 @@ func backupDeleteDBPluginFunc(backupName string, backupData gpbckpconfig.BackupC
 		gplog.Error(errtext.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, errDateDeleted))
 	}
 	// If the backup date deletion has invalid value, try to delete the backup.
-	if isBackupActive(backupDateDeleted) || errDateDeleted != nil {
+	if gpbckpconfig.IsBackupActive(backupDateDeleted) || errDateDeleted != nil {
 		dateDeleted := getCurrentTimestamp()
 		stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, backupDeletePluginConfigFile, backupName)
 		if len(stderr) > 0 {
@@ -308,7 +308,7 @@ func backupDeleteFilePluginFunc(backupData gpbckpconfig.BackupConfig, parseHData
 		gplog.Error(errtext.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, errDateDeleted))
 	}
 	// If the backup date deletion has invalid value, try to delete the backup.
-	if isBackupActive(backupDateDeleted) || errDateDeleted != nil {
+	if gpbckpconfig.IsBackupActive(backupDateDeleted) || errDateDeleted != nil {
 		dateDeleted := getCurrentTimestamp()
 		stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, backupDeletePluginConfigFile, backupData.Timestamp)
 		if len(stderr) > 0 {
