@@ -42,3 +42,33 @@ jobs:
         run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/coverage.out
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  goreleaser:
+    needs: build
+    runs-on: ubuntu-latest
+    env: 
+      goreleaser_version: "v1.20.0"
+    steps:
+      - name: Set up go 1.20
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.20"
+        id: go
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get ref
+        id: vars
+        run: |
+          echo ::set-output name=ref::$(echo ${GITHUB_REF} | cut -d'/' -f3)
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        with:
+          distribution: goreleaser
+          version: ${{ env.goreleaser_version }}
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
