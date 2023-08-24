@@ -201,7 +201,7 @@ func addBackupToTable(backupData gpbckpconfig.BackupConfig, t table.Writer) {
 		backupType,
 		backupFilter,
 		backupData.Plugin,
-		backupDuration,
+		formatBackupDuration(backupDuration),
 		backupDateDeleted,
 	})
 }

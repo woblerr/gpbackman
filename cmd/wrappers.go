@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -106,4 +107,11 @@ func checkCompatibleFlags(flags *pflag.FlagSet, flagNames ...string) error {
 		return errtext.ErrorIncompatibleFlagsError()
 	}
 	return nil
+}
+
+func formatBackupDuration(value float64) string {
+	hours := int(value / 3600)
+	minutes := (int(value) % 3600) / 60
+	seconds := int(value) % 60
+	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
