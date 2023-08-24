@@ -15,13 +15,13 @@ func TestWarnTextFunctionsWarnAndArg(t *testing.T) {
 			name:     "Test WarnTextBackupAlreadyDeleted",
 			value:    "TestBackup",
 			function: WarnTextBackupAlreadyDeleted,
-			want:     "Backup TestBackup has already been deleted.",
+			want:     "Backup TestBackup has already been deleted",
 		},
 		{
 			name:     "Test WarnTextBackupUnableDeleteFailed",
 			value:    "TestBackup",
 			function: WarnTextBackupUnableDeleteFailed,
-			want:     "Backup TestBackup has failed status. Nothing to delete.",
+			want:     "Backup TestBackup has failed status. Nothing to delete",
 		},
 	}
 	for _, tt := range tests {

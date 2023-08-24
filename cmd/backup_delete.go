@@ -344,12 +344,12 @@ func backupDeleteFilePluginFunc(backupData gpbckpconfig.BackupConfig, parseHData
 
 // TODO
 func backupDeleteDBLocal() {
-	gplog.Warn("The functionality is still in development.")
+	gplog.Warn("The functionality is still in development")
 }
 
 // TODO
 func backupDeleteFileLocal() {
-	gplog.Warn("The functionality is still in development.")
+	gplog.Warn("The functionality is still in development")
 }
 
 func execDeleteBackup(executablePath, deleteBackupPluginCommand, pluginConfigFile, timestamp string) (string, string, error) {

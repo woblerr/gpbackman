@@ -13,7 +13,7 @@ func TestInfoTextFunctionaAndArg(t *testing.T) {
 			name:     "Test InfoTextBackupDeleteSuccess",
 			value:    "TestBackup",
 			function: InfoTextBackupDeleteSuccess,
-			want:     "Backup TestBackup successfully deleted.",
+			want:     "Backup TestBackup successfully deleted",
 		},
 	}
 	for _, tt := range tests {
