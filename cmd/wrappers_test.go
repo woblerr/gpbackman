@@ -55,3 +55,22 @@ func TestIsBackupActive(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatBackupDuration(t *testing.T) {
+	tests := []struct {
+		name  string
+		value float64
+		want  string
+	}{
+		{"01:00:00", 3600, "01:00:00"},
+		{"01:01:01", 3661, "01:01:01"},
+		{"00:00:00", 0, "00:00:00"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatBackupDuration(tt.value); got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
