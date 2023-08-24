@@ -4,14 +4,14 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/woblerr/gpbackman/errtext"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
 // CheckTimestamp Returns error if timestamp is not valid.
 func CheckTimestamp(timestamp string) error {
 	timestampFormat := regexp.MustCompile(`^([0-9]{14})$`)
 	if !timestampFormat.MatchString(timestamp) {
-		return errtext.ErrorValidationTimestamp()
+		return textmsg.ErrorValidationTimestamp()
 	}
 	return nil
 }
@@ -19,7 +19,7 @@ func CheckTimestamp(timestamp string) error {
 // CheckFullPath Returns error if path is not full path.
 func CheckFullPath(path string) error {
 	if !filepath.IsAbs(path) {
-		return errtext.ErrorValidationFullPath()
+		return textmsg.ErrorValidationFullPath()
 	}
 	return nil
 }

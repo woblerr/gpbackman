@@ -9,8 +9,8 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/pflag"
-	"github.com/woblerr/gpbackman/errtext"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
 var execOSExit = os.Exit
@@ -39,7 +39,7 @@ func setLogLevelConsole(level string) error {
 	case "verbose":
 		gplog.SetVerbosity(gplog.LOGVERBOSE)
 	default:
-		return errtext.ErrorInvalidValueError()
+		return textmsg.ErrorInvalidValueError()
 	}
 	return nil
 }
@@ -58,7 +58,7 @@ func setLogLevelFile(level string) error {
 	case "verbose":
 		gplog.SetLogFileVerbosity(gplog.LOGVERBOSE)
 	default:
-		return errtext.ErrorInvalidValueError()
+		return textmsg.ErrorInvalidValueError()
 	}
 	return nil
 }
@@ -104,7 +104,7 @@ func checkCompatibleFlags(flags *pflag.FlagSet, flagNames ...string) error {
 		}
 	}
 	if n > 1 {
-		return errtext.ErrorIncompatibleFlagsError()
+		return textmsg.ErrorIncompatibleFlagsError()
 	}
 	return nil
 }

@@ -6,8 +6,8 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/woblerr/gpbackman/errtext"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
 const (
@@ -87,7 +87,7 @@ func doRootFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(rootHistoryDBFlagName) {
 		err = gpbckpconfig.CheckFullPath(rootHistoryDB)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableValidateFlag(rootHistoryDB, rootHistoryDBFlagName, err))
+			gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootHistoryDB, rootHistoryDBFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
@@ -96,7 +96,7 @@ func doRootFlagValidation(flags *pflag.FlagSet) {
 		for _, hFile := range rootHistoryFiles {
 			err = gpbckpconfig.CheckFullPath(hFile)
 			if err != nil {
-				gplog.Error(errtext.ErrorTextUnableValidateFlag(hFile, rootHistoryFilesFlagName, err))
+				gplog.Error(textmsg.ErrorTextUnableValidateFlag(hFile, rootHistoryFilesFlagName, err))
 				execOSExit(exitErrorCode)
 			}
 		}
@@ -104,12 +104,12 @@ func doRootFlagValidation(flags *pflag.FlagSet) {
 	// Check, that the log level is correct.
 	err = setLogLevelConsole(rootLogLevelConsole)
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableValidateFlag(rootLogLevelConsole, rootLogLevelConsoleFlagName, err))
+		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelConsole, rootLogLevelConsoleFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 	err = setLogLevelFile(rootLogLevelFile)
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableValidateFlag(rootLogLevelFile, rootLogLevelFileFlagName, err))
+		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelFile, rootLogLevelFileFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 }
@@ -121,7 +121,7 @@ func doRootBackupFlagValidation(flags *pflag.FlagSet) {
 	// history-file flag and history-db flags cannot be used together for backup-info and backup-delete commands.
 	err := checkCompatibleFlags(flags, rootHistoryDBFlagName, rootHistoryFilesFlagName)
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableCompatibleFlags(err, rootHistoryDBFlagName, rootHistoryFilesFlagName))
+		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, rootHistoryDBFlagName, rootHistoryFilesFlagName))
 		execOSExit(exitErrorCode)
 	}
 	// If history-files flag is specified, set historyDB = false.

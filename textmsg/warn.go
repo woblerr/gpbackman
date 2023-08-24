@@ -1,4 +1,4 @@
-package errtext
+package textmsg
 
 import "fmt"
 

@@ -7,8 +7,8 @@ import (
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/woblerr/gpbackman/errtext"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
 const (
@@ -80,7 +80,7 @@ func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 	// show-deleted, show-failed and show-all flags cannot be set together for backup-info command.
 	err := checkCompatibleFlags(flags, backupInfoShowDeletedFlagName, backupInfoShowFailedFlagName, backupInfoShowAllFlagName)
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableCompatibleFlags(
+		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(
 			err,
 			backupInfoShowDeletedFlagName,
 			backupInfoShowFailedFlagName,
@@ -102,18 +102,18 @@ func doBackupInfo() {
 func backupInfoDB() {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableOpenHistoryDB(err))
+		gplog.Error(textmsg.ErrorTextUnableOpenHistoryDB(err))
 	}
 	backupList, err := gpbckpconfig.GetBackupNamesDB(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, hDB)
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableReadHistoryDB(err))
+		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 	}
 	t := table.NewWriter()
 	initTable(t)
 	for _, backupName := range backupList {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableGetBackupInfo(backupName, err))
+			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 			continue
 		}
 		addBackupToTable(backupData, t)
@@ -130,19 +130,19 @@ func backupInfoFile() {
 		hFile := getHistoryFilePath(historyFile)
 		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("read", err))
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
 			continue
 		}
 		parseHData, err := gpbckpconfig.ParseResult(historyData)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("parse", err))
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
 			continue
 		}
 		if len(parseHData.BackupConfigs) != 0 {
 			for _, backupData := range parseHData.BackupConfigs {
 				backupDateDeleted, err := backupData.GetBackupDateDeleted()
 				if err != nil {
-					gplog.Error(errtext.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
+					gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
 				}
 				validBackup := gpbckpconfig.GetBackupNameFile(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, backupData.Status, backupDateDeleted)
 				if validBackup {
@@ -175,23 +175,23 @@ func initTable(t table.Writer) {
 func addBackupToTable(backupData gpbckpconfig.BackupConfig, t table.Writer) {
 	backupDate, err := backupData.GetBackupDate()
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableGetBackupValue("date", backupData.Timestamp, err))
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date", backupData.Timestamp, err))
 	}
 	backupType, err := backupData.GetBackupType()
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableGetBackupValue("type", backupData.Timestamp, err))
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("type", backupData.Timestamp, err))
 	}
 	backupFilter, err := backupData.GetObjectFilteringInfo()
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableGetBackupValue("object filtering", backupData.Timestamp, err))
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("object filtering", backupData.Timestamp, err))
 	}
 	backupDuration, err := backupData.GetBackupDuration()
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableGetBackupValue("duration", backupData.Timestamp, err))
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("duration", backupData.Timestamp, err))
 	}
 	backupDateDeleted, err := backupData.GetBackupDateDeleted()
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
 	}
 	t.AppendRow([]interface{}{
 		backupData.Timestamp,

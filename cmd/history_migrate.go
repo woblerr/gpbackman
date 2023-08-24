@@ -4,8 +4,8 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpbackup/history"
 	"github.com/spf13/cobra"
-	"github.com/woblerr/gpbackman/errtext"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
 var historyMigrateCmd = &cobra.Command{
@@ -42,30 +42,30 @@ func doMigrateHistory() {
 	logHeadersDebug()
 	hDB, err := history.InitializeHistoryDatabase(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(errtext.ErrorTextUnableInitHistoryDB(err))
+		gplog.Error(textmsg.ErrorTextUnableInitHistoryDB(err))
 	}
 	for _, historyFile := range rootHistoryFiles {
 		hFile := getHistoryFilePath(historyFile)
 		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("read", err))
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
 			continue
 		}
 		parseHData, err := gpbckpconfig.ParseResult(historyData)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("parse", err))
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
 			continue
 		}
 		for _, backupConfig := range parseHData.BackupConfigs {
 			hBackupConfig := gpbckpconfig.ConvertToHistoryBackupConfig(backupConfig)
 			err = history.StoreBackupHistory(hDB, &hBackupConfig)
 			if err != nil {
-				gplog.Error(errtext.ErrorTextUnableWriteIntoHistoryDB(err))
+				gplog.Error(textmsg.ErrorTextUnableWriteIntoHistoryDB(err))
 			}
 		}
 		err = renameHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(errtext.ErrorTextUnableActionHistoryFile("rename", err))
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("rename", err))
 		}
 	}
 	hDB.Close()

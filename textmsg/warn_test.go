@@ -1,10 +1,10 @@
-package errtext
+package textmsg
 
 import (
 	"testing"
 )
 
-func TestWarnTextFunctionsWarnOnly(t *testing.T) {
+func TestWarnTextFunctionsWarnAndArg(t *testing.T) {
 	tests := []struct {
 		name     string
 		value    string
