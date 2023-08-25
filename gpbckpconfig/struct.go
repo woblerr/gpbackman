@@ -206,16 +206,33 @@ func (backupConfig BackupConfig) IsSuccess() (bool, error) {
 	}
 }
 
-func (history *History) FindBackupConfig(timestamp string) (BackupConfig, error) {
-	for _, backupConfig := range history.BackupConfigs {
+func (history *History) FindBackupConfig(timestamp string) (int, BackupConfig, error) {
+	for idx, backupConfig := range history.BackupConfigs {
 		if backupConfig.Timestamp == timestamp {
-			return backupConfig, nil
+			return idx, backupConfig, nil
 		}
 	}
-	return BackupConfig{}, errors.New("backup timestamp doesn't match any existing backups")
+	return 0, BackupConfig{}, errors.New("backup timestamp doesn't match any existing backups")
 }
 
-func (history *History) UpdateBackupConfigDateDeleted(timestamp string, dataDeleted string) error {
+func (history *History) FindBackupConfigDependencies(timestamp string, stopPosition int) []string {
+	dependentBackups := make([]string, 0, stopPosition+1)
+	for i := 0; i < stopPosition; i++ {
+		dependentBackupConfig := history.BackupConfigs[i]
+		if len(dependentBackupConfig.RestorePlan) > 0 {
+			for _, ts := range dependentBackupConfig.RestorePlan {
+				if ts.Timestamp == timestamp {
+					dependentBackups = append(dependentBackups, dependentBackupConfig.Timestamp)
+				}
+			}
+		} else {
+			continue
+		}
+	}
+	return dependentBackups
+}
+
+func (history *History) UpdateBackupConfigDateDeleted(timestamp, dataDeleted string) error {
 	for idx, backupConfig := range history.BackupConfigs {
 		if backupConfig.Timestamp == timestamp {
 			history.BackupConfigs[idx].DateDeleted = dataDeleted

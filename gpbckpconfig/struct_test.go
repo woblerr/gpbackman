@@ -400,7 +400,7 @@ func TestFindBackupConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.history.FindBackupConfig(tt.value)
+			_, got, err := tt.history.FindBackupConfig(tt.value)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\nFindBackupConfig() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
 				return
