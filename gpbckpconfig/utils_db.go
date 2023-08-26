@@ -70,3 +70,32 @@ func getBackupNameQuery(showD, showF, sAll bool) string {
 	}
 	return getBackupsQuery
 }
+
+func GetBackupDependencies(backupName string, historyDB *sql.DB) ([]string, error) {
+	backupListDependenciesRow, err := historyDB.Query(getBackupDependenciesQuery(backupName))
+	if err != nil {
+		return nil, err
+	}
+	defer backupListDependenciesRow.Close()
+	var backupList []string
+	for backupListDependenciesRow.Next() {
+		var b string
+		err := backupListDependenciesRow.Scan(&b)
+		if err != nil {
+			return nil, err
+		}
+		backupList = append(backupList, b)
+	}
+	if err := backupListDependenciesRow.Err(); err != nil {
+		return nil, err
+	}
+	return backupList, nil
+}
+
+func getBackupDependenciesQuery(backupName string) string {
+	getDependenciesQuery := `SELECT timestamp from restore_plans ` +
+		`WHERE timestamp != '` + backupName +
+		`' AND restore_plan_timestamp = '` + backupName +
+		`' ORDER BY timestamp DESC;`
+	return getDependenciesQuery
+}

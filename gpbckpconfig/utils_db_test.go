@@ -47,3 +47,24 @@ func TestGetBackupNameQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestGetBackupDependenciesQuery(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  string
+	}{
+		{
+			name:  "Test valid result",
+			value: "TestBackup",
+			want:  `SELECT timestamp from restore_plans WHERE timestamp != 'TestBackup' AND restore_plan_timestamp = 'TestBackup' ORDER BY timestamp DESC;`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getBackupDependenciesQuery(tt.value); got != tt.want {
+				t.Errorf("getBackupDependenciesQuery(%v):\n%v\nwant:\n%v", tt.value, got, tt.want)
+			}
+		})
+	}
+}
