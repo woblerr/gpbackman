@@ -25,25 +25,28 @@ func ParseResult(output []byte) (History, error) {
 // This function is only applicable to processing values obtained from gpbackup history file.
 //
 // The value is calculated, based on:
-//   - if sAll is true, the function returns true, implying that all backups should be shown regardless of their status and delete status;
-//   - if showD is true, the function returns true only for backups that have already been deleted;
-//   - if showF is true, the function returns true only for backups with the failed status;
+//   - if showD is true, the function returns true only for backups that active or already deleted;
+//   - if showF is true, the function returns true only for backups that active or failed;
 //   - if none of the parameters were passed, the function returns true for backups that have a successful status and have not been deleted;
 //   - If none of the above conditions are met, the function returns false.
-func GetBackupNameFile(showD, showF, sAll bool, status, dateDeleted string) bool {
+func GetBackupNameFile(showD, showF bool, status, dateDeleted string) bool {
 	switch {
-	case sAll:
+	// Displaying all backups (active, deleted, failed)
+	case showD && showF:
 		return true
-	case showD:
-		if status != backupStatusFailure && !IsBackupActive(dateDeleted) {
+	// Displaying only active and deleted backups; failed - hidden.
+	case showD && !showF:
+		if status != backupStatusFailure {
 			return true
 		}
-	case showF:
-		if status == backupStatusFailure {
+	// Displaying only active and failed backups; deleted - hidden.
+	case !showD && showF:
+		if IsBackupActive(dateDeleted) {
 			return true
 		}
+	// Displaying only active backups or backups with deletion status "In progress", deleted and failed - hidden.
 	default:
-		if status != backupStatusFailure && IsBackupActive(dateDeleted) {
+		if status != backupStatusFailure && (IsBackupActive(dateDeleted) || dateDeleted == DateDeletedInProgress) {
 			return true
 		}
 	}

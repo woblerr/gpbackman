@@ -28,6 +28,5 @@ func CheckFullPath(path string) error {
 func IsBackupActive(dateDeleted string) bool {
 	return (dateDeleted == "" ||
 		dateDeleted == DateDeletedPluginFailed ||
-		dateDeleted == DateDeletedLocalFailed ||
-		dateDeleted == DateDeletedInProgress)
+		dateDeleted == DateDeletedLocalFailed)
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
 	"github.com/woblerr/gpbackman/textmsg"
 )
@@ -14,14 +13,12 @@ import (
 const (
 	backupInfoShowDeletedFlagName = "show-deleted"
 	backupInfoShowFailedFlagName  = "show-failed"
-	backupInfoShowAllFlagName     = "show-all"
 )
 
 // Flags for the gpbackman backup-info command (backupInfoCmd)
 var (
 	backupInfoShowDeleted bool
 	backupInfoShowFailed  bool
-	backupInfoShowAll     bool
 )
 
 var backupInfoCmd = &cobra.Command{
@@ -29,11 +26,11 @@ var backupInfoCmd = &cobra.Command{
 	Short: "Display a list of backups",
 	Long: `Display a list of backups.
 
-By default, only active backups are displayed.
+By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
-To display only deleted backups, use the --show-deleted flag.
-To display only failed backups, use the --show-failed flag.
-To display all backups, including deleted and failed, use the --show-all flag.
+To additional display deleted backups, use the --show-deleted flag.
+To additional display failed backups, use the --show-failed flag.
+To display all backups, use --show-deleted  and --show-failed options together.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -48,7 +45,7 @@ Only --history-file or --history-db option can be specified, not both.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags())
 		doRootBackupFlagValidation(cmd.Flags())
-		doBackupInfoFlagValidation(cmd.Flags())
+		// doBackupInfoFlagValidation(cmd.Flags())
 		doBackupInfo()
 	},
 }
@@ -59,36 +56,19 @@ func init() {
 		&backupInfoShowDeleted,
 		backupInfoShowDeletedFlagName,
 		false,
-		"show only deleted backups",
+		"show deleted backups",
 	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowFailed,
 		backupInfoShowFailedFlagName,
 		false,
-		"show only failed backups",
-	)
-	backupInfoCmd.Flags().BoolVar(
-		&backupInfoShowAll,
-		backupInfoShowAllFlagName,
-		false,
-		"show all backups, including deleted and failed",
+		"show failed backups",
 	)
 }
 
 // These flag checks are applied only for backup-info commands.
-func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
-	// show-deleted, show-failed and show-all flags cannot be set together for backup-info command.
-	err := checkCompatibleFlags(flags, backupInfoShowDeletedFlagName, backupInfoShowFailedFlagName, backupInfoShowAllFlagName)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(
-			err,
-			backupInfoShowDeletedFlagName,
-			backupInfoShowFailedFlagName,
-			backupInfoShowAllFlagName))
-		execOSExit(exitErrorCode)
-	}
-
-}
+// func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
+// }
 
 func doBackupInfo() {
 	logHeadersDebug()
@@ -104,7 +84,7 @@ func backupInfoDB() {
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableOpenHistoryDB(err))
 	}
-	backupList, err := gpbckpconfig.GetBackupNamesDB(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, hDB)
+	backupList, err := gpbckpconfig.GetBackupNamesDB(backupInfoShowDeleted, backupInfoShowFailed, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 	}
@@ -144,7 +124,7 @@ func backupInfoFile() {
 				if err != nil {
 					gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
 				}
-				validBackup := gpbckpconfig.GetBackupNameFile(backupInfoShowDeleted, backupInfoShowFailed, backupInfoShowAll, backupData.Status, backupDateDeleted)
+				validBackup := gpbckpconfig.GetBackupNameFile(backupInfoShowDeleted, backupInfoShowFailed, backupData.Status, backupDateDeleted)
 				if validBackup {
 					addBackupToTable(backupData, t)
 				}

@@ -24,9 +24,9 @@ func GetBackupDataDB(backupName string, hDB *sql.DB) (BackupConfig, error) {
 	return ConvertFromHistoryBackupConfig(hBackupData), nil
 }
 
-// GetBackupNamesDB Returns a list of backup names that are active (completed successfully and not deleted).
-func GetBackupNamesDB(showD, showF, sAll bool, historyDB *sql.DB) ([]string, error) {
-	backupListRow, err := historyDB.Query(getBackupNameQuery(showD, showF, sAll))
+// GetBackupNamesDB Returns a list of backup names.
+func GetBackupNamesDB(showD, showF bool, historyDB *sql.DB) ([]string, error) {
+	backupListRow, err := historyDB.Query(getBackupNameQuery(showD, showF))
 	if err != nil {
 		return nil, err
 	}
@@ -46,21 +46,23 @@ func GetBackupNamesDB(showD, showF, sAll bool, historyDB *sql.DB) ([]string, err
 	return backupList, nil
 }
 
-func getBackupNameQuery(showD, showF, sAll bool) string {
+func getBackupNameQuery(showD, showF bool) string {
 	orderBy := " ORDER BY timestamp DESC;"
 	getBackupsQuery := "SELECT timestamp FROM backups"
 	switch {
-	case sAll:
+	// Displaying all backups (active, deleted, failed)
+	case showD && showF:
 		getBackupsQuery += orderBy
-	case showD:
-		getBackupsQuery += " WHERE status != '" + backupStatusFailure + "'" +
-			" AND date_deleted NOT IN ('', '" +
+	// Displaying only active and deleted backups; failed - hidden.
+	case showD && !showF:
+		getBackupsQuery += " WHERE status != '" + backupStatusFailure + "'" + orderBy
+	// Displaying only active and failed backups; deleted - hidden.
+	case !showD && showF:
+		getBackupsQuery += " WHERE date_deleted IN ('', '" +
 			DateDeletedInProgress + "', '" +
 			DateDeletedPluginFailed + "', '" +
 			DateDeletedLocalFailed + "')" + orderBy
-
-	case showF:
-		getBackupsQuery += " WHERE status = '" + backupStatusFailure + "'" + orderBy
+	// Displaying only active backups or backups with deletion status "In progress", deleted and failed - hidden.
 	default:
 		getBackupsQuery += " WHERE status != '" + backupStatusFailure + "'" +
 			" AND date_deleted IN ('', '" +

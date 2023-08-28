@@ -83,9 +83,9 @@ func TestIsBackupActive(t *testing.T) {
 			want:  true,
 		},
 		{
-			name:  "Test in progress",
+			name:  "Test deletion in progress",
 			value: DateDeletedInProgress,
-			want:  true,
+			want:  false,
 		},
 		{
 			name:  "Test deleted",

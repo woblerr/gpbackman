@@ -58,8 +58,8 @@ func ErrorTextUnableDeleteBackupUseCascade(backupName string, err error) string 
 	return fmt.Sprintf("Backup %s has dependent backups. Use --cascade option. Error: %v", backupName, err)
 }
 
-func ErrorTextBackupInProgress(backupName string, err error) string {
-	return fmt.Sprintf("Backup %s in progress. Wait for the backup to finish or check actual status manually. Error: %v", backupName, err)
+func ErrorTextBackupDeleteInProgress(backupName string, err error) string {
+	return fmt.Sprintf("Backup %s deletion in progress. Error: %v", backupName, err)
 }
 
 // Errors that occur when working with a backup plugin.
@@ -112,7 +112,7 @@ func ErrorBackupDeleteCascadeError() error {
 }
 
 func ErrorBackupDeleteInProgressError() error {
-	return errors.New("backup in progress")
+	return errors.New("backup deletion in progress")
 }
 
 func ErrorBackupDeleteCascadeOptionError() error {

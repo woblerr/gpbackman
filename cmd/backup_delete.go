@@ -384,7 +384,7 @@ func checkBackupCanBeDeleted(backupData gpbckpconfig.BackupConfig) bool {
 		result = true
 	} else {
 		if backupDateDeleted == gpbckpconfig.DateDeletedInProgress {
-			gplog.Warn(textmsg.ErrorTextBackupInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
+			gplog.Warn(textmsg.ErrorTextBackupDeleteInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
 		} else {
 			gplog.Warn(textmsg.WarnTextBackupAlreadyDeleted(backupData.Timestamp))
 		}
