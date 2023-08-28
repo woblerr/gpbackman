@@ -207,6 +207,11 @@ func backupDeleteDBCascade(backupList []string, hDB *sql.DB, pluginConfig *utils
 func backupDeleteDBPluginFunc(backupName string, hDB *sql.DB, pluginConfig *utils.PluginConfig) error {
 	var err error
 	dateDeleted := getCurrentTimestamp()
+	err = updateDeleteStatus(backupName, gpbckpconfig.DateDeletedInProgress, hDB)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
+		return err
+	}
 	stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, backupDeletePluginConfigFile, backupName)
 	if len(stderr) > 0 {
 		gplog.Error(stderr)
@@ -301,6 +306,11 @@ func backupDeleteFilePluginFunc(backupData gpbckpconfig.BackupConfig, parseHData
 	var err error
 	backupName := backupData.Timestamp
 	dateDeleted := getCurrentTimestamp()
+	err = parseHData.UpdateBackupConfigDateDeleted(backupName, gpbckpconfig.DateDeletedInProgress)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
+		return err
+	}
 	stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, backupDeletePluginConfigFile, backupName)
 	if len(stderr) > 0 {
 		gplog.Error(stderr)
