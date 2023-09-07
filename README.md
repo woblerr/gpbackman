@@ -127,6 +127,7 @@ Display info for active backups from `gpbackup_history.db`:
 
 Display info for all backups from `gpbackup_history.yaml`:
 ```bash
+./gpbackman backup-info --show-deleted --show-failed --history-file /data/master/gpseg-1/gpbackup_history.yaml
  TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED             
 ----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+--------------------------
  20230809232817 | Wed Aug 09 2023 23:28:17 | Success | demo     | full          |                  |                    | 04:00:03 |                          
