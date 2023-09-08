@@ -81,8 +81,11 @@ const (
 //
 // For gpbackup you cannot combine --data-only or --metadata-only with --incremental (see docs).
 // So these options cannot be set at the same time.
-// If not one of the -data-only, --metadata-only and--incremental flags is not set,
+// If not one of the --data-only, --metadata-only and --incremental flags is not set,
 // the full value is returned.
+// But if the --data-only flag set, or it's full backup, but there are no tables in backup set contain data,
+// the metadata-only value is returned.
+// See https://github.com/greenplum-db/gpbackup/blob/b061a47b673238439442340e66ca57d896edacd5/backup/backup.go#L127-L129
 // In all other cases, an error is returned.
 func (backupConfig BackupConfig) GetBackupType() (string, error) {
 	switch {
@@ -92,7 +95,7 @@ func (backupConfig BackupConfig) GetBackupType() (string, error) {
 		return backupTypeIncremental, nil
 	case backupConfig.DataOnly && !(backupConfig.Incremental || backupConfig.MetadataOnly):
 		return backupTypeDataOnly, nil
-	case backupConfig.MetadataOnly && !(backupConfig.Incremental || backupConfig.DataOnly):
+	case backupConfig.MetadataOnly && !(backupConfig.Incremental):
 		return backupTypeMetadataOnly, nil
 	default:
 		return "", errors.New("backup type does not match any of the available values")
@@ -204,6 +207,14 @@ func (backupConfig BackupConfig) IsSuccess() (bool, error) {
 	default:
 		return false, errors.New("backup status does not match any of the available values")
 	}
+}
+
+// IsLocal Check if the backup in local or in plugin storage.
+// Returns:
+//   - true  - if the backup in local storage (plugin field is empty);
+//   - false - if the backup in plugin storage (plugin field is not empty).
+func (backupConfig BackupConfig) IsLocal() bool {
+	return backupConfig.Plugin == ""
 }
 
 func (history *History) FindBackupConfig(timestamp string) (int, BackupConfig, error) {

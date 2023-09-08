@@ -119,6 +119,10 @@ func ErrorBackupDeleteCascadeOptionError() error {
 	return errors.New("use cascade option")
 }
 
+func ErrorBackupDeleteLocalStorageError() error {
+	return errors.New("is a local backup")
+}
+
 // Error that is returned when some validation fails.
 
 func ErrorValidationFullPath() error {

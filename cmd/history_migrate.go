@@ -18,14 +18,12 @@ If the gpbackup_history.db file does not exist, it will be created.
 The gpbackup_history.yaml file will be renamed to gpbackup_history.yaml.migrated.
 
 The gpbackup_history.db file location can be set using the  --history-db option.
-Can be specified only once.
+Can be specified only once. The full path to the file is required.
 
 The gpbackup_history.yaml file location can be set using the  --history-file option.
-Can only be specified multiple times.
+Can be specified multiple times. The full path to the file is required.
 
-If no --history-file and/or --history-db options are specified, the files will be searched in the current directory.
-
-If you use the --history-file option to specify additional history files, you should include each file's full pathname.`,
+If no --history-file and/or --history-db options are specified, the files will be searched in the current directory.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags())

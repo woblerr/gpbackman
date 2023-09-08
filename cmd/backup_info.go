@@ -28,15 +28,15 @@ var backupInfoCmd = &cobra.Command{
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
-To additional display deleted backups, use the --show-deleted flag.
-To additional display failed backups, use the --show-failed flag.
+To additional display deleted backups, use the --show-deleted option.
+To additional display failed backups, use the --show-failed option.
 To display all backups, use --show-deleted  and --show-failed options together.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 
 The gpbackup_history.yaml file location can be set using the --history-file option.
-Can only be specified multiple times. The full path to the file is required.
+Can be specified multiple times. The full path to the file is required.
 
 If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
 

@@ -48,7 +48,7 @@ The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 
 The gpbackup_history.yaml file location can be set using the --history-file option.
-Can only be specified multiple times. The full path to the file is required.
+Can be specified multiple times. The full path to the file is required.
 
 If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
 
@@ -383,6 +383,16 @@ func checkBackupCanBeDeleted(backupData gpbckpconfig.BackupConfig) bool {
 	}
 	if !backupSuccessStatus {
 		gplog.Warn(textmsg.WarnTextBackupUnableDeleteFailed(backupData.Timestamp))
+		return result
+	}
+	// Checks, if this is local backup.
+	// In this case	the backup can't be deleted.
+	// TODO
+	// The same check for backup, which was done with the storage plugin,
+	// but the storage plugin is not specified. And the deletion is set as local.
+	// Now it is only necessary to check whether the backup is in the local storage.
+	if backupData.IsLocal() {
+		gplog.Error(textmsg.ErrorTextUnableDeleteBackup(backupData.Timestamp, textmsg.ErrorBackupDeleteLocalStorageError()))
 		return result
 	}
 	backupDateDeleted, errDateDeleted := backupData.GetBackupDateDeleted()

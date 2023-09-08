@@ -206,6 +206,7 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorBackupDeleteCascadeOptionError", ErrorBackupDeleteCascadeOptionError, "use cascade option"},
 		{"ErrorValidationFullPath", ErrorValidationFullPath, "not an absolute path"},
 		{"ErrorValidationTimestamp", ErrorValidationTimestamp, "not a timestamp"},
+		{"ErrorBackupDeleteLocalStorageError", ErrorBackupDeleteLocalStorageError, "is a local backup"},
 	}
 
 	for _, tt := range tests {
