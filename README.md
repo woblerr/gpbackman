@@ -63,7 +63,7 @@ The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 
 The gpbackup_history.yaml file location can be set using the --history-file option.
-Can only be specified multiple times. The full path to the file is required.
+Can be specified multiple times. The full path to the file is required.
 
 If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
 
@@ -112,10 +112,13 @@ The following information is provided about each backup:
     - `""` - if backup is active;
     - date  in format `Mon Jan 02 2006 15:04:05` - if backup is deleted and deletion timestamp is set.
 
+If gpbackup is launched without specifying `--metadata-only` flag, but there were no tables that contain data for backup, then gpbackup will only perform a `metadata-only` backup. The logs will contain messages like `No tables in backup set contain data. Performing metadata-only backup instead.` As a result, gpBackMan will display such backups as `metadata-only`.
+
 #### Examples
 Display info for active backups from `gpbackup_history.db`:
 ```bash
-./gpbackman backup-info 
+./gpbackman backup-info
+
  TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED 
 ----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+--------------
  20230725101959 | Tue Jul 25 2023 10:19:59 | Success | demo     | incremental   |                  | gpbackup_s3_plugin | 00:00:22 |              
@@ -127,7 +130,11 @@ Display info for active backups from `gpbackup_history.db`:
 
 Display info for all backups from `gpbackup_history.yaml`:
 ```bash
-./gpbackman backup-info --show-deleted --show-failed --history-file /data/master/gpseg-1/gpbackup_history.yaml
+./gpbackman backup-info \
+  --show-deleted \
+  --show-failed \
+  --history-file /data/master/gpseg-1/gpbackup_history.yaml
+
  TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED             
 ----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+--------------------------
  20230809232817 | Wed Aug 09 2023 23:28:17 | Success | demo     | full          |                  |                    | 04:00:03 |                          
@@ -164,7 +171,7 @@ The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 
 The gpbackup_history.yaml file location can be set using the --history-file option.
-Can only be specified multiple times. The full path to the file is required.
+Can be specified multiple times. The full path to the file is required.
 
 If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
 
@@ -187,6 +194,32 @@ Global Flags:
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
 ```
+
+#### Examples
+##### Delete existing backup from local storage
+
+The functionality is in development.
+
+gpBackMan returns a message:
+```bash
+[WARNING]:-The functionality is still in development
+```
+##### Delete existing backup using storage plugin
+Delete specific backup:
+```bash
+./gpbackman backup-delete \
+  --timestamp 20230725101959 \
+  --plugin-config /tmp/gpbackup_plugin_config.yml
+```
+
+Delete specific backup and all dependent backups:
+```bash
+./gpbackman backup-delete\
+  --timestamp 20230725101115 \
+  --plugin-config /tmp/gpbackup_plugin_config.yml \
+  --cascade
+```
+
 ### Migrate history database (`history-migrate`)
 
 Available options for `history-migrate` command and their description:
@@ -200,14 +233,12 @@ If the gpbackup_history.db file does not exist, it will be created.
 The gpbackup_history.yaml file will be renamed to gpbackup_history.yaml.migrated.
 
 The gpbackup_history.db file location can be set using the  --history-db option.
-Can be specified only once.
+Can be specified only once. The full path to the file is required.
 
 The gpbackup_history.yaml file location can be set using the  --history-file option.
-Can only be specified multiple times.
+Can be specified multiple times. The full path to the file is required.
 
 If no --history-file and/or --history-db options are specified, the files will be searched in the current directory.
-
-If you use the --history-file option to specify additional history files, you should include each file's full pathname.
 
 Usage:
   gpbackman history-migrate [flags]
@@ -221,6 +252,14 @@ Global Flags:
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
+```
+
+#### Examples
+Migrate data from several gpbackup_history.yaml files to gpbackup_history.db SQLite history database:
+```bash
+./gpbackman history-migrate \
+  --history-file /data/master/gpseg-1/gpbackup_history.yaml \
+  --history-file /tmp/gpbackup_history.yaml
 ```
 
 ## Getting Started
