@@ -370,6 +370,34 @@ func TestIsSuccess(t *testing.T) {
 	}
 }
 
+func TestIsLocal(t *testing.T) {
+	tests := []struct {
+		name   string
+		config BackupConfig
+		want   bool
+	}{
+		{
+			name:   "Test local backup",
+			config: BackupConfig{Plugin: ""},
+			want:   true,
+		},
+		{
+			name:   "Test plugin backup",
+			config: BackupConfig{Plugin: "plugin"},
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.IsLocal()
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFindBackupConfig(t *testing.T) {
 	historyTest := &History{
 		BackupConfigs: []BackupConfig{
@@ -469,6 +497,79 @@ func TestUpdateBackupConfigDateDeleted(t *testing.T) {
 			}
 			if !reflect.DeepEqual(historyTest, tt.want) {
 				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", historyTest, tt.want)
+			}
+		})
+	}
+}
+
+func TestFindBackupConfigDependencies(t *testing.T) {
+	historyTest := History{
+		BackupConfigs: []BackupConfig{
+			{
+				Timestamp: "20220401202430",
+				RestorePlan: []RestorePlanEntry{
+					{Timestamp: "20220401092430"},
+					{Timestamp: "20220401102430"},
+					{Timestamp: "20220401202430"},
+				},
+			},
+			{
+				Timestamp: "20220401102430",
+				RestorePlan: []RestorePlanEntry{
+					{Timestamp: "20220401092430"},
+					{Timestamp: "20220401102430"},
+				},
+			},
+			{Timestamp: "20220401092430",
+				RestorePlan: []RestorePlanEntry{
+					{Timestamp: "20220401092430"},
+				},
+			},
+			{Timestamp: "20220401082430",
+				RestorePlan: []RestorePlanEntry{},
+			},
+			{Timestamp: "20220401072430",
+				RestorePlan: []RestorePlanEntry{},
+			},
+		},
+	}
+	tests := []struct {
+		name         string
+		timestamp    string
+		stopPosition int
+		want         []string
+	}{
+		{
+			name:         "Test with dependent backups idx 0",
+			timestamp:    "20220401202430",
+			stopPosition: 0,
+			want:         []string{},
+		},
+		{
+			name:         "Test with dependent backups idx 1",
+			timestamp:    "20220401102430",
+			stopPosition: 1,
+			want:         []string{"20220401202430"},
+		},
+		{
+			name:         "Test no dependent backups idx 2",
+			timestamp:    "20220401092430",
+			stopPosition: 2,
+			want:         []string{"20220401202430", "20220401102430"},
+		},
+		{
+			name:         "Test no dependent backups idx 4",
+			timestamp:    "20220401072430",
+			stopPosition: 4,
+			want:         []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := historyTest.FindBackupConfigDependencies(tt.timestamp, tt.stopPosition)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
 			}
 		})
 	}
