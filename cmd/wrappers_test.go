@@ -1,6 +1,14 @@
 package cmd
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/spf13/pflag"
+	"github.com/woblerr/gpbackman/gpbckpconfig"
+)
 
 func TestGetHistoryFilePath(t *testing.T) {
 	tests := []struct {
@@ -70,6 +78,88 @@ func TestFormatBackupDuration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := formatBackupDuration(tt.value); got != tt.want {
 				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRenameHistoryFile(t *testing.T) {
+	// Create temp dir.
+	tmpDir, err := os.MkdirTemp("", "test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+	// Create temp file.
+	tmpFile := filepath.Join(tmpDir, "testHistoryfile")
+	f, err := os.Create(tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	f.Close()
+	// Rename History file.
+	err = renameHistoryFile(tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to rename file: %v", err)
+	}
+	// Check that old file does not exist.
+	if _, err := os.Stat(tmpFile); err == nil {
+		t.Errorf("Old file still exists")
+	} else if !os.IsNotExist(err) {
+		t.Errorf("Failed to check if old file exists: %v", err)
+	}
+	// Check that new file does exist.
+	newFile := tmpFile + historyFileNameMigratedSuffixConst
+	if _, err := os.Stat(newFile); err != nil {
+		if os.IsNotExist(err) {
+			t.Errorf("New file does not exist")
+		} else {
+			t.Errorf("Failed to check if new file exists: %v", err)
+		}
+	}
+}
+
+func TestGetCurrentTimestamp(t *testing.T) {
+	result := getCurrentTimestamp()
+	_, err := time.Parse(gpbckpconfig.Layout, result)
+	if err != nil {
+		t.Errorf("Got an error: %v", err)
+	}
+}
+
+func TestCheckCompatibleFlags(t *testing.T) {
+	testCases := []struct {
+		name      string
+		flagNames []string
+		wantErr   bool
+	}{
+		{
+			name:      "No flags changed",
+			flagNames: []string{},
+			wantErr:   false,
+		},
+		{
+			name:      "One flag changed",
+			flagNames: []string{"flag1"},
+			wantErr:   false,
+		},
+		{
+			name:      "Multiple flags changed",
+			flagNames: []string{"flag1", "flag2"},
+			wantErr:   true,
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			for _, name := range tt.flagNames {
+				flags.String(name, "", "")
+				flags.Set(name, "")
+			}
+			err := checkCompatibleFlags(flags, tt.flagNames...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\ncheckCompatibleFlags() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
 			}
 		})
 	}
