@@ -11,13 +11,13 @@ if [ "${uid}" = "0" ]; then
 
     # Set custom user UID or GID.
     if  [ "${GPBACKMAN_UID}" != "1001" ] || [ "${GPBACKMAN_GID}" != "1001" ] ; then
-        sed -i "s/:1001:1001:/:${APP_UID}:${APP_UID}:/g" /etc/passwd
+        sed -i "s/:1001:1001:/:${GPBACKMAN_UID}:${GPBACKMAN_GID}:/g" /etc/passwd
     fi
     chown -R ${GPBACKMAN_USER}:${GPBACKMAN_USER} /home/${GPBACKMAN_USER} 
 fi
 
-if [[ ${uid} -eq 0 ]]; then
-   exec su-exec ${GPBACKMAN_USER} "$@"
+if [ "${uid}" = "0" ]; then
+    exec su-exec ${GPBACKMAN_USER} "$@"
 else
-   exec "$@"
+    exec "$@"
 fi
