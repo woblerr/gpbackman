@@ -1,0 +1,267 @@
+backupconfigs:
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
+  datedeleted: "20230726110328"
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: true
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230725101115"
+    tablefqns:
+    - testschema.testtable1
+    - testschema.testtable2
+  - timestamp: "20230725101152"
+    tablefqns: []
+  - timestamp: "20230725110051"
+    tablefqns:
+    - testschema.testtable3
+  - timestamp: "20230725110310"
+    tablefqns: []
+  singledatafile: false
+  timestamp: "20230725110310"
+  endtime: "20230725110328"
+  withoutglobals: false
+  withstatistics: false
+  status: Success
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: true
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230725101115"
+    tablefqns:
+    - testschema.testtable1
+    - testschema.testtable2
+  - timestamp: "20230725101152"
+    tablefqns: []
+  - timestamp: "20230725110051"
+    tablefqns:
+    - testschema.testtable3
+  singledatafile: false
+  timestamp: "20230725110051"
+  endtime: "20230725110111"
+  withoutglobals: false
+  withstatistics: false
+  status: Success
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: true
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230725101115"
+    tablefqns:
+    - testschema.testtable1
+    - testschema.testtable2
+  - timestamp: "20230725101152"
+    tablefqns: []
+  - timestamp: "20230725101959"
+    tablefqns: []
+  - timestamp: "20230725102831"
+    tablefqns: []
+  - timestamp: "20230725102950"
+    tablefqns:
+    - testschema.testtable3
+  singledatafile: false
+  timestamp: "20230725102950"
+  endtime: "20230725103009"
+  withoutglobals: false
+  withstatistics: false
+  status: Success
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: true
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230725101115"
+    tablefqns:
+    - testschema.testtable1
+    - testschema.testtable2
+  - timestamp: "20230725101152"
+    tablefqns: []
+  - timestamp: "20230725101959"
+    tablefqns:
+    - testschema.testtable3
+  - timestamp: "20230725102831"
+    tablefqns: []
+  singledatafile: false
+  timestamp: "20230725102831"
+  endtime: "20230725102849"
+  withoutglobals: false
+  withstatistics: false
+  status: Success
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: true
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230725101115"
+    tablefqns:
+    - testschema.testtable1
+    - testschema.testtable2
+  - timestamp: "20230725101152"
+    tablefqns: []
+  - timestamp: "20230725101959"
+    tablefqns:
+    - testschema.testtable3
+  singledatafile: false
+  timestamp: "20230725101959"
+  endtime: "20230725102021"
+  withoutglobals: false
+  withstatistics: false
+  status: Success
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: true
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230725101115"
+    tablefqns:
+    - testschema.testtable1
+    - testschema.testtable2
+  - timestamp: "20230725101152"
+    tablefqns: []
+  singledatafile: false
+  timestamp: "20230725101152"
+  endtime: "20230725101210"
+  withoutglobals: false
+  withstatistics: false
+  status: Success
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: false
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230725101115"
+    tablefqns:
+    - testschema.testtable1
+    - testschema.testtable2
+  singledatafile: false
+  timestamp: "20230725101115"
+  endtime: "20230725101135"
+  withoutglobals: false
+  withstatistics: false
+  status: Success

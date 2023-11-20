@@ -11,6 +11,13 @@ test:
 	@echo "Run tests for $(APP_NAME)"
 	TZ="Etc/UTC" go test -mod=vendor -timeout=60s -count 1  ./...
 
+.PHONY: test-e2e
+test-e2e:
+	@echo "Run end-to-end tests for $(APP_NAME)"
+	@if [ -n "$(APP_NAME)" ]; then docker rm -f "$(APP_NAME)"; fi;
+	@make docker
+	$(call test-e2e_backup-info)
+
 .PHONY: build
 build:
 	@echo "Build $(APP_NAME)"
@@ -38,3 +45,14 @@ dist:
 	docker run -d --name="$(APP_NAME)_dist" "$(APP_NAME)_dist"
 	docker cp "$(APP_NAME)_dist":/artifacts dist/
 	docker rm -f "$(APP_NAME)_dist"
+
+.PHONY: docker
+docker:
+	@echo "Build $(APP_NAME) docker container"
+	@echo "Version $(BRANCH)-$(GIT_REV)"
+	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME) .
+
+define test-e2e_backup-info
+	@echo "Run end-to-end tests for $(APP_NAME) for backup-info command"
+	GBBACKMAN_CONTAINER_NAME=$(APP_NAME) $(ROOT_DIR)/e2e_tests/run_e2e_backup-info.sh
+endef
