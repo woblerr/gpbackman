@@ -16,6 +16,10 @@ test-e2e:
 	@echo "Run end-to-end tests for $(APP_NAME)"
 	@if [ -n "$(APP_NAME)" ]; then docker rm -f "$(APP_NAME)"; fi;
 	@make docker
+	@make test-e2e_backup-info
+
+.PHONY: test-e2e_backup-info
+test-e2e_backup-info:
 	$(call test-e2e_backup-info)
 
 .PHONY: build
@@ -54,5 +58,5 @@ docker:
 
 define test-e2e_backup-info
 	@echo "Run end-to-end tests for $(APP_NAME) for backup-info command"
-	GBBACKMAN_CONTAINER_NAME=$(APP_NAME) $(ROOT_DIR)/e2e_tests/run_e2e_backup-info.sh
+	docker run --rm -v $(ROOT_DIR)/e2e_tests/:/home/gpbackman/e2e_tests --name="$(APP_NAME)" "$(APP_NAME)" /home/gpbackman/e2e_tests/run_e2e_backup-info.sh
 endef
