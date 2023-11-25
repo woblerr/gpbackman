@@ -5,21 +5,25 @@
 # This test works with files from src_data directory.
 # If new file with backup info is added to src_data, it's nessary to update test cases in this script.
 
+GPBACKMAN_TEST_COMMAND="backup-info"
+
+SRC_DIR="/home/gpbackman/e2e_tests/src_data"
+
 # backup-info commnad for yaml backup history format.
-GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
---history-file /home/gpbackman/e2e_tests/src_data/gpbackup_history_dataonly_nodata_plugin.yaml \
---history-file /home/gpbackman/e2e_tests/src_data/gpbackup_history_dataonly_plugin.yaml \
---history-file /home/gpbackman/e2e_tests/src_data/gpbackup_history_failure_plugin.yaml \
---history-file /home/gpbackman/e2e_tests/src_data/gpbackup_history_full_local.yaml \
---history-file /home/gpbackman/e2e_tests/src_data/gpbackup_history_full_plugin.yaml \
---history-file /home/gpbackman/e2e_tests/src_data/gpbackup_history_incremental_plugin.yaml \
---history-file /home/gpbackman/e2e_tests/src_data/gpbackup_history_metadata_plugin.yaml \
+GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
+--history-file ${SRC_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml \
+--history-file ${SRC_DIR}/gpbackup_history_dataonly_plugin.yaml \
+--history-file ${SRC_DIR}/gpbackup_history_failure_plugin.yaml \
+--history-file ${SRC_DIR}/gpbackup_history_full_local.yaml \
+--history-file ${SRC_DIR}/gpbackup_history_full_plugin.yaml \
+--history-file ${SRC_DIR}/gpbackup_history_incremental_plugin.yaml \
+--history-file ${SRC_DIR}/gpbackup_history_metadata_plugin.yaml \
 --show-deleted \
 --show-failed)
 
 # backup-info commnad for sqllite backup history format.
-GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
---history-db /home/gpbackman/e2e_tests/src_data/gpbackup_history.db \
+GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
+--history-db ${SRC_DIR}/gpbackup_history.db \
 --show-deleted \
 --show-failed)
 
@@ -37,7 +41,7 @@ Failure|full|gpbackup_s3_plugin|1
 Success|incremental|gpbackup_s3_plugin|6'''
 
 # Check results.
-echo "[INFO] backup-info test 1."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
 for i in ${REGEX_LIST}
 do
     bckp_status=$(echo "${i}" | cut -f1 -d'|')
@@ -51,7 +55,7 @@ do
         exit 1
     fi
 done
-echo "[INFO] backup-info test 1 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
 
 ################################################################
 # Test 2.
@@ -73,7 +77,7 @@ REGEX_LIST='''20230806230400|Sun Aug 06 2023 23:04:00|Failure|demo|full|gpbackup
 20230721090000|Fri Jul 21 2023 09:00:00|Success|demo|metadata-only|gpbackup_s3_plugin|00:04:17|1'''
 
 # Check results.
-echo "[INFO] backup-info test 2."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2."
 for i in ${REGEX_LIST}
 do
     bckp_timestamp=$(echo "${i}" | cut -f1 -d'|')
@@ -107,7 +111,7 @@ do
         exit 1
     fi
 done
-echo "[INFO] backup-info test 2 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2 passed."
 
 ################################################################
 # Test 3.
@@ -119,7 +123,7 @@ echo "[INFO] backup-info test 2 passed."
 REGEX_LIST="20230725110310|Tue Jul 25 2023 11:03:10|Success|demo|incremental|gpbackup_s3_plugin|00:00:18|Wed Jul 26 2023 11:03:28|1"
 
 # Check results.
-echo "[INFO] backup-info test 3."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 3."
 for i in ${REGEX_LIST}
 do
     bckp_timestamp=$(echo "${i}" | cut -f1 -d'|')
@@ -156,7 +160,7 @@ do
         exit 1
     fi
 done
-echo "[INFO] backup-info test 3 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 3 passed."
 
 ################################################################
 # Test 4.
@@ -169,7 +173,7 @@ echo "[INFO] backup-info test 3 passed."
 REGEX_LIST="20230809232817|Wed Aug 09 2023 23:28:17|Success|demo|full|04:00:03|1"
 
 # Check results.
-echo "[INFO] backup-info test 4."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 4."
 for i in ${REGEX_LIST}
 do
     bckp_timestamp=$(echo "${i}" | cut -f1 -d'|')
@@ -200,7 +204,7 @@ do
         exit 1
     fi
 done
-echo "[INFO] backup-info test 4 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 4 passed."
 
-echo "[INFO] all tests passed"
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
 exit 0
