@@ -17,10 +17,16 @@ test-e2e:
 	@if [ -n "$(APP_NAME)" ]; then docker rm -f "$(APP_NAME)"; fi;
 	@make docker
 	@make test-e2e_backup-info
+	@make test-e2e_history-migrate
 
 .PHONY: test-e2e_backup-info
 test-e2e_backup-info:
-	$(call test-e2e_backup-info)
+	$(call e2e_command,backup-info)
+
+.PHONY: test-e2e_history-migrate
+test-e2e_history-migrate:
+	$(call e2e_command,history-migrate)
+
 
 .PHONY: build
 build:
@@ -56,7 +62,7 @@ docker:
 	@echo "Version $(BRANCH)-$(GIT_REV)"
 	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME) .
 
-define test-e2e_backup-info
-	@echo "Run end-to-end tests for $(APP_NAME) for backup-info command"
-	docker run --rm -v $(ROOT_DIR)/e2e_tests/:/home/gpbackman/e2e_tests --name="$(APP_NAME)" "$(APP_NAME)" /home/gpbackman/e2e_tests/run_e2e_backup-info.sh
+define e2e_command
+	@echo "Run end-to-end tests for $(APP_NAME) for ${1} command"
+	docker run --rm -v $(ROOT_DIR)/e2e_tests/:/home/gpbackman/e2e_tests --name="$(APP_NAME)" "$(APP_NAME)" /home/gpbackman/e2e_tests/run_e2e_${1}.sh
 endef
