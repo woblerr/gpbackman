@@ -1,0 +1,90 @@
+version: '3'
+
+services:
+  ################################################################
+  # Test backup-info command.
+  backup-info:
+    image: ${IMAGE_GPBACKMAN}
+    container_name: backup-info
+    hostname: backup-info
+    volumes:
+      - "./src_data:/home/gpbackman/src_data"
+      - "./scripts/run_backup-info.sh:/home/gpbackman/run_backup-info.sh"
+    command: /home/gpbackman/run_backup-info.sh
+    networks:
+      - e2e
+
+  ################################################################
+  # Test backup-delete command.
+  minio:
+    image: minio/minio:${IMAGE_TAG_MINIO}
+    container_name: minio
+    hostname: minio
+    environment:
+      - "MINIO_ROOT_USER"
+      - "MINIO_ROOT_PASSWORD"
+      - "MINIO_SITE_REGION"
+      - "MINIO_DOMAIN"
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - e2e
+
+  prepare_backup-delete:
+    image: minio/mc:${IMAGE_TAG_MINIO_MC}
+    container_name: prepate_backup-delete
+    environment:
+      - "MINIO_ROOT_USER"
+      - "MINIO_ROOT_PASSWORD"
+      - "S3_MINIO_KEY"
+      - "S3_MINIO_KEY_SECRET"
+      - "S3_MINIO_HOSTNAME"
+      - "S3_MINIO_BUCKET"
+    depends_on:
+      minio:
+        condition: service_started
+    volumes:
+      - "./scripts/prepare_backup-delete.sh:/prepare_backup-delete.sh"
+    entrypoint: /prepare_backup-delete.sh
+    networks:
+      - e2e
+
+  backup-delete:
+    build:
+      context: .
+      dockerfile: ./conf/Dockerfile.s3_plugin
+      args:
+        S3_PLUGIN_VERSION: ${S3_PLUGIN_VERSION}
+    image: backup-delete
+    container_name: backup-delete
+    hostname: backup-delete
+    depends_on:
+      minio:
+        condition: service_started
+      prepare_backup-delete:
+        condition: service_completed_successfully
+    volumes:
+      - "./src_data:/home/gpbackman/src_data"
+      - "./scripts/run_backup-delete.sh:/home/gpbackman/run_backup-delete.sh"
+      - "./conf/gpbackup_s3_plugin.yaml:/home/gpbackman/gpbackup_s3_plugin.yaml"
+    command: /home/gpbackman/run_backup-delete.sh
+    networks:
+      - e2e
+
+  ################################################################
+  # Test history-migrate command.
+  history-migrate:
+    image: ${IMAGE_GPBACKMAN}
+    container_name: history-migrate
+    hostname: history-migrate
+    volumes:
+      - "./src_data:/home/gpbackman/src_data"
+      - "./scripts/run_history-migrate.sh:/home/gpbackman/run_history-migrate.sh"
+    command: /home/gpbackman/run_history-migrate.sh
+    networks:
+      - e2e
+
+networks:
+  e2e:

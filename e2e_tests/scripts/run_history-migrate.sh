@@ -7,15 +7,15 @@
 
 GPBACKMAN_TEST_COMMAND="history-migrate"
 
-SRC_DIR="/home/gpbackman/e2e_tests/src_data"
+SRC_DIR="/home/gpbackman/src_data"
 WORK_DIR="/home/gpbackman/test_data"
 
 # Prepare data.
 rm -rf "${WORK_DIR}/"
 mkdir -p "${WORK_DIR}"
-cp "${SRC_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml" \
-"${SRC_DIR}/gpbackup_history_metadata_plugin.yaml" \
-"${WORK_DIR}"
+cp ${SRC_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml \
+${SRC_DIR}/gpbackup_history_metadata_plugin.yaml \
+${WORK_DIR}
 
 # Execute history-migrate commnad.
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
@@ -52,7 +52,7 @@ GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --show-deleted \
 --show-failed)
 
-# backup-info commnad for sqllite backup history format.
+# backup-info commnad for sqlite backup history format.
 # This result from migrated data.
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
@@ -62,7 +62,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2."
 if [ "${GPBACKMAN_RESULT_YAML}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
-    echo -e "[ERROR] results before and after migration do not match.\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqllite:\n${GPBACKMAN_RESULT_SQLITE}"
+    echo -e "[ERROR] results before and after migration do not match.\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2 passed."

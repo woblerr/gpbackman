@@ -7,7 +7,7 @@
 
 GPBACKMAN_TEST_COMMAND="backup-info"
 
-SRC_DIR="/home/gpbackman/e2e_tests/src_data"
+SRC_DIR="/home/gpbackman/src_data"
 
 # backup-info commnad for yaml backup history format.
 GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
@@ -21,7 +21,7 @@ GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --show-deleted \
 --show-failed)
 
-# backup-info commnad for sqllite backup history format.
+# backup-info commnad for sqlite backup history format.
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${SRC_DIR}/gpbackup_history.db \
 --show-deleted \
@@ -51,7 +51,7 @@ do
     result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | grep -w "${bckp_plugin}" | wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | grep -w "${bckp_plugin}" | wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqllite=${result_cnt_sqlite}, want=${cnt}"
+        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
@@ -107,7 +107,7 @@ do
         grep -w "${bckp_duration}" | \
         wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqllite=${result_cnt_sqlite}, want=${cnt}"
+        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
@@ -156,7 +156,7 @@ do
         grep -w "${bckp_date_deleted}" | \
         wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqllite=${result_cnt_sqlite}, want=${cnt}"
+        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
@@ -200,7 +200,7 @@ do
         grep -w "${bckp_duration}" | \
         wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqllite=${result_cnt_sqlite}, want=${cnt}"
+        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
