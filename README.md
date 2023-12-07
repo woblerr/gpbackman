@@ -272,10 +272,48 @@ make build
 ./gpbackman <flags>
 ```
 
+### Running as docker container
+
+Environment variables supported by this image:
+* `TZ` - container's time zone, default `Etc/UTC`;
+* `GPBACKMAN_USER` - non-root user name for execution of the command, default `gpbackman`;
+* `GPBACKMAN_UID` - UID of internal `${GPBACKMAN_USER}` user, default `1001`;
+* `GPBACKMAN_GID` - GID of internal `${GPBACKMAN_USER}` user, default `1001`.
+
+
+#### Build container
+
+```bash
+make docker
+```
+
+or manual:
+
+```bash
+docker build  -f Dockerfile  -t gpbackman .
+```
+
+#### Run container
+
+```bash
+docker run \
+  --name gpbackman \
+  -v /data/master/gpseg-1/gpbackup_history.db:/data/master/gpseg-1/gpbackup_history.db
+  gpbackman \
+  gpbackman backup-info \
+  --history-db /data/master/gpseg-1/gpbackup_history.db
+```
+
 ### Running tests
 
 Run the unit tests:
 
 ```bash
 make test
+```
+
+Run the end-to-end tests:
+
+```bash
+make test-e2e
 ```
