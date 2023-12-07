@@ -10,7 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env: 
-      build_platforms: "linux/amd64"
+      build_platforms: "linux/amd64,linux/arm64"
+      app_name: "gpbackman"
     steps:
       - name: Set up go 1.20
         uses: actions/setup-go@v3
@@ -42,6 +43,68 @@ jobs:
         run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/coverage.out
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - name: Run end-to-end tests
+        run: |
+          make test-e2e
+
+      - name: Build image and push master tag to ghcr.io and Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_PKG: ${{ secrets.GUTHUB_CR_PAT }}
+          DOCKERHUB_USER: ${{ secrets.DOCKEHUB_USER }}
+          DOCKERHUB_PKG: ${{ secrets.DOCKEHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha}}
+          GITHUB_REF: ${{ github.ref}}
+          BUILD_PLATFORMS: ${{ env.build_platforms }}
+          APP_NAME: ${{ env.app_name }}
+        run: |
+          ref="$(echo ${GITHUB_REF} | cut -d'/' -f3)"
+          sha="$(echo ${GITHUB_SHA} | cut -c1-7)"
+          echo REPO_BUILD_TAG: ${ref}-${sha}
+          echo ${GITHUB_PKG} | docker login ghcr.io -u ${GITHUB_USER} --password-stdin
+          echo ${DOCKERHUB_PKG} | docker login -u ${DOCKERHUB_USER} --password-stdin
+          docker buildx build --push \
+              --build-arg REPO_BUILD_TAG=${ref}-${sha} \
+              --platform ${BUILD_PLATFORMS} \
+              -t ghcr.io/${GITHUB_USER}/${APP_NAME}:${ref} \
+              -t ${DOCKERHUB_USER}/${APP_NAME}:${ref} .
+
+      - name: Build image and push tag (latest) to ghcr.io and Docker Hub
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_PKG: ${{ secrets.GUTHUB_CR_PAT }}
+          DOCKERHUB_USER: ${{ secrets.DOCKEHUB_USER }}
+          DOCKERHUB_PKG: ${{ secrets.DOCKEHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha}}
+          GITHUB_REF: ${{ github.ref}}
+          BUILD_PLATFORMS: ${{ env.build_platforms }}
+          APP_NAME: ${{ env.app_name }}
+        run: |
+          ref="$(echo ${GITHUB_REF} | cut -d'/' -f3)"
+          build_ver="$(echo ${ref} | cut -c 2-)"
+          echo REPO_BUILD_TAG: ${build_ver}
+          echo ${GITHUB_PKG} | docker login ghcr.io -u ${GITHUB_USER} --password-stdin
+          echo ${DOCKERHUB_PKG} | docker login -u ${DOCKERHUB_USER} --password-stdin
+          docker buildx build --push \
+              --build-arg REPO_BUILD_TAG=${build_ver} \
+              --platform ${BUILD_PLATFORMS} \
+              -t ghcr.io/${GITHUB_USER}/${APP_NAME}:${ref} \
+              -t ghcr.io/${GITHUB_USER}/${APP_NAME}:latest \
+              -t ${DOCKERHUB_USER}/${APP_NAME}:${ref} \
+              -t ${DOCKERHUB_USER}/${APP_NAME}:latest .
 
   goreleaser:
     needs: build
