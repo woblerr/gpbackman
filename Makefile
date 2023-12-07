@@ -5,11 +5,49 @@ BRANCH := $(subst /,-,$(BRANCH_FULL))
 GIT_REV := $(shell git describe --abbrev=7 --always)
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 MUSL_CROSS := $(shell brew list| grep musl-cross)
+UID := $(shell id -u)
+GID := $(shell id -g)
 
 .PHONY: test
 test:
 	@echo "Run tests for $(APP_NAME)"
 	TZ="Etc/UTC" go test -mod=vendor -timeout=60s -count 1  ./...
+
+.PHONY: test-e2e
+test-e2e:
+	@echo "Run end-to-end tests for $(APP_NAME)"
+	@make docker
+	$(call down_docker_compose)
+	$(call run_docker_compose,backup-info)
+	$(call run_docker_compose,backup-delete)
+	$(call run_docker_compose,history-migrate)
+	$(call down_docker_compose)
+
+.PHONY: test-e2e_backup-info
+test-e2e_backup-info:
+	@echo "Run end-to-end tests for $(APP_NAME) for backup-info command"
+	$(call down_docker_compose)
+	$(call run_docker_compose,backup-info)
+	$(call down_docker_compose)
+
+.PHONY: test-e2e_backup-delete
+test-e2e_backup-delete:
+	@echo "Run end-to-end tests for $(APP_NAME) for backup-delete command"
+	$(call down_docker_compose)
+	$(call run_docker_compose,backup-delete)
+	$(call down_docker_compose)
+
+.PHONY: test-e2e_history-migrate
+test-e2e_history-migrate:
+	@echo "Run end-to-end tests for $(APP_NAME) for history-migrate command"
+	$(call down_docker_compose)
+	$(call run_docker_compose,history-migrate)
+	$(call down_docker_compose)
+
+.PHONY: test-e2e-down
+test-e2e-down:
+	@echo "Stop old containers"
+	$(call down_docker_compose)
 
 .PHONY: build
 build:
@@ -38,3 +76,22 @@ dist:
 	docker run -d --name="$(APP_NAME)_dist" "$(APP_NAME)_dist"
 	docker cp "$(APP_NAME)_dist":/artifacts dist/
 	docker rm -f "$(APP_NAME)_dist"
+
+.PHONY: docker
+docker:
+	@echo "Build $(APP_NAME) docker container"
+	@echo "Version $(BRANCH)-$(GIT_REV)"
+	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME) .
+
+define e2e_command
+	@echo "Run end-to-end tests for $(APP_NAME) for ${1} command"
+	docker run --rm -v $(ROOT_DIR)/e2e_tests/:/home/gpbackman/e2e_tests --name="$(APP_NAME)" "$(APP_NAME)" /home/gpbackman/e2e_tests/run_e2e_${1}.sh
+endef
+
+define run_docker_compose
+	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker-compose -f e2e_tests/docker-compose.yml run --rm --name ${1} ${1}
+endef
+
+define down_docker_compose
+	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker-compose -f e2e_tests/docker-compose.yml down -v
+endef

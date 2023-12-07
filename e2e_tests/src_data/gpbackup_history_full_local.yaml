@@ -1,0 +1,31 @@
+backupconfigs:
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: false
+  leafpartitiondata: false
+  metadataonly: false
+  plugin: ""
+  pluginversion: ""
+  restoreplan:
+  - timestamp: "20230809232817"
+    tablefqdn: []
+  singledatafile: false
+  timestamp: "20230809232817"
+  endtime: "20230810032820"
+  withoutgoals: false
+  withstatistics: false
+  status: Success

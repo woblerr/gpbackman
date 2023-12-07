@@ -77,6 +77,14 @@ func TestGetBackupNameFile(t *testing.T) {
 			dateDeleted: "20220401102430",
 			want:        false,
 		},
+		{
+			name:        "Test show all backups",
+			showD:       true,
+			showF:       true,
+			status:      backupStatusSuccess,
+			dateDeleted: "20220401102430",
+			want:        true,
+		},
 	}
 
 	for _, tt := range tests {

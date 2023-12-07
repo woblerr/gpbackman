@@ -1,0 +1,11 @@
+---
+executablepath: /home/gpbackman/gpbackup_s3_plugin
+options: 
+  region: us-west-1
+  endpoint: minio:9000
+  aws_access_key_id: demo
+  aws_secret_access_key: demoBackup
+  bucket: backup
+  folder: test
+  encryption: off
+

@@ -84,7 +84,6 @@ func renameHistoryFile(filename string) error {
 	fileName := filepath.Base(filename)
 	newFileName := fileName + historyFileNameMigratedSuffixConst
 	newPath := filepath.Join(fileDir, newFileName)
-
 	err := os.Rename(filename, newPath)
 	if err != nil {
 		return err
