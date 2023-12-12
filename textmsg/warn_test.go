@@ -20,8 +20,8 @@ func TestWarnTextFunctionsWarnAndArg(t *testing.T) {
 		{
 			name:     "Test WarnTextBackupUnableDeleteFailed",
 			value:    "TestBackup",
-			function: WarnTextBackupUnableDeleteFailed,
-			want:     "Backup TestBackup has failed status. Nothing to delete",
+			function: WarnTextBackupFailedStatus,
+			want:     "Backup TestBackup has failed status. Nothing to do",
 		},
 	}
 	for _, tt := range tests {

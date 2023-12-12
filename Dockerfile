@@ -1,6 +1,8 @@
 ARG REPO_BUILD_TAG="unknown"
 
-FROM golang:1.20-alpine AS builder
+# Pin alpine 3.18. 
+# See https://github.com/mattn/go-sqlite3/issues/1164#issuecomment-1848677118
+FROM golang:1.20-alpine3.18 AS builder
 ARG REPO_BUILD_TAG
 COPY . /build
 WORKDIR /build

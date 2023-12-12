@@ -114,12 +114,6 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 			execOSExit(exitErrorCode)
 		}
 	}
-	// history-file flag and history-db flags cannot be used together for backup-delete command.
-	err = checkCompatibleFlags(flags, rootHistoryDBFlagName, rootHistoryFilesFlagName)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, rootHistoryDBFlagName, rootHistoryFilesFlagName))
-		execOSExit(exitErrorCode)
-	}
 }
 
 func doDeleteBackup() {
@@ -377,12 +371,12 @@ func checkBackupCanBeDeleted(backupData gpbckpconfig.BackupConfig) bool {
 	result := false
 	backupSuccessStatus, err := backupData.IsSuccess()
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupData.Timestamp, err))
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("status", backupData.Timestamp, err))
 		// There is no point in performing further checks.
 		return result
 	}
 	if !backupSuccessStatus {
-		gplog.Warn(textmsg.WarnTextBackupUnableDeleteFailed(backupData.Timestamp))
+		gplog.Warn(textmsg.WarnTextBackupFailedStatus(backupData.Timestamp))
 		return result
 	}
 	// Checks, if this is local backup.
