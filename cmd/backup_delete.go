@@ -117,7 +117,6 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 }
 
 func doDeleteBackup() {
-	logHeadersInfo()
 	logHeadersDebug()
 	if len(backupDeletePluginConfigFile) > 0 {
 		pluginConfig, err := utils.ReadPluginConfig(backupDeletePluginConfigFile)

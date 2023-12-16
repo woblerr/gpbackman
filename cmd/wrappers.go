@@ -15,14 +15,11 @@ import (
 
 var execOSExit = os.Exit
 
-func logHeadersInfo() {
-	gplog.Info("Start %s version %s", commandName, getVersion())
-	gplog.Info("Use console log level: %s", rootLogLevelConsole)
-	gplog.Info("Use file log level: %s", rootLogLevelFile)
-}
-
 func logHeadersDebug() {
-	gplog.Verbose("%s command: %s", commandName, os.Args)
+	gplog.Debug("Start %s version %s", commandName, getVersion())
+	gplog.Debug("Use console log level: %s", rootLogLevelConsole)
+	gplog.Debug("Use file log level: %s", rootLogLevelFile)
+	gplog.Debug("%s command: %s", commandName, os.Args)
 }
 
 // Sets the log levels for the console and file loggers.
