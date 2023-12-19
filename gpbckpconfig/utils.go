@@ -48,6 +48,8 @@ func backupPluginCustomReportPath(timestamp, folderValue string) string {
 // If folder option is not specified or it is empty, the error will be returned.
 func backupS3PluginReportPath(timestamp string, pluginOptions map[string]string) (string, error) {
 	pathOption := "folder"
+	// Timestamp validation is done on flags validation.
+	// We assume, that is the correct value coming from.
 	reportPathBasic := "backups/" + timestamp[0:8] + "/" + timestamp
 	folderValue, exists := pluginOptions[pathOption]
 	if !exists || folderValue == "" {

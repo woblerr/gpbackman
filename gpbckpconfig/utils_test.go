@@ -101,3 +101,110 @@ func TestIsBackupActive(t *testing.T) {
 		})
 	}
 }
+
+func TestBackupS3PluginReportPath(t *testing.T) {
+	tests := []struct {
+		name          string
+		timestamp     string
+		pluginOptions map[string]string
+		want          string
+		wantErr       bool
+	}{
+		{
+			name:          "valid timestamp and options",
+			timestamp:     "20230112131415",
+			pluginOptions: map[string]string{"folder": "/path/to/folder"},
+			want:          "/path/to/folder/backups/20230112/20230112131415/gpbackup_20230112131415_report",
+			wantErr:       false,
+		},
+		{
+			name:      "missing options",
+			timestamp: "20230112131415",
+			wantErr:   true,
+		},
+		{
+			name:          "wrong options",
+			timestamp:     "20230112131415",
+			pluginOptions: map[string]string{"wrong_key": "/path/to/folder"},
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := backupS3PluginReportPath(tt.timestamp, tt.pluginOptions)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nbackupS3PluginReportPath() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nbackupS3PluginReportPath() got:%v\nwant:%v\n", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReportFileName(t *testing.T) {
+	tests := []struct {
+		name      string
+		timestamp string
+		want      string
+	}{
+		{
+			name:      "Valid timestamp",
+			timestamp: "202301011234",
+			want:      "gpbackup_202301011234_report",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := reportFileName(tt.timestamp); got != tt.want {
+				t.Errorf("\nreportFileName():\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBackupPluginCustomReportPath(t *testing.T) {
+	type args struct {
+		timestamp   string
+		folderValue string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "basic",
+			args: args{
+				timestamp:   "20230101123456",
+				folderValue: "/backup/folder",
+			},
+			want: "/backup/folder/gpbackup_20230101123456_report",
+		},
+		{
+			name: "folder with leading and trailing slashes",
+			args: args{
+				timestamp:   "20230101123456",
+				folderValue: "/backup//folder//",
+			},
+			want: "/backup/folder/gpbackup_20230101123456_report",
+		},
+		{
+			name: "folder with spaces",
+			args: args{
+				timestamp:   "20230101123456",
+				folderValue: "/backup/folder with spaces",
+			},
+			want: "/backup/folder with spaces/gpbackup_20230101123456_report",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := backupPluginCustomReportPath(tt.args.timestamp, tt.args.folderValue); got != tt.want {
+				t.Errorf("\nbackupPluginCustomReportPath():\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
