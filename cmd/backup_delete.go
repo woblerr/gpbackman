@@ -385,7 +385,7 @@ func checkBackupCanBeDeleted(backupData gpbckpconfig.BackupConfig) bool {
 	// but the storage plugin is not specified. And the deletion is set as local.
 	// Now it is only necessary to check whether the backup is in the local storage.
 	if backupData.IsLocal() {
-		gplog.Error(textmsg.ErrorTextUnableDeleteBackup(backupData.Timestamp, textmsg.ErrorBackupDeleteLocalStorageError()))
+		gplog.Error(textmsg.ErrorTextUnableDeleteBackup(backupData.Timestamp, textmsg.ErrorBackupLocalStorageError()))
 		return result
 	}
 	backupDateDeleted, errDateDeleted := backupData.GetBackupDateDeleted()
