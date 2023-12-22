@@ -10,8 +10,8 @@ import (
 
 // Errors that occur when working with a history db.
 
-func ErrorTextUnableOpenHistoryDB(err error) string {
-	return fmt.Sprintf("Unable to open history db. Error: %v", err)
+func ErrorTextUnableActionHistoryDB(value string, err error) string {
+	return fmt.Sprintf("Unable to %s history db. Error: %v", value, err)
 }
 
 func ErrorTextUnableReadHistoryDB(err error) string {

@@ -141,7 +141,7 @@ func doDeleteBackup() {
 func backupDeleteDBPlugin(pluginConfig *utils.PluginConfig) {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableOpenHistoryDB(err))
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
 		execOSExit(exitErrorCode)
 	}
 	for _, backupName := range backupDeleteTimestamp {

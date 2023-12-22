@@ -14,12 +14,6 @@ func TestErrorTextFunctionsErrorOnly(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "Test ErrorTextUnableOpenHistoryDB",
-			testErr:  testError,
-			function: ErrorTextUnableOpenHistoryDB,
-			want:     "Unable to open history db. Error: test error",
-		},
-		{
 			name:     "Test ErrorTextUnableReadHistoryDB",
 			testErr:  testError,
 			function: ErrorTextUnableReadHistoryDB,
@@ -118,6 +112,13 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			testErr:  testError,
 			function: ErrorTextUnableGetBackupReportPath,
 			want:     "Unable to get path to report for the backup TestBackup. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableActionHistoryDB",
+			value:    "open",
+			testErr:  testError,
+			function: ErrorTextUnableActionHistoryDB,
+			want:     "Unable to open history db. Error: test error",
 		},
 	}
 	for _, tt := range tests {
