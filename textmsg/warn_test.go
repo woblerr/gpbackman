@@ -23,6 +23,12 @@ func TestWarnTextFunctionsWarnAndArg(t *testing.T) {
 			function: WarnTextBackupFailedStatus,
 			want:     "Backup TestBackup has failed status. Nothing to do",
 		},
+		{
+			name:     "Test WarnTextBackupUnableGetReport",
+			value:    "TestBackup",
+			function: WarnTextBackupUnableGetReport,
+			want:     "Unable to get report for backup TestBackup. Check if backup is active",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
