@@ -35,7 +35,7 @@ The --timestamp option must be specified.
 The report could be displayed only for active backups.
 
 The storage plugin config file location can be set using the --plugin-config option.
-The full path to the file is required. In this case, the deletion will be performed using the storage plugin.
+The full path to the file is required.
 
 If a custom plugin is used, it is required to specify the path to the directory with the repo file using the --plugin-report-file-path option.
 It is not necessary to use the --plugin-report-file-path flag for the following plugins (the path is generated automatically):
