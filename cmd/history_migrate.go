@@ -36,7 +36,6 @@ func init() {
 }
 
 func doMigrateHistory() {
-	logHeadersInfo()
 	logHeadersDebug()
 	hDB, err := history.InitializeHistoryDatabase(getHistoryDBPath(rootHistoryDB))
 	if err != nil {

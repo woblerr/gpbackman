@@ -10,8 +10,8 @@ import (
 
 // Errors that occur when working with a history db.
 
-func ErrorTextUnableOpenHistoryDB(err error) string {
-	return fmt.Sprintf("Unable to open history db. Error: %v", err)
+func ErrorTextUnableActionHistoryDB(value string, err error) string {
+	return fmt.Sprintf("Unable to %s history db. Error: %v", value, err)
 }
 
 func ErrorTextUnableReadHistoryDB(err error) string {
@@ -60,6 +60,14 @@ func ErrorTextUnableDeleteBackupUseCascade(backupName string, err error) string 
 
 func ErrorTextBackupDeleteInProgress(backupName string, err error) string {
 	return fmt.Sprintf("Backup %s deletion in progress. Error: %v", backupName, err)
+}
+
+func ErrorTextUnableGetBackupReport(backupName string, err error) string {
+	return fmt.Sprintf("Unable to get report for the backup %s. Error: %v", backupName, err)
+}
+
+func ErrorTextUnableGetBackupReportPath(backupName string, err error) string {
+	return fmt.Sprintf("Unable to get path to report for the backup %s. Error: %v", backupName, err)
 }
 
 // Errors that occur when working with a backup plugin.
@@ -119,7 +127,7 @@ func ErrorBackupDeleteCascadeOptionError() error {
 	return errors.New("use cascade option")
 }
 
-func ErrorBackupDeleteLocalStorageError() error {
+func ErrorBackupLocalStorageError() error {
 	return errors.New("is a local backup")
 }
 
@@ -131,4 +139,10 @@ func ErrorValidationFullPath() error {
 
 func ErrorValidationTimestamp() error {
 	return errors.New("not a timestamp")
+}
+
+// Error that is returned when some plugin options validation fails
+
+func ErrorValidationPluginOption(value, pluginName string) error {
+	return fmt.Errorf("invalid plugin %s option value for plugin %s", value, pluginName)
 }

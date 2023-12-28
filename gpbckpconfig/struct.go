@@ -70,6 +70,8 @@ const (
 	DateDeletedInProgress   = "In progress"
 	DateDeletedPluginFailed = "Plugin Backup Delete Failed"
 	DateDeletedLocalFailed  = "Local Delete Failed"
+	// Plugin names.
+	backupS3Plugin = "gpbackup_s3_plugin"
 )
 
 // GetBackupType Get backup type.
@@ -215,6 +217,23 @@ func (backupConfig BackupConfig) IsSuccess() (bool, error) {
 //   - false - if the backup in plugin storage (plugin field is not empty).
 func (backupConfig BackupConfig) IsLocal() bool {
 	return backupConfig.Plugin == ""
+}
+
+// GetReportFilePathPlugin Return path to report file name for specific plugin.
+// If custom report path is set, it is returned.
+// Otherwise, the path from plugin is returned.
+func (backupConfig BackupConfig) GetReportFilePathPlugin(customReportPath string, pluginOptions map[string]string) (string, error) {
+	if customReportPath != "" {
+		return backupPluginCustomReportPath(backupConfig.Timestamp, customReportPath), nil
+	}
+	// In future another plugins may be added.
+	switch backupConfig.Plugin {
+	case backupS3Plugin:
+		return backupS3PluginReportPath(backupConfig.Timestamp, pluginOptions)
+	default:
+		// nothing to do
+	}
+	return "", errors.New("the path to the report is not specified")
 }
 
 func (history *History) FindBackupConfig(timestamp string) (int, BackupConfig, error) {

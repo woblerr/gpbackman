@@ -398,6 +398,109 @@ func TestIsLocal(t *testing.T) {
 	}
 }
 
+func TestBackupConfigGetReportFilePathPlugin(t *testing.T) {
+
+	type args struct {
+		customReportPath string
+		pluginOptions    map[string]string
+	}
+	tests := []struct {
+		name    string
+		config  BackupConfig
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Test custom report path",
+			config: BackupConfig{
+				Timestamp: "20220401102430",
+				Plugin:    backupS3Plugin,
+			},
+			args: args{
+				customReportPath: "/path/to/report",
+				pluginOptions:    make(map[string]string),
+			},
+			want:    "/path/to/report/gpbackup_20220401102430_report",
+			wantErr: false,
+		},
+		{
+			name: "Test s3 plugin report path if custom report path is not set and folder is absent",
+			config: BackupConfig{
+				Timestamp: "20220401102430",
+				Plugin:    backupS3Plugin,
+			},
+			args: args{
+				customReportPath: "",
+				pluginOptions: map[string]string{
+					"bucket": "bucket",
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Test s3 plugin report path if custom report path is not set and folder is empty",
+			config: BackupConfig{
+				Timestamp: "20220401102430",
+				Plugin:    backupS3Plugin,
+			},
+			args: args{
+				customReportPath: "",
+				pluginOptions: map[string]string{
+					"folder": "",
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Test s3 plugin report path if custom report path is not set and folder is ok",
+			config: BackupConfig{
+				Timestamp: "20220401102430",
+				Plugin:    backupS3Plugin,
+			},
+
+			args: args{
+				customReportPath: "",
+				pluginOptions: map[string]string{
+					"folder": "/path/to/report",
+				},
+			},
+			want:    "/path/to/report/backups/20220401/20220401102430/gpbackup_20220401102430_report",
+			wantErr: false,
+		},
+		{
+			name: "Test some plugin report path if custom report path is not set",
+			config: BackupConfig{
+				Timestamp: "20220401102430",
+				Plugin:    "some_plugin",
+			},
+
+			args: args{
+				customReportPath: "",
+				pluginOptions: map[string]string{
+					"folder": "/path/to/report",
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.config.GetReportFilePathPlugin(tt.args.customReportPath, tt.args.pluginOptions)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nBackupConfig.GetReportFilePathPlugin()error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("\nBackupConfig.GetReportFilePathPlugin() got:\n%v\nwant:%v\ns", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFindBackupConfig(t *testing.T) {
 	historyTest := &History{
 		BackupConfigs: []BackupConfig{

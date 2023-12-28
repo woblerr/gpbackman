@@ -1,0 +1,59 @@
+Greenplum Database Backup Report
+
+timestamp key:         20230724090000
+gpdb version:          6.23.3
+gpbackup version:      1.27.0
+
+database name:         demo
+command line:          gpbackup --dbname demo --compression-type gzip --plugin-config /tmp/gpbackup_plugin_config.yml --metadata-only
+compression:           gzip
+plugin executable:     gpbackup_s3_plugin
+backup section:        Metadata Only
+object filtering:      None
+includes statistics:   No
+data file format:      No Data Files
+incremental:           False
+
+start time:            Mon Jul 24 2023 09:00:00
+end time:              Mon Jul 24 2023 09:05:17
+duration:              0:05:17
+
+backup status:         Success
+
+segment count:         8
+
+count of database objects in backup:
+aggregates                   50
+casts                        8
+collations                   0
+constraints                  100
+conversions                  0
+default privileges           60
+database gucs                0
+event triggers               0
+extensions                   10
+foreign data wrappers        0
+foreign servers              0
+functions                    100
+indexes                      5
+operator classes             1
+operator families            1
+operators                    10
+procedural languages         1
+protocols                    1
+resource groups              3
+resource queues              1
+roles                        200
+rules                        0
+schemas                      70
+sequences                    15
+tables                       1000
+tablespaces                  0
+text search configurations   0
+text search dictionaries     0
+text search parsers          0
+text search templates        0
+triggers                     0
+types                        60
+user mappings                0
+views                        500

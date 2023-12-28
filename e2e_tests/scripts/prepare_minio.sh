@@ -10,6 +10,7 @@ mc admin policy attach ${S3_MINIO_HOSTNAME} readwrite --user ${S3_MINIO_KEY}
 TIMESTAMP="20230724090000"
 touch /tmp/test.txt
 mc cp /tmp/test.txt ${S3_MINIO_HOSTNAME}/${S3_MINIO_BUCKET}/test/backups/${TIMESTAMP:0:8}/${TIMESTAMP}/test.txt
+mc cp /tmp/src_data/gpbackup_${TIMESTAMP}_report ${S3_MINIO_HOSTNAME}/${S3_MINIO_BUCKET}/test/backups/${TIMESTAMP:0:8}/${TIMESTAMP}/gpbackup_${TIMESTAMP}_report
 
 TIMESTAMPS="20230725101959 20230725102950 20230725102831"
 for i in ${TIMESTAMPS}; do

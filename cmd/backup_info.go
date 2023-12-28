@@ -82,7 +82,7 @@ func doBackupInfo() {
 func backupInfoDB() {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableOpenHistoryDB(err))
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
 	}
 	backupList, err := gpbckpconfig.GetBackupNamesDB(backupInfoShowDeleted, backupInfoShowFailed, hDB)
 	if err != nil {

@@ -14,12 +14,6 @@ func TestErrorTextFunctionsErrorOnly(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "Test ErrorTextUnableOpenHistoryDB",
-			testErr:  testError,
-			function: ErrorTextUnableOpenHistoryDB,
-			want:     "Unable to open history db. Error: test error",
-		},
-		{
 			name:     "Test ErrorTextUnableReadHistoryDB",
 			testErr:  testError,
 			function: ErrorTextUnableReadHistoryDB,
@@ -104,6 +98,27 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			testErr:  testError,
 			function: ErrorTextUnableActionHistoryFile,
 			want:     "Unable to do something with history file. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableGetBackupReport",
+			value:    testBackupName,
+			testErr:  testError,
+			function: ErrorTextUnableGetBackupReport,
+			want:     "Unable to get report for the backup TestBackup. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableGetBackupReportPath",
+			value:    testBackupName,
+			testErr:  testError,
+			function: ErrorTextUnableGetBackupReportPath,
+			want:     "Unable to get path to report for the backup TestBackup. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableActionHistoryDB",
+			value:    "open",
+			testErr:  testError,
+			function: ErrorTextUnableActionHistoryDB,
+			want:     "Unable to open history db. Error: test error",
 		},
 	}
 	for _, tt := range tests {
@@ -194,9 +209,9 @@ func TestErrorTextFunctionsErrorAndMultipleArgs(t *testing.T) {
 
 func TestErrorFunctions(t *testing.T) {
 	tests := []struct {
-		name     string
-		errFunc  func() error
-		expected string
+		name    string
+		errFunc func() error
+		want    string
 	}{
 		{"ErrorInvalidValueError", ErrorInvalidValueError, "invalid flag value"},
 		{"ErrorIncompatibleValuesError", ErrorIncompatibleValuesError, "incompatible flags values"},
@@ -206,15 +221,39 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorBackupDeleteCascadeOptionError", ErrorBackupDeleteCascadeOptionError, "use cascade option"},
 		{"ErrorValidationFullPath", ErrorValidationFullPath, "not an absolute path"},
 		{"ErrorValidationTimestamp", ErrorValidationTimestamp, "not a timestamp"},
-		{"ErrorBackupDeleteLocalStorageError", ErrorBackupDeleteLocalStorageError, "is a local backup"},
+		{"ErrorBackupLocalStorageError", ErrorBackupLocalStorageError, "is a local backup"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.errFunc()
-			if err == nil || err.Error() != tt.expected {
-				t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.expected)
+			if err == nil || err.Error() != tt.want {
+				t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.want)
 			}
 		})
+	}
+}
+
+func TestErrorFunctionsTwoArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		value1  string
+		value2  string
+		errFunc func(string, string) error
+		want    string
+	}{
+		{
+			name:    "ErrorValidationPluginOption",
+			value1:  "TestValue1",
+			value2:  "TestValue2",
+			errFunc: ErrorValidationPluginOption,
+			want:    "invalid plugin TestValue1 option value for plugin TestValue2",
+		},
+	}
+	for _, tt := range tests {
+		err := tt.errFunc(tt.value1, tt.value2)
+		if err == nil || err.Error() != tt.want {
+			t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.want)
+		}
 	}
 }

@@ -2,20 +2,7 @@ version: '3'
 
 services:
   ################################################################
-  # Test backup-info command.
-  backup-info:
-    image: ${IMAGE_GPBACKMAN}
-    container_name: backup-info
-    hostname: backup-info
-    volumes:
-      - "./src_data:/home/gpbackman/src_data"
-      - "./scripts/run_backup-info.sh:/home/gpbackman/run_backup-info.sh"
-    command: /home/gpbackman/run_backup-info.sh
-    networks:
-      - e2e
-
-  ################################################################
-  # Test backup-delete command.
+  # Prepare infra for some tests.
   minio:
     image: minio/minio:${IMAGE_TAG_MINIO}
     container_name: minio
@@ -32,9 +19,9 @@ services:
     networks:
       - e2e
 
-  prepare_backup-delete:
+  prepare_minio:
     image: minio/mc:${IMAGE_TAG_MINIO_MC}
-    container_name: prepate_backup-delete
+    container_name: prepare_minio
     environment:
       - "MINIO_ROOT_USER"
       - "MINIO_ROOT_PASSWORD"
@@ -46,11 +33,27 @@ services:
       minio:
         condition: service_started
     volumes:
-      - "./scripts/prepare_backup-delete.sh:/prepare_backup-delete.sh"
-    entrypoint: /prepare_backup-delete.sh
+      - "./scripts/prepare_minio.sh:/prepare_minio.sh"
+      - "./src_data:/tmp/src_data"
+    entrypoint: /prepare_minio.sh
     networks:
       - e2e
 
+################################################################
+  # Test backup-info command.
+  backup-info:
+    image: ${IMAGE_GPBACKMAN}
+    container_name: backup-info
+    hostname: backup-info
+    volumes:
+      - "./src_data:/home/gpbackman/src_data"
+      - "./scripts/run_backup-info.sh:/home/gpbackman/run_backup-info.sh"
+    command: /home/gpbackman/run_backup-info.sh
+    networks:
+      - e2e
+
+  ################################################################
+  # Test backup-delete command.
   backup-delete:
     build:
       context: .
@@ -63,7 +66,7 @@ services:
     depends_on:
       minio:
         condition: service_started
-      prepare_backup-delete:
+      prepare_minio:
         condition: service_completed_successfully
     volumes:
       - "./src_data:/home/gpbackman/src_data"
@@ -83,6 +86,30 @@ services:
       - "./src_data:/home/gpbackman/src_data"
       - "./scripts/run_history-migrate.sh:/home/gpbackman/run_history-migrate.sh"
     command: /home/gpbackman/run_history-migrate.sh
+    networks:
+      - e2e
+
+  ################################################################
+  # Test report-info command.
+  report-info:
+    build:
+      context: .
+      dockerfile: ./conf/Dockerfile.s3_plugin
+      args:
+        S3_PLUGIN_VERSION: ${S3_PLUGIN_VERSION}
+    image: report-info
+    container_name: report-info
+    hostname: report-info
+    depends_on:
+      minio:
+        condition: service_started
+      prepare_minio:
+        condition: service_completed_successfully
+    volumes:
+      - "./src_data:/home/gpbackman/src_data"
+      - "./scripts/run_report-info.sh:/home/gpbackman/run_report-info.sh"
+      - "./conf/gpbackup_s3_plugin.yaml:/home/gpbackman/gpbackup_s3_plugin.yaml"
+    command: /home/gpbackman/run_report-info.sh
     networks:
       - e2e
 
