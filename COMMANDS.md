@@ -189,9 +189,9 @@ Display info for active backups from `gpbackup_history.db`:
  20230725101959 | Tue Jul 25 2023 10:19:59 | Success | demo     | incremental   |                  | gpbackup_s3_plugin | 00:00:22 |              
  20230725101152 | Tue Jul 25 2023 10:11:52 | Success | demo     | incremental   |                  | gpbackup_s3_plugin | 00:00:18 |              
  20230725101115 | Tue Jul 25 2023 10:11:15 | Success | demo     | full          |                  | gpbackup_s3_plugin | 00:00:20 |              
- 20230724090000 | Mon Jul 24 2023 09:00:00 | Success | demo     | metadata-only |                  | gpbackup_s3_plugin | 00:25:17 |              
- 20230723082000 | Sun Jul 23 2023 08:20:00 | Success | demo     | data-only     |                  | gpbackup_s3_plugin | 00:05:17 |              
-```
+ 20230724090000 | Mon Jul 24 2023 09:00:00 | Success | demo     | metadata-only |                  | gpbackup_s3_plugin | 00:05:17 |              
+ 20230723082000 | Sun Jul 23 2023 08:20:00 | Success | demo     | data-only     |                  | gpbackup_s3_plugin | 00:35:17 |              
+ ```
 
 Display info for all backups from `gpbackup_history.yaml`:
 ```bash
@@ -199,18 +199,17 @@ Display info for all backups from `gpbackup_history.yaml`:
   --show-deleted \
   --show-failed \
   --history-file /data/master/gpseg-1/gpbackup_history.yaml
-
- TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED             
-----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+--------------------------
- 20230809232817 | Wed Aug 09 2023 23:28:17 | Success | demo     | full          |                  |                    | 04:00:03 |                          
- 20230806230400 | Sun Aug 06 2023 23:04:00 | Failure | demo     | full          |                  | gpbackup_s3_plugin | 00:00:38 |                          
+ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED 
+----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+--------------
+ 20230809232817 | Wed Aug 09 2023 23:28:17 | Success | demo     | full          |                  |                    | 04:00:03 |              
+ 20230725102831 | Tue Jul 25 2023 10:28:31 | Success | demo     | incremental   |                  | gpbackup_s3_plugin | 00:00:18 |              
  20230725110310 | Tue Jul 25 2023 11:03:10 | Success | demo     | incremental   |                  | gpbackup_s3_plugin | 00:00:18 | Wed Jul 26 2023 11:03:28 
  20230725101959 | Tue Jul 25 2023 10:19:59 | Success | demo     | incremental   |                  | gpbackup_s3_plugin | 00:00:22 |                          
  20230725101152 | Tue Jul 25 2023 10:11:52 | Success | demo     | incremental   |                  | gpbackup_s3_plugin | 00:00:18 |                          
  20230725101115 | Tue Jul 25 2023 10:11:15 | Success | demo     | full          |                  | gpbackup_s3_plugin | 00:00:20 |                          
- 20230724090000 | Mon Jul 24 2023 09:00:00 | Success | demo     | metadata-only |                  | gpbackup_s3_plugin | 00:25:17 |                          
- 20230723082000 | Sun Jul 23 2023 08:20:00 | Success | demo     | data-only     |                  | gpbackup_s3_plugin | 00:05:17 |                          
-```
+ 20230724090000 | Mon Jul 24 2023 09:00:00 | Success | demo     | metadata-only |                  | gpbackup_s3_plugin | 00:05:17 |                          
+ 20230723082000 | Sun Jul 23 2023 08:20:00 | Success | demo     | data-only     |                  | gpbackup_s3_plugin | 00:35:17 |                          
+ ```
 
 ## Using container
 
