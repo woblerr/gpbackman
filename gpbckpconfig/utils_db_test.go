@@ -52,7 +52,7 @@ func TestGetBackupDependenciesQuery(t *testing.T) {
 		{
 			name:  "Test valid result",
 			value: "TestBackup",
-			want:  `SELECT timestamp from restore_plans WHERE timestamp != 'TestBackup' AND restore_plan_timestamp = 'TestBackup' ORDER BY timestamp DESC;`,
+			want:  `SELECT timestamp FROM restore_plans WHERE timestamp != 'TestBackup' AND restore_plan_timestamp = 'TestBackup' ORDER BY timestamp DESC;`,
 		},
 	}
 	for _, tt := range tests {

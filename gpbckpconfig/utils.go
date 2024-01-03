@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/woblerr/gpbackman/textmsg"
 )
@@ -15,6 +16,10 @@ func CheckTimestamp(timestamp string) error {
 		return textmsg.ErrorValidationTimestamp()
 	}
 	return nil
+}
+
+func GetTimestampOlderThen(value uint) string {
+	return time.Now().AddDate(0, 0, -int(value)).Format(Layout)
 }
 
 // CheckFullPath Returns error if path is not full path.
