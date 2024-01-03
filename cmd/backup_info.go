@@ -10,11 +10,6 @@ import (
 	"github.com/woblerr/gpbackman/textmsg"
 )
 
-const (
-	backupInfoShowDeletedFlagName = "show-deleted"
-	backupInfoShowFailedFlagName  = "show-failed"
-)
-
 // Flags for the gpbackman backup-info command (backupInfoCmd)
 var (
 	backupInfoShowDeleted bool
@@ -54,13 +49,13 @@ func init() {
 	rootCmd.AddCommand(backupInfoCmd)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDeleted,
-		backupInfoShowDeletedFlagName,
+		showDeletedFlagName,
 		false,
 		"show deleted backups",
 	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowFailed,
-		backupInfoShowFailedFlagName,
+		showFailedFlagName,
 		false,
 		"show failed backups",
 	)

@@ -12,12 +12,6 @@ import (
 	"github.com/woblerr/gpbackman/textmsg"
 )
 
-const (
-	reportInfoTimestampFlagName            = "timestamp"
-	reportInfoPluginConfigFileFlagName     = "plugin-config"
-	reportInfoReportFilePluginPathFlagName = "plugin-report-file-path"
-)
-
 // Flags for the gpbackman report-info command (reportInfoCmd)
 var (
 	reportInfoTimestamp            string
@@ -63,50 +57,50 @@ func init() {
 	rootCmd.AddCommand(reportInfoCmd)
 	reportInfoCmd.PersistentFlags().StringVar(
 		&reportInfoTimestamp,
-		reportInfoTimestampFlagName,
+		timestampFlagName,
 		"",
 		"the backup timestamp for report displaying",
 	)
 	reportInfoCmd.PersistentFlags().StringVar(
 		&reportInfoPluginConfigFile,
-		reportInfoPluginConfigFileFlagName,
+		pluginConfigFileFlagName,
 		"",
 		"the full path to plugin config file",
 	)
 	reportInfoCmd.PersistentFlags().StringVar(
 		&reportInfoReportFilePluginPath,
-		reportInfoReportFilePluginPathFlagName,
+		reportFilePluginPathFlagName,
 		"",
 		"the full path to plugin report file",
 	)
-	reportInfoCmd.MarkPersistentFlagRequired(reportInfoTimestampFlagName)
+	reportInfoCmd.MarkPersistentFlagRequired(timestampFlagName)
 }
 
 // These flag checks are applied only for report-info command.
 func doReportInfoFlagValidation(flags *pflag.FlagSet) {
 	var err error
 	// If timestamps are specified and have correct values.
-	if flags.Changed(reportInfoTimestampFlagName) {
+	if flags.Changed(timestampFlagName) {
 		err = gpbckpconfig.CheckTimestamp(reportInfoTimestamp)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoTimestamp, reportInfoTimestampFlagName, err))
+			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoTimestamp, timestampFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 
 	}
 	// If plugin-config flag is specified and full path.
-	if flags.Changed(reportInfoPluginConfigFileFlagName) {
+	if flags.Changed(pluginConfigFileFlagName) {
 		err = gpbckpconfig.CheckFullPath(reportInfoPluginConfigFile)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoPluginConfigFile, reportInfoPluginConfigFileFlagName, err))
+			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoPluginConfigFile, pluginConfigFileFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
 	// If plugin-report-file-pat flag is specified and full path.
-	if flags.Changed(reportInfoReportFilePluginPathFlagName) {
+	if flags.Changed(reportFilePluginPathFlagName) {
 		err = gpbckpconfig.CheckFullPath(reportInfoReportFilePluginPath)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoReportFilePluginPath, reportInfoReportFilePluginPathFlagName, err))
+			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoReportFilePluginPath, reportFilePluginPathFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
