@@ -32,7 +32,7 @@ unless the --cascade option is passed in.
 
 If backup already deleted, the deletion process is skipped, unless --force option is specified.
 
-By default, he deletion will be performed for local backup (in development).
+By default, the deletion will be performed for local backup (in development).
 
 The storage plugin config file location can be set using the --plugin-config option.
 The full path to the file is required. In this case, the deletion will be performed using the storage plugin.
