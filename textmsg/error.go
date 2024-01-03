@@ -99,6 +99,11 @@ func ErrorTextUnableCompatibleFlagsValues(err error, values ...string) string {
 		strings.Join(result, ", "), err)
 }
 
+func ErrorTextUnableValidateValue(err error, values ...string) string {
+	return fmt.Sprintf("Unable to validate provided arguments. Try to use one of flags: %s. Error: %v",
+		strings.Join(values, ", "), err)
+}
+
 // Error that is returned when flags validation not passed.
 
 func ErrorInvalidValueError() error {
@@ -114,10 +119,6 @@ func ErrorIncompatibleFlagsError() error {
 }
 
 // Error that is returned when backup deletion fails.
-
-func ErrorBackupDeleteCascadeError() error {
-	return errors.New("delete cascade is failed")
-}
 
 func ErrorBackupDeleteInProgressError() error {
 	return errors.New("backup deletion in progress")
@@ -139,6 +140,10 @@ func ErrorValidationFullPath() error {
 
 func ErrorValidationTimestamp() error {
 	return errors.New("not a timestamp")
+}
+
+func ErrorValidationValue() error {
+	return errors.New("value not set")
 }
 
 // Error that is returned when some plugin options validation fails

@@ -216,7 +216,6 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorInvalidValueError", ErrorInvalidValueError, "invalid flag value"},
 		{"ErrorIncompatibleValuesError", ErrorIncompatibleValuesError, "incompatible flags values"},
 		{"ErrorIncompatibleFlagsError", ErrorIncompatibleFlagsError, "incompatible flags"},
-		{"ErrorBackupDeleteCascadeError", ErrorBackupDeleteCascadeError, "delete cascade is failed"},
 		{"ErrorBackupDeleteInProgressError", ErrorBackupDeleteInProgressError, "backup deletion in progress"},
 		{"ErrorBackupDeleteCascadeOptionError", ErrorBackupDeleteCascadeOptionError, "use cascade option"},
 		{"ErrorValidationFullPath", ErrorValidationFullPath, "not an absolute path"},
