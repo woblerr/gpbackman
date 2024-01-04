@@ -188,7 +188,7 @@ func backupDeleteDBPlugin(backupListForDeletion []string, deleteCascade bool, pl
 				if deleteCascade {
 					gplog.Debug(textmsg.InfoTextBackupDeleteList(backupDependencies))
 					// If the deletion of at least one dependent backup fails, we fail full entire chain.
-					err := backupDeleteDBCascade(backupDependencies, hDB, pluginConfig)
+					err = backupDeleteDBCascade(backupDependencies, hDB, pluginConfig)
 					if err != nil {
 						gplog.Error(textmsg.ErrorTextUnableDeleteBackupCascade(backupName, err))
 						return err
@@ -273,7 +273,7 @@ func backupDeleteFilePlugin(backupListForDeletion []string, deleteCascade bool, 
 			return err
 		}
 		if len(parseHData.BackupConfigs) != 0 {
-			for _, backupName := range backupDeleteTimestamp {
+			for _, backupName := range backupListForDeletion {
 				backupPositionInHistoryFile, backupData, err := parseHData.FindBackupConfig(backupName)
 				if err != nil {
 					gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
@@ -288,10 +288,10 @@ func backupDeleteFilePlugin(backupListForDeletion []string, deleteCascade bool, 
 					backupDependencies := parseHData.FindBackupConfigDependencies(backupName, backupPositionInHistoryFile)
 					if len(backupDependencies) > 0 {
 						gplog.Info(textmsg.InfoTextBackupDependenciesList(backupName, backupDependencies))
-						if backupDeleteCascade {
+						if deleteCascade {
 							gplog.Debug(textmsg.InfoTextBackupDeleteList(backupDependencies))
 							// If the deletion of at least one dependent backup fails, we fail full entire chain.
-							err := backupDeleteFileCascade(backupDependencies, &parseHData, pluginConfig)
+							err = backupDeleteFileCascade(backupDependencies, &parseHData, pluginConfig)
 							if err != nil {
 								gplog.Error(textmsg.ErrorTextUnableDeleteBackupCascade(backupName, err))
 								return err
