@@ -139,7 +139,7 @@ func cleanBackup() error {
 				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
 				return err
 			}
-			err = backupCleanDBPlugin(backupCleanCascade, pluginConfig, hDB)
+			err = backupCleanDBPlugin(backupCleanCascade, backupCleanPluginConfigFile, pluginConfig, hDB)
 			if err != nil {
 				return err
 			}
@@ -156,7 +156,7 @@ func cleanBackup() error {
 				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
 				return err
 			}
-			err = backupCleanFilePlugin(backupCleanCascade, pluginConfig)
+			err = backupCleanFilePlugin(backupCleanCascade, backupCleanPluginConfigFile, pluginConfig)
 			if err != nil {
 				return err
 			}
@@ -170,7 +170,7 @@ func cleanBackup() error {
 	return nil
 }
 
-func backupCleanDBPlugin(deleteCascade bool, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
+func backupCleanDBPlugin(deleteCascade bool, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
 	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(beforeTimestamp, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
@@ -179,14 +179,15 @@ func backupCleanDBPlugin(deleteCascade bool, pluginConfig *utils.PluginConfig, h
 	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
 	// Execute deletion for each backup.
 	// Use backupDeleteDBPlugin function from backup-delete command.
-	err = backupDeleteDBPlugin(backupList, deleteCascade, pluginConfig, hDB)
+	// Don't use force deletes for mass deletion.
+	err = backupDeleteDBPlugin(backupList, deleteCascade, false, pluginConfigPath, pluginConfig, hDB)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func backupCleanFilePlugin(deleteCascade bool, pluginConfig *utils.PluginConfig) error {
+func backupCleanFilePlugin(deleteCascade bool, pluginConfigPath string, pluginConfig *utils.PluginConfig) error {
 	return nil
 }
 
