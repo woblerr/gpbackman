@@ -257,7 +257,7 @@ func checkBackupCanGetReport(backupData gpbckpconfig.BackupConfig) bool {
 		return result
 	}
 	if !backupSuccessStatus {
-		gplog.Warn(textmsg.WarnTextBackupFailedStatus(backupData.Timestamp))
+		gplog.Warn(textmsg.InfoTextBackupFailedStatus(backupData.Timestamp))
 		return result
 	}
 	// Checks, if this is local backup.
@@ -276,7 +276,7 @@ func checkBackupCanGetReport(backupData gpbckpconfig.BackupConfig) bool {
 		if backupDateDeleted == gpbckpconfig.DateDeletedInProgress {
 			gplog.Warn(textmsg.ErrorTextBackupDeleteInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
 		} else {
-			gplog.Warn(textmsg.WarnTextBackupAlreadyDeleted(backupData.Timestamp))
+			gplog.Warn(textmsg.InfoTextBackupAlreadyDeleted(backupData.Timestamp))
 		}
 	}
 	return result

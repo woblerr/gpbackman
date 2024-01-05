@@ -12,18 +12,6 @@ func TestWarnTextFunctionsWarnAndArg(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "Test WarnTextBackupAlreadyDeleted",
-			value:    "TestBackup",
-			function: WarnTextBackupAlreadyDeleted,
-			want:     "Backup TestBackup has already been deleted",
-		},
-		{
-			name:     "Test WarnTextBackupUnableDeleteFailed",
-			value:    "TestBackup",
-			function: WarnTextBackupFailedStatus,
-			want:     "Backup TestBackup has failed status. Nothing to do",
-		},
-		{
 			name:     "Test WarnTextBackupUnableGetReport",
 			value:    "TestBackup",
 			function: WarnTextBackupUnableGetReport,
