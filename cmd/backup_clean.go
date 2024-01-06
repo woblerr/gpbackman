@@ -139,7 +139,7 @@ func cleanBackup() error {
 				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
 				return err
 			}
-			err = backupCleanDBPlugin(backupCleanCascade, backupCleanPluginConfigFile, pluginConfig, hDB)
+			err = backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
 			if err != nil {
 				return err
 			}
@@ -156,7 +156,7 @@ func cleanBackup() error {
 				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
 				return err
 			}
-			err = backupCleanFilePlugin(backupCleanCascade, backupCleanPluginConfigFile, pluginConfig)
+			err = backupCleanFilePlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig)
 			if err != nil {
 				return err
 			}
@@ -170,8 +170,8 @@ func cleanBackup() error {
 	return nil
 }
 
-func backupCleanDBPlugin(deleteCascade bool, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
-	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(beforeTimestamp, hDB)
+func backupCleanDBPlugin(deleteCascade bool, CutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
+	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(CutOffTimestamp, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
@@ -187,7 +187,7 @@ func backupCleanDBPlugin(deleteCascade bool, pluginConfigPath string, pluginConf
 	return nil
 }
 
-func backupCleanFilePlugin(deleteCascade bool, pluginConfigPath string, pluginConfig *utils.PluginConfig) error {
+func backupCleanFilePlugin(deleteCascade bool, CutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig) error {
 	return nil
 }
 
