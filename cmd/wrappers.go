@@ -60,6 +60,14 @@ func setLogLevelFile(level string) error {
 	return nil
 }
 
+func getHistoryDBPath(historyDBPath string) string {
+	var historyDBName = historyDBNameConst
+	if historyDBPath != "" {
+		return historyDBPath
+	}
+	return historyDBName
+}
+
 func getHistoryFilePath(historyFilePath string) string {
 	var historyFileName = historyFileNameConst
 	if historyFilePath != "" {
@@ -68,12 +76,19 @@ func getHistoryFilePath(historyFilePath string) string {
 	return historyFileName
 }
 
-func getHistoryDBPath(historyDBPath string) string {
-	var historyDBName = historyDBNameConst
-	if historyDBPath != "" {
-		return historyDBPath
+func getDataFromHistoryFile(historyFile string) (gpbckpconfig.History, error) {
+	var hData gpbckpconfig.History
+	historyData, err := gpbckpconfig.ReadHistoryFile(historyFile)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
+		return hData, err
 	}
-	return historyDBName
+	hData, err = gpbckpconfig.ParseResult(historyData)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
+		return hData, err
+	}
+	return hData, nil
 }
 
 func renameHistoryFile(filename string) error {

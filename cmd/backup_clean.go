@@ -150,28 +150,42 @@ func cleanBackup() error {
 			}
 		}
 	} else {
-		if len(backupCleanPluginConfigFile) > 0 {
-			pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
-				return err
-			}
-			err = backupCleanFilePlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig)
+		for _, historyFile := range rootHistoryFiles {
+			hFile := getHistoryFilePath(historyFile)
+			parseHData, err := getDataFromHistoryFile(historyFile)
 			if err != nil {
 				return err
 			}
-		} else {
-			err := backupCleanFileLocal()
-			if err != nil {
-				return err
+			if len(parseHData.BackupConfigs) != 0 {
+				if len(backupCleanPluginConfigFile) > 0 {
+					pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
+					if err != nil {
+						gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
+						return err
+					}
+					err = backupCleanFilePlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig, &parseHData)
+					if err != nil {
+						return err
+					}
+				} else {
+					err := backupCleanFileLocal()
+					if err != nil {
+						return err
+					}
+				}
+			}
+			errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
+			if errUpdateHFile != nil {
+				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("update", errUpdateHFile))
+				return errUpdateHFile
 			}
 		}
 	}
 	return nil
 }
 
-func backupCleanDBPlugin(deleteCascade bool, CutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
-	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(CutOffTimestamp, hDB)
+func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
+	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(cutOffTimestamp, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
@@ -187,7 +201,16 @@ func backupCleanDBPlugin(deleteCascade bool, CutOffTimestamp, pluginConfigPath s
 	return nil
 }
 
-func backupCleanFilePlugin(deleteCascade bool, CutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig) error {
+func backupCleanFilePlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData *gpbckpconfig.History) error {
+	backupList := GetBackupNamesBeforeTimestampFile(cutOffTimestamp, parseHData)
+	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+	// Execute deletion for each backup.
+	// Use backupDeleteFilePlugin function from backup-delete command.
+	// Don't use force deletes for mass deletion.
+	err := backupDeleteFilePlugin(backupList, deleteCascade, false, pluginConfigPath, pluginConfig, parseHData)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -201,4 +224,20 @@ func backupCleanDBLocal() error {
 func backupCleanFileLocal() error {
 	gplog.Warn("The functionality is still in development")
 	return nil
+}
+
+func GetBackupNamesBeforeTimestampFile(timestamp string, parseHData *gpbckpconfig.History) []string {
+	backupNames := make([]string, 0)
+	for idx, backupConfig := range parseHData.BackupConfigs {
+		// In history file we have sorted timestamps by descending order.
+		if backupConfig.Timestamp < timestamp {
+			for i := idx; i < len(parseHData.BackupConfigs); i++ {
+				backupCanBeDeleted, _ := checkBackupCanBeUsed(false, parseHData.BackupConfigs[i])
+				if backupCanBeDeleted {
+					backupNames = append(backupNames, parseHData.BackupConfigs[i].Timestamp)
+				}
+			}
+		}
+	}
+	return backupNames
 }
