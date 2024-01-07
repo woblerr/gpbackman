@@ -148,7 +148,7 @@ func deleteBackup() error {
 	} else {
 		for _, historyFile := range rootHistoryFiles {
 			hFile := getHistoryFilePath(historyFile)
-			parseHData, err := getDataFromHistoryFile(historyFile)
+			parseHData, err := getDataFromHistoryFile(hFile)
 			if err != nil {
 				return err
 			}
