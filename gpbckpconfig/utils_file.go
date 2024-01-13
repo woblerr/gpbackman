@@ -36,7 +36,7 @@ func GetBackupNameFile(showD, showF bool, status, dateDeleted string) bool {
 		return true
 	// Displaying only active and deleted backups; failed - hidden.
 	case showD && !showF:
-		if status != backupStatusFailure {
+		if status != BackupStatusFailure {
 			return true
 		}
 	// Displaying only active and failed backups; deleted - hidden.
@@ -46,7 +46,7 @@ func GetBackupNameFile(showD, showF bool, status, dateDeleted string) bool {
 		}
 	// Displaying only active backups or backups with deletion status "In progress", deleted and failed - hidden.
 	default:
-		if status != backupStatusFailure && (IsBackupActive(dateDeleted) || dateDeleted == DateDeletedInProgress) {
+		if status != BackupStatusFailure && (IsBackupActive(dateDeleted) || dateDeleted == DateDeletedInProgress) {
 			return true
 		}
 	}

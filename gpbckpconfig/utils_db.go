@@ -46,7 +46,7 @@ func getBackupNameQuery(showD, showF bool) string {
 		getBackupsQuery += orderBy
 	// Displaying only active and deleted backups; failed - hidden.
 	case showD && !showF:
-		getBackupsQuery += " WHERE status != '" + backupStatusFailure + "'" + orderBy
+		getBackupsQuery += " WHERE status != '" + BackupStatusFailure + "'" + orderBy
 	// Displaying only active and failed backups; deleted - hidden.
 	case !showD && showF:
 		getBackupsQuery += " WHERE date_deleted IN ('', '" +
@@ -55,7 +55,7 @@ func getBackupNameQuery(showD, showF bool) string {
 			DateDeletedLocalFailed + "')" + orderBy
 	// Displaying only active backups or backups with deletion status "In progress", deleted and failed - hidden.
 	default:
-		getBackupsQuery += " WHERE status != '" + backupStatusFailure + "'" +
+		getBackupsQuery += " WHERE status != '" + BackupStatusFailure + "'" +
 			" AND date_deleted IN ('', '" +
 			DateDeletedInProgress + "', '" +
 			DateDeletedPluginFailed + "', '" +
@@ -76,7 +76,7 @@ func getBackupDependenciesQuery(backupName string) string {
 func getBackupNameBeforeTimestampQuery(timestamp string) string {
 	getBackupBeforeTimestampQuery := `SELECT timestamp FROM backups`
 	getBackupBeforeTimestampQuery += " WHERE timestamp < '" + timestamp + "'" +
-		" AND status != '" + backupStatusFailure + "'" +
+		" AND status != '" + BackupStatusFailure + "'" +
 		" AND date_deleted IN ('', '" +
 		DateDeletedPluginFailed + "', '" +
 		DateDeletedLocalFailed + "') ORDER BY timestamp DESC;"

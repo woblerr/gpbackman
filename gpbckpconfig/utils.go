@@ -58,7 +58,7 @@ func backupS3PluginReportPath(timestamp string, pluginOptions map[string]string)
 	reportPathBasic := "backups/" + timestamp[0:8] + "/" + timestamp
 	folderValue, exists := pluginOptions[pathOption]
 	if !exists || folderValue == "" {
-		return "", textmsg.ErrorValidationPluginOption(pathOption, backupS3Plugin)
+		return "", textmsg.ErrorValidationPluginOption(pathOption, BackupS3Plugin)
 	}
 	// It's necessary to return full path to report file with leading '/'.
 	// But in config file folder value could be with leading '/' or without.
