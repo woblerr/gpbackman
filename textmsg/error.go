@@ -50,6 +50,10 @@ func ErrorTextUnableDeleteBackup(backupName string, err error) string {
 	return fmt.Sprintf("Unable to delete backup %s. Error: %v", backupName, err)
 }
 
+func ErrorTextUnableWorkBackup(backupName string, err error) string {
+	return fmt.Sprintf("Unable to work with backup %s. Error: %v", backupName, err)
+}
+
 func ErrorTextUnableDeleteBackupCascade(backupName string, err error) string {
 	return fmt.Sprintf("Unable to delete dependent backups for backup %s. Error: %v", backupName, err)
 }

@@ -120,6 +120,13 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			function: ErrorTextUnableActionHistoryDB,
 			want:     "Unable to open history db. Error: test error",
 		},
+		{
+			name:     "Test ErrorTextUnableWorkBackup",
+			value:    testBackupName,
+			testErr:  testError,
+			function: ErrorTextUnableWorkBackup,
+			want:     "Unable to work with backup TestBackup. Error: test error",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
