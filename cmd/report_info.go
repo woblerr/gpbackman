@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -115,109 +116,115 @@ func doReportInfo() {
 }
 
 func reportInfo() error {
-	if len(reportInfoPluginConfigFile) > 0 {
-		pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
+	if historyDB {
+		hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
 			return err
 		}
-		if historyDB {
-			err := reportInfoDBPlugin(pluginConfig)
+		defer func() {
+			closeErr := hDB.Close()
+			if closeErr != nil {
+				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+			}
+		}()
+		if len(reportInfoPluginConfigFile) > 0 {
+			pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
+			if err != nil {
+				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
+				return err
+			}
+			err = reportInfoDBPlugin(reportInfoTimestamp, reportInfoPluginConfigFile, pluginConfig, hDB)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := reportInfoFilePlugin(pluginConfig)
+			err := reportInfoDBLocal()
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		// TODO: in development.
-		if historyDB {
-			err := reportInfoDBLocal()
+		for _, historyFile := range rootHistoryFiles {
+			hFile := getHistoryFilePath(historyFile)
+			historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 			if err != nil {
+				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
 				return err
 			}
-		} else {
-			err := reportInfoFileLocal()
+			parseHData, err := gpbckpconfig.ParseResult(historyData)
 			if err != nil {
+				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
 				return err
+			}
+			if len(parseHData.BackupConfigs) != 0 {
+				if len(reportInfoPluginConfigFile) > 0 {
+					pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
+					if err != nil {
+						return err
+					}
+					err = reportInfoFilePlugin(reportInfoTimestamp, reportInfoPluginConfigFile, pluginConfig, parseHData)
+					if err != nil {
+						return err
+					}
+				} else {
+					err := reportInfoFileLocal()
+					if err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
 	return nil
 }
 
-func reportInfoDBPlugin(pluginConfig *utils.PluginConfig) error {
-	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
-		return err
-	}
-	defer func() {
-		closeErr := hDB.Close()
-		if closeErr != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
-		}
-	}()
-	backupName := reportInfoTimestamp
+func reportInfoDBPlugin(backupName, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
 	backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 		return err
 	}
-	if checkBackupCanGetReport(backupData) {
-		err = reportInfoPluginFunc(backupData, pluginConfig)
-		if err != nil {
-			return err
-		}
-	} else {
-		gplog.Warn(textmsg.WarnTextBackupUnableGetReport(backupName))
+	canGetReport, err := checkBackupCanBeUsed(false, backupData)
+	if err != nil {
+		return err
 	}
-	return nil
-}
-
-func reportInfoFilePlugin(pluginConfig *utils.PluginConfig) error {
-	for _, historyFile := range rootHistoryFiles {
-		hFile := getHistoryFilePath(historyFile)
-		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
+	if canGetReport {
+		err = reportInfoPluginFunc(backupData, pluginConfigPath, pluginConfig)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
 			return err
-		}
-		parseHData, err := gpbckpconfig.ParseResult(historyData)
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
-			return err
-		}
-		if len(parseHData.BackupConfigs) != 0 {
-			backupName := reportInfoTimestamp
-			_, backupData, err := parseHData.FindBackupConfig(backupName)
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
-				return err
-			}
-			if checkBackupCanGetReport(backupData) {
-				err = reportInfoPluginFunc(backupData, pluginConfig)
-				if err != nil {
-					return err
-				}
-			} else {
-				gplog.Warn(textmsg.WarnTextBackupUnableGetReport(backupName))
-			}
 		}
 	}
 	return nil
 }
 
-func reportInfoPluginFunc(backupData gpbckpconfig.BackupConfig, pluginConfig *utils.PluginConfig) error {
+func reportInfoFilePlugin(backupName, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData gpbckpconfig.History) error {
+	_, backupData, err := parseHData.FindBackupConfig(backupName)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
+		return err
+	}
+	canGetReport, err := checkBackupCanBeUsed(false, backupData)
+	if err != nil {
+		return err
+	}
+	if canGetReport {
+		err = reportInfoPluginFunc(backupData, pluginConfigPath, pluginConfig)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func reportInfoPluginFunc(backupData gpbckpconfig.BackupConfig, pluginConfigPath string, pluginConfig *utils.PluginConfig) error {
 	reportFile, err := backupData.GetReportFilePathPlugin(reportInfoReportFilePluginPath, pluginConfig.Options)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableGetBackupReportPath(backupData.Timestamp, err))
 		return err
 	}
-	stdout, stderr, err := execReportInfo(pluginConfig.ExecutablePath, restoreDataPluginCommand, reportInfoPluginConfigFile, reportFile)
+	gplog.Debug(textmsg.InfoTextPluginCommandExecution(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile))
+	stdout, stderr, err := execReportInfo(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile)
 	if len(stderr) > 0 {
 		gplog.Error(stderr)
 	}
@@ -241,45 +248,6 @@ func reportInfoDBLocal() error {
 func reportInfoFileLocal() error {
 	gplog.Warn("The functionality is still in development")
 	return nil
-}
-
-// Report could be displayed only for active backups:
-// - backup has success status and backup is active
-// Returns:
-// - true, if report can be displayed;
-// - false, if report can't be displayed.
-// Errors and warnings will also be logged.
-func checkBackupCanGetReport(backupData gpbckpconfig.BackupConfig) bool {
-	result := false
-	backupSuccessStatus, err := backupData.IsSuccess()
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("status", backupData.Timestamp, err))
-		return result
-	}
-	if !backupSuccessStatus {
-		gplog.Warn(textmsg.InfoTextBackupFailedStatus(backupData.Timestamp))
-		return result
-	}
-	// Checks, if this is local backup.
-	if backupData.IsLocal() {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupReport(backupData.Timestamp, textmsg.ErrorBackupLocalStorageError()))
-		return result
-	}
-	backupDateDeleted, errDateDeleted := backupData.GetBackupDateDeleted()
-	if errDateDeleted != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, errDateDeleted))
-	}
-	// If the backup date deletion has invalid value, try to delete the backup.
-	if gpbckpconfig.IsBackupActive(backupDateDeleted) || errDateDeleted != nil {
-		result = true
-	} else {
-		if backupDateDeleted == gpbckpconfig.DateDeletedInProgress {
-			gplog.Warn(textmsg.ErrorTextBackupDeleteInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
-		} else {
-			gplog.Warn(textmsg.InfoTextBackupAlreadyDeleted(backupData.Timestamp))
-		}
-	}
-	return result
 }
 
 func execReportInfo(executablePath, reportInfoPluginCommand, pluginConfigFile, file string) (string, string, error) {
