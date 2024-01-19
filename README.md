@@ -13,6 +13,7 @@ The utility works with both history database formats: `gpbackup_history.yaml` fi
 * display information about backups;
 * display the backup report for existing backups;
 * delete existing backups from local storage or using storage plugins (for example, [S3 Storage Plugin](https://github.com/greenplum-db/gpbackup-s3-plugin));
+* delete all existing backups from local storage or using storage plugins older than the specified time condition;
 * migrate history database from `gpbackup_history.yaml` format to `gpbackup_history.db` SQLite format.
 
 ## Commands
@@ -28,12 +29,13 @@ Usage:
   gpbackman [command]
 
 Available Commands:
-  backup-delete   Delete a specific backup set
-  backup-info     Display a list of backups
+  backup-clean    Delete all existing backups older than the specified time condition
+  backup-delete   Delete a specific existing backup
+  backup-info     Display information about backups
   completion      Generate the autocompletion script for the specified shell
   help            Help about any command
-  history-migrate Migrate data from gpbackup_history.yaml to gpbackup_history.db SQLite history database
-  report-info     Display the report for specific backup set
+  history-migrate Migrate history database
+  report-info     Display the report for a specific backup
 
 Flags:
   -h, --help                       help for gpbackman
@@ -50,10 +52,11 @@ Use "gpbackman [command] --help" for more information about a command.
 ### Detail info about commands
 
 Description of each command:
-* [Delete existing backup (`backup-delete`)](./COMMANDS.md#delete-existing-backup-backup-delete)
+* [Delete all existing backups older than the specified time condition (`backup-clean`)](./COMMANDS.md#delete-all-existing-backups-older-than-the-specified-time-condition-backup-clean)
+* [Delete a specific existing backup (`backup-delete`)](./COMMANDS.md#delete-a-specific-existing-backup-backup-delete)
 * [Display information about backups (`backup-info`)](./COMMANDS.md#display-information-about-backups-backup-info)
 * [Migrate history database (`history-migrate`)](./COMMANDS.md#migrate-history-database-history-migrate)
-* [Display the backup report (`report-info`)](./COMMANDS.md#display-the-backup-report-report-info)
+* [Display the report for a specific backup (`report-info`)](./COMMANDS.md#display-the-report-for-a-specific-backup-report-info)
 
 ## Getting Started
 ### Building and running
