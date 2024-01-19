@@ -22,8 +22,8 @@ var (
 )
 var backupDeleteCmd = &cobra.Command{
 	Use:   "backup-delete",
-	Short: "Delete a specific backup set",
-	Long: `Delete a specific backup set.
+	Short: "Delete a specific existing backup",
+	Long: `Delete a specific existing backup.
 
 The --timestamp option must be specified. It could be specified multiple times.
 

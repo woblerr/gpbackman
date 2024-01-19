@@ -19,8 +19,8 @@ var (
 
 var backupInfoCmd = &cobra.Command{
 	Use:   "backup-info",
-	Short: "Display a list of backups",
-	Long: `Display a list of backups.
+	Short: "Display information about backups",
+	Long: `Display information about backups.
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 

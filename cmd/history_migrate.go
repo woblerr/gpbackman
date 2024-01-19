@@ -10,7 +10,7 @@ import (
 
 var historyMigrateCmd = &cobra.Command{
 	Use:   "history-migrate",
-	Short: "Migrate data from gpbackup_history.yaml to gpbackup_history.db SQLite history database",
+	Short: "Migrate history database",
 	Long: `Migrate data from gpbackup_history.yaml to gpbackup_history.db SQLite history database.
 
 The data from the gpbackup_history.yaml file will be uploaded to gpbackup_history.db SQLite history database.

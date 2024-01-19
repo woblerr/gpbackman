@@ -22,8 +22,8 @@ var (
 
 var reportInfoCmd = &cobra.Command{
 	Use:   "report-info",
-	Short: "Display the report for specific backup set",
-	Long: `Display the report for specific backup set.
+	Short: "Display the report for a specific backup",
+	Long: `Display the report for a specific backup.
 
 The --timestamp option must be specified.
 

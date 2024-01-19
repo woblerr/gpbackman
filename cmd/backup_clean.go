@@ -21,8 +21,8 @@ var (
 
 var backupCleanCmd = &cobra.Command{
 	Use:   "backup-clean",
-	Short: "Delete backups by condition",
-	Long: `Delete backups by condition.
+	Short: "Delete all existing backups older than the specified time condition",
+	Long: `Delete all existing backups older than the specified time condition.
 
 To delete backup sets older than the given timestamp, use the --before-timestamp option. 
 To delete backup sets older than the given number of days, use the --older-than-day option. 
