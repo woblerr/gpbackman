@@ -78,7 +78,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --show-deleted)
 
 # After successful delete, in history there should be 11 fo sql and 7 for yaml backup with date deleted info.
-TEST_CNT_YAML=8
+TEST_CNT_YAML=7
 TEST_CNT_SQL=11
 
 
