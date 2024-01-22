@@ -322,3 +322,29 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckBackupType(t *testing.T) {
+	tests := []struct {
+		name      string
+		inputType string
+		wantErr   bool
+	}{
+		{
+			name:      "Valid Backup Type",
+			inputType: gpbckpconfig.BackupTypeFull,
+			wantErr:   false,
+		},
+		{
+			name:      "Invalid Backup Type",
+			inputType: "InvalidType",
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := checkBackupType(tt.inputType); (err != nil) != tt.wantErr {
+				t.Errorf("checkBackupType() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+			}
+		})
+	}
+}

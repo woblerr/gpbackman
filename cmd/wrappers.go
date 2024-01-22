@@ -181,3 +181,17 @@ func checkBackupCanBeUsed(deleteForce bool, backupData gpbckpconfig.BackupConfig
 	}
 	return result, nil
 }
+
+// Check that specified backup type is supported.
+func checkBackupType(backuType string) error {
+	var validVType = map[string]bool{
+		gpbckpconfig.BackupTypeFull:         true,
+		gpbckpconfig.BackupTypeIncremental:  true,
+		gpbckpconfig.BackupTypeMetadataOnly: true,
+		gpbckpconfig.BackupTypeDataOnly:     true,
+	}
+	if !validVType[backuType] {
+		return textmsg.ErrorInvalidValueError()
+	}
+	return nil
+}
