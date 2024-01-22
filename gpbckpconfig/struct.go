@@ -54,10 +54,10 @@ const (
 	Layout     = "20060102150405"
 	DateFormat = "Mon Jan 02 2006 15:04:05"
 	// Backup types.
-	backupTypeFull         = "full"
-	backupTypeIncremental  = "incremental"
-	backupTypeDataOnly     = "data-only"
-	backupTypeMetadataOnly = "metadata-only"
+	BackupTypeFull         = "full"
+	BackupTypeIncremental  = "incremental"
+	BackupTypeDataOnly     = "data-only"
+	BackupTypeMetadataOnly = "metadata-only"
 	// Backup statuses.
 	BackupStatusSuccess = "Success"
 	BackupStatusFailure = "Failure"
@@ -92,13 +92,13 @@ const (
 func (backupConfig BackupConfig) GetBackupType() (string, error) {
 	switch {
 	case !(backupConfig.Incremental || backupConfig.DataOnly || backupConfig.MetadataOnly):
-		return backupTypeFull, nil
+		return BackupTypeFull, nil
 	case backupConfig.Incremental && !(backupConfig.DataOnly || backupConfig.MetadataOnly):
-		return backupTypeIncremental, nil
+		return BackupTypeIncremental, nil
 	case backupConfig.DataOnly && !(backupConfig.Incremental || backupConfig.MetadataOnly):
-		return backupTypeDataOnly, nil
+		return BackupTypeDataOnly, nil
 	case backupConfig.MetadataOnly && !(backupConfig.Incremental):
-		return backupTypeMetadataOnly, nil
+		return BackupTypeMetadataOnly, nil
 	default:
 		return "", errors.New("backup type does not match any of the available values")
 	}
