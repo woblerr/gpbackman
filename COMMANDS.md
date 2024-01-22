@@ -219,6 +219,8 @@ To additional display deleted backups, use the --show-deleted option.
 To additional display failed backups, use the --show-failed option.
 To display all backups, use --show-deleted  and --show-failed options together.
 
+To display backups of a specific type, use the --type option.
+
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 
@@ -236,6 +238,7 @@ Flags:
   -h, --help           help for backup-info
       --show-deleted   show deleted backups
       --show-failed    show failed backups
+      --type string    backup type filter (full, incremental, data-only, metadata-only)
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
