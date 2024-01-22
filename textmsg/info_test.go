@@ -25,13 +25,13 @@ func TestInfoTextFunctionAndArg(t *testing.T) {
 			name:     "Test InfoTextBackupAlreadyDeleted",
 			value:    "TestBackup",
 			function: InfoTextBackupAlreadyDeleted,
-			want:     "Backup TestBackup has already been deleted. Nothing to do",
+			want:     "Backup TestBackup has already been deleted.",
 		},
 		{
 			name:     "Test InfoTextBackupUnableDeleteFailed",
 			value:    "TestBackup",
 			function: InfoTextBackupFailedStatus,
-			want:     "Backup TestBackup has failed status. Nothing to do",
+			want:     "Backup TestBackup has failed status.",
 		},
 	}
 	for _, tt := range tests {
@@ -108,6 +108,27 @@ func TestInfoTextFunctionAndMultipleListArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.function(tt.values); got != tt.want {
+				t.Errorf("\nVariables do not match:\n%s\nwant:\n%s", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInfoTextFunction(t *testing.T) {
+	tests := []struct {
+		name     string
+		function func() string
+		want     string
+	}{
+		{
+			name:     "Test InfoTextNothingToDo",
+			function: InfoTextNothingToDo,
+			want:     "Nothing to do",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.function(); got != tt.want {
 				t.Errorf("\nVariables do not match:\n%s\nwant:\n%s", got, tt.want)
 			}
 		})

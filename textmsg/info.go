@@ -10,11 +10,11 @@ func InfoTextBackupDeleteStart(backupName string) string {
 }
 
 func InfoTextBackupAlreadyDeleted(backupName string) string {
-	return fmt.Sprintf("Backup %s has already been deleted. Nothing to do", backupName)
+	return fmt.Sprintf("Backup %s has already been deleted.", backupName)
 }
 
 func InfoTextBackupFailedStatus(backupName string) string {
-	return fmt.Sprintf("Backup %s has failed status. Nothing to do", backupName)
+	return fmt.Sprintf("Backup %s has failed status.", backupName)
 }
 
 func InfoTextBackupDeleteSuccess(backupName string) string {
@@ -31,4 +31,8 @@ func InfoTextBackupDeleteList(list []string) string {
 
 func InfoTextPluginCommandExecution(list ...string) string {
 	return fmt.Sprintf("Executing Plugin command: %s", strings.Join(list, " "))
+}
+
+func InfoTextNothingToDo() string {
+	return "Nothing to do"
 }

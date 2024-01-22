@@ -190,13 +190,17 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath s
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
 	}
-	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
-	// Execute deletion for each backup.
-	// Use backupDeleteDBPlugin function from backup-delete command.
-	// Don't use force deletes for mass deletion.
-	err = backupDeleteDBPlugin(backupList, deleteCascade, false, pluginConfigPath, pluginConfig, hDB)
-	if err != nil {
-		return err
+	if len(backupList) > 0 {
+		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+		// Execute deletion for each backup.
+		// Use backupDeleteDBPlugin function from backup-delete command.
+		// Don't use force deletes for mass deletion.
+		err = backupDeleteDBPlugin(backupList, deleteCascade, false, pluginConfigPath, pluginConfig, hDB)
+		if err != nil {
+			return err
+		}
+	} else {
+		gplog.Info(textmsg.InfoTextNothingToDo())
 	}
 	return nil
 }

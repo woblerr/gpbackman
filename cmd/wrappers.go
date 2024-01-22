@@ -144,6 +144,7 @@ func checkBackupCanBeUsed(deleteForce bool, backupData gpbckpconfig.BackupConfig
 	}
 	if !backupSuccessStatus {
 		gplog.Warn(textmsg.InfoTextBackupFailedStatus(backupData.Timestamp))
+		gplog.Info(textmsg.InfoTextNothingToDo())
 		return result, nil
 	}
 	// Checks, if this is local backup.
@@ -171,6 +172,7 @@ func checkBackupCanBeUsed(deleteForce bool, backupData gpbckpconfig.BackupConfig
 			gplog.Error(textmsg.ErrorTextBackupDeleteInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
 		} else {
 			gplog.Debug(textmsg.InfoTextBackupAlreadyDeleted(backupData.Timestamp))
+			gplog.Debug(textmsg.InfoTextNothingToDo())
 		}
 	}
 	// If flag --force is set.
