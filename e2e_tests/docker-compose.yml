@@ -113,5 +113,29 @@ services:
     networks:
       - e2e
 
+  ################################################################
+  # Test backup-clean command.
+  backup-clean:
+    build:
+      context: .
+      dockerfile: ./conf/Dockerfile.s3_plugin
+      args:
+        S3_PLUGIN_VERSION: ${S3_PLUGIN_VERSION}
+    image: backup-clean
+    container_name: backup-clean
+    hostname: backup-clean
+    depends_on:
+      minio:
+        condition: service_started
+      prepare_minio:
+        condition: service_completed_successfully
+    volumes:
+      - "./src_data:/home/gpbackman/src_data"
+      - "./scripts/run_backup-clean.sh:/home/gpbackman/run_backup-clean.sh"
+      - "./conf/gpbackup_s3_plugin.yaml:/home/gpbackman/gpbackup_s3_plugin.yaml"
+    command: /home/gpbackman/run_backup-clean.sh
+    networks:
+      - e2e
+
 networks:
   e2e:

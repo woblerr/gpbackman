@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	rootHistoryDBFlagName       = "history-db"
-	rootHistoryFilesFlagName    = "history-file"
-	rootLogFileFlagName         = "log-file"
-	rootLogLevelConsoleFlagName = "log-level-console"
-	rootLogLevelFileFlagName    = "log-level-file"
+	rootHistoryDBFlagName       = historyDBFlagName
+	rootHistoryFilesFlagName    = historyFilesFlagName
+	rootLogFileFlagName         = logFileFlagName
+	rootLogLevelConsoleFlagName = logLevelConsoleFlagName
+	rootLogLevelFileFlagName    = logLevelFileFlagName
 )
 
 // Flags for the gpbackman command (rootCmd)
@@ -116,9 +116,11 @@ func doRootFlagValidation(flags *pflag.FlagSet) {
 
 // These flag checks are applied only to commands:
 // - backup-info
+// - report-info
 // - backup-delete
+// - backup-clean
 func doRootBackupFlagValidation(flags *pflag.FlagSet) {
-	// history-file flag and history-db flags cannot be used together for backup-info and backup-delete commands.
+	// history-file flag and history-db flags cannot be used together.
 	err := checkCompatibleFlags(flags, rootHistoryDBFlagName, rootHistoryFilesFlagName)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, rootHistoryDBFlagName, rootHistoryFilesFlagName))

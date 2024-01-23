@@ -1,6 +1,9 @@
 package gpbckpconfig
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestCheckTimestamp(t *testing.T) {
 	tests := []struct {
@@ -206,5 +209,23 @@ func TestBackupPluginCustomReportPath(t *testing.T) {
 				t.Errorf("\nbackupPluginCustomReportPath():\n%v\nwant:\n%v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestGetTimestampOlderThen(t *testing.T) {
+	// Call the function with a known input
+	input := uint(1)
+	got := GetTimestampOlderThen(input)
+
+	// Parse the returned timestamp
+	parsedTime, err := time.Parse(Layout, got)
+	if err != nil {
+		t.Errorf("Failed to parse timestamp: %v", err)
+	}
+
+	// Check if the returned timestamp is within the expected range
+	now := time.Now()
+	if !parsedTime.Before(now.Add(-time.Duration(input)*24*time.Hour)) || parsedTime.After(now) {
+		t.Errorf("Returned timestamp is not within the expected range")
 	}
 }

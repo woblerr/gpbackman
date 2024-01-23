@@ -60,6 +60,14 @@ func setLogLevelFile(level string) error {
 	return nil
 }
 
+func getHistoryDBPath(historyDBPath string) string {
+	var historyDBName = historyDBNameConst
+	if historyDBPath != "" {
+		return historyDBPath
+	}
+	return historyDBName
+}
+
 func getHistoryFilePath(historyFilePath string) string {
 	var historyFileName = historyFileNameConst
 	if historyFilePath != "" {
@@ -68,12 +76,19 @@ func getHistoryFilePath(historyFilePath string) string {
 	return historyFileName
 }
 
-func getHistoryDBPath(historyDBPath string) string {
-	var historyDBName = historyDBNameConst
-	if historyDBPath != "" {
-		return historyDBPath
+func getDataFromHistoryFile(historyFile string) (gpbckpconfig.History, error) {
+	var hData gpbckpconfig.History
+	historyData, err := gpbckpconfig.ReadHistoryFile(historyFile)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
+		return hData, err
 	}
-	return historyDBName
+	hData, err = gpbckpconfig.ParseResult(historyData)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
+		return hData, err
+	}
+	return hData, nil
 }
 
 func renameHistoryFile(filename string) error {
@@ -110,4 +125,59 @@ func formatBackupDuration(value float64) string {
 	minutes := (int(value) % 3600) / 60
 	seconds := int(value) % 60
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+}
+
+// The backup can be used in one of the cases:
+// - backup has success status and backup is active
+// - backup has success status, not active, but the --force flag is set.
+// Returns:
+// - true, if backup can be used;
+// - false, if backup can't be used.
+// Errors and warnings will also returned and logged.
+func checkBackupCanBeUsed(deleteForce bool, backupData gpbckpconfig.BackupConfig) (bool, error) {
+	result := false
+	backupSuccessStatus, err := backupData.IsSuccess()
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("status", backupData.Timestamp, err))
+		// There is no point in performing further checks.
+		return result, err
+	}
+	if !backupSuccessStatus {
+		gplog.Warn(textmsg.InfoTextBackupFailedStatus(backupData.Timestamp))
+		gplog.Info(textmsg.InfoTextNothingToDo())
+		return result, nil
+	}
+	// Checks, if this is local backup.
+	// In this case	the backup can't be deleted.
+	// TODO
+	// The same check for backup, which was done with the storage plugin,
+	// but the storage plugin is not specified. And the deletion is set as local.
+	// Now it is only necessary to check whether the backup is in the local storage.
+	if backupData.IsLocal() {
+		gplog.Error(textmsg.ErrorTextUnableWorkBackup(backupData.Timestamp, textmsg.ErrorBackupLocalStorageError()))
+		return result, textmsg.ErrorBackupLocalStorageError()
+	}
+	backupDateDeleted, errDateDeleted := backupData.GetBackupDateDeleted()
+	if errDateDeleted != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, errDateDeleted))
+	}
+	// If the backup date deletion has invalid value, try to delete the backup.
+	if gpbckpconfig.IsBackupActive(backupDateDeleted) || errDateDeleted != nil {
+		result = true
+	} else {
+		if backupDateDeleted == gpbckpconfig.DateDeletedInProgress {
+			// We do not return the error here,
+			// because it is necessary to leave the possibility of starting the process
+			// of deleting backups that are stuck in the "In Progress" status using the --force flag.
+			gplog.Error(textmsg.ErrorTextBackupDeleteInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
+		} else {
+			gplog.Debug(textmsg.InfoTextBackupAlreadyDeleted(backupData.Timestamp))
+			gplog.Debug(textmsg.InfoTextNothingToDo())
+		}
+	}
+	// If flag --force is set.
+	if deleteForce {
+		result = true
+	}
+	return result, nil
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/spf13/pflag"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
 )
@@ -160,6 +161,163 @@ func TestCheckCompatibleFlags(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\ncheckCompatibleFlags() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func TestCheckBackupCanBeUsed(t *testing.T) {
+	// Initializes gplog,
+	testhelper.SetupTestLogger()
+	testCases := []struct {
+		name         string
+		deleteForce  bool
+		backupConfig gpbckpconfig.BackupConfig
+		want         bool
+		wantErr      bool
+	}{
+		{
+			name:        "Successful backup with plugin and force",
+			deleteForce: true,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:        "Successful backup with plugin and without force",
+			deleteForce: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:        "Failed backup with plugin and force",
+			deleteForce: true,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusFailure,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "",
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:        "Failed backup with plugin and without force",
+			deleteForce: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusFailure,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "",
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:        "Successful backup without plugin and force",
+			deleteForce: true,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      "",
+				DateDeleted: "",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:        "Successful backup without plugin and without force",
+			deleteForce: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      "",
+				DateDeleted: "",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:        "Successful deleted backup with plugin and force",
+			deleteForce: true,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "20240113210000",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:        "Successful deleted backup with plugin and without force",
+			deleteForce: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "20240113210000",
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:        "Invalid backup status with plugin and without force",
+			deleteForce: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      "some_status",
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:        "Successful backup with plugin with deletion in progress and force",
+			deleteForce: true,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: gpbckpconfig.DateDeletedInProgress,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:        "Successful backup with plugin with deletion in progress and without force",
+			deleteForce: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: gpbckpconfig.DateDeletedInProgress,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:        "Successful backup with plugin with invalid deletion date and without force",
+			deleteForce: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "some date",
+			},
+			want:    true,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := checkBackupCanBeUsed(tt.deleteForce, tt.backupConfig)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\ncheckBackupCanBeUsed() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("\ncheckBackupCanBeUsed got:\n%v\nwant:\n%v\n", got, tt.want)
 			}
 		})
 	}

@@ -10,7 +10,7 @@ import (
 
 var historyMigrateCmd = &cobra.Command{
 	Use:   "history-migrate",
-	Short: "Migrate data from gpbackup_history.yaml to gpbackup_history.db SQLite history database",
+	Short: "Migrate history database",
 	Long: `Migrate data from gpbackup_history.yaml to gpbackup_history.db SQLite history database.
 
 The data from the gpbackup_history.yaml file will be uploaded to gpbackup_history.db SQLite history database.
@@ -36,34 +36,49 @@ func init() {
 }
 
 func doMigrateHistory() {
-	logHeadersDebug()
+	err := migrateHistory()
+	if err != nil {
+		execOSExit(exitErrorCode)
+	}
+}
+
+func migrateHistory() error {
 	hDB, err := history.InitializeHistoryDatabase(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableInitHistoryDB(err))
+		return err
 	}
+	defer func() {
+		closeErr := hDB.Close()
+		if closeErr != nil {
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+		}
+	}()
 	for _, historyFile := range rootHistoryFiles {
 		hFile := getHistoryFilePath(historyFile)
 		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
-			continue
+			return err
 		}
 		parseHData, err := gpbckpconfig.ParseResult(historyData)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
-			continue
+			return err
 		}
 		for _, backupConfig := range parseHData.BackupConfigs {
 			hBackupConfig := gpbckpconfig.ConvertToHistoryBackupConfig(backupConfig)
 			err = history.StoreBackupHistory(hDB, &hBackupConfig)
 			if err != nil {
 				gplog.Error(textmsg.ErrorTextUnableWriteIntoHistoryDB(err))
+				return err
 			}
 		}
 		err = renameHistoryFile(hFile)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("rename", err))
+			return err
 		}
 	}
-	hDB.Close()
+	return nil
 }

@@ -339,13 +339,13 @@ func TestIsSuccess(t *testing.T) {
 	}{
 		{
 			name:    "Test success status",
-			config:  BackupConfig{Status: backupStatusSuccess},
+			config:  BackupConfig{Status: BackupStatusSuccess},
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name:    "Test Failure status",
-			config:  BackupConfig{Status: backupStatusFailure},
+			config:  BackupConfig{Status: BackupStatusFailure},
 			want:    false,
 			wantErr: false,
 		},
@@ -415,7 +415,7 @@ func TestBackupConfigGetReportFilePathPlugin(t *testing.T) {
 			name: "Test custom report path",
 			config: BackupConfig{
 				Timestamp: "20220401102430",
-				Plugin:    backupS3Plugin,
+				Plugin:    BackupS3Plugin,
 			},
 			args: args{
 				customReportPath: "/path/to/report",
@@ -428,7 +428,7 @@ func TestBackupConfigGetReportFilePathPlugin(t *testing.T) {
 			name: "Test s3 plugin report path if custom report path is not set and folder is absent",
 			config: BackupConfig{
 				Timestamp: "20220401102430",
-				Plugin:    backupS3Plugin,
+				Plugin:    BackupS3Plugin,
 			},
 			args: args{
 				customReportPath: "",
@@ -443,7 +443,7 @@ func TestBackupConfigGetReportFilePathPlugin(t *testing.T) {
 			name: "Test s3 plugin report path if custom report path is not set and folder is empty",
 			config: BackupConfig{
 				Timestamp: "20220401102430",
-				Plugin:    backupS3Plugin,
+				Plugin:    BackupS3Plugin,
 			},
 			args: args{
 				customReportPath: "",
@@ -458,7 +458,7 @@ func TestBackupConfigGetReportFilePathPlugin(t *testing.T) {
 			name: "Test s3 plugin report path if custom report path is not set and folder is ok",
 			config: BackupConfig{
 				Timestamp: "20220401102430",
-				Plugin:    backupS3Plugin,
+				Plugin:    BackupS3Plugin,
 			},
 
 			args: args{

@@ -120,6 +120,13 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			function: ErrorTextUnableActionHistoryDB,
 			want:     "Unable to open history db. Error: test error",
 		},
+		{
+			name:     "Test ErrorTextUnableWorkBackup",
+			value:    testBackupName,
+			testErr:  testError,
+			function: ErrorTextUnableWorkBackup,
+			want:     "Unable to work with backup TestBackup. Error: test error",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -197,6 +204,13 @@ func TestErrorTextFunctionsErrorAndMultipleArgs(t *testing.T) {
 			function: ErrorTextUnableCompatibleFlagsValues,
 			want:     "Unable to use the provided values for these flags together: TestFlag1=TestValue1, TestFlag2=TestValue2. Error: test error",
 		},
+		{
+			name:     "Test ErrorTextUnableValidateValue",
+			values:   []string{"TestFlag1", "TestFlag2"},
+			testErr:  testError,
+			function: ErrorTextUnableValidateValue,
+			want:     "Unable to validate provided arguments. Try to use one of flags: TestFlag1, TestFlag2. Error: test error",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -216,12 +230,12 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorInvalidValueError", ErrorInvalidValueError, "invalid flag value"},
 		{"ErrorIncompatibleValuesError", ErrorIncompatibleValuesError, "incompatible flags values"},
 		{"ErrorIncompatibleFlagsError", ErrorIncompatibleFlagsError, "incompatible flags"},
-		{"ErrorBackupDeleteCascadeError", ErrorBackupDeleteCascadeError, "delete cascade is failed"},
 		{"ErrorBackupDeleteInProgressError", ErrorBackupDeleteInProgressError, "backup deletion in progress"},
 		{"ErrorBackupDeleteCascadeOptionError", ErrorBackupDeleteCascadeOptionError, "use cascade option"},
 		{"ErrorValidationFullPath", ErrorValidationFullPath, "not an absolute path"},
 		{"ErrorValidationTimestamp", ErrorValidationTimestamp, "not a timestamp"},
 		{"ErrorBackupLocalStorageError", ErrorBackupLocalStorageError, "is a local backup"},
+		{"ErrorValidationValue", ErrorValidationValue, "value not set"},
 	}
 
 	for _, tt := range tests {

@@ -59,8 +59,8 @@ const (
 	backupTypeDataOnly     = "data-only"
 	backupTypeMetadataOnly = "metadata-only"
 	// Backup statuses.
-	backupStatusSuccess = "Success"
-	backupStatusFailure = "Failure"
+	BackupStatusSuccess = "Success"
+	BackupStatusFailure = "Failure"
 	// Object filtering types.
 	objectFilteringIncludeSchema = "include-schema"
 	objectFilteringExcludeSchema = "exclude-schema"
@@ -71,7 +71,7 @@ const (
 	DateDeletedPluginFailed = "Plugin Backup Delete Failed"
 	DateDeletedLocalFailed  = "Local Delete Failed"
 	// Plugin names.
-	backupS3Plugin = "gpbackup_s3_plugin"
+	BackupS3Plugin = "gpbackup_s3_plugin"
 )
 
 // GetBackupType Get backup type.
@@ -202,9 +202,9 @@ func (backupConfig BackupConfig) GetBackupDateDeleted() (string, error) {
 // In all other cases, an error is returned.
 func (backupConfig BackupConfig) IsSuccess() (bool, error) {
 	switch backupConfig.Status {
-	case backupStatusSuccess:
+	case BackupStatusSuccess:
 		return true, nil
-	case backupStatusFailure:
+	case BackupStatusFailure:
 		return false, nil
 	default:
 		return false, errors.New("backup status does not match any of the available values")
@@ -228,7 +228,7 @@ func (backupConfig BackupConfig) GetReportFilePathPlugin(customReportPath string
 	}
 	// In future another plugins may be added.
 	switch backupConfig.Plugin {
-	case backupS3Plugin:
+	case BackupS3Plugin:
 		return backupS3PluginReportPath(backupConfig.Timestamp, pluginOptions)
 	default:
 		// nothing to do

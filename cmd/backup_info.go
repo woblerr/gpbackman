@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -8,11 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
 	"github.com/woblerr/gpbackman/textmsg"
-)
-
-const (
-	backupInfoShowDeletedFlagName = "show-deleted"
-	backupInfoShowFailedFlagName  = "show-failed"
 )
 
 // Flags for the gpbackman backup-info command (backupInfoCmd)
@@ -23,8 +19,8 @@ var (
 
 var backupInfoCmd = &cobra.Command{
 	Use:   "backup-info",
-	Short: "Display a list of backups",
-	Long: `Display a list of backups.
+	Short: "Display information about backups",
+	Long: `Display information about backups.
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
@@ -54,13 +50,13 @@ func init() {
 	rootCmd.AddCommand(backupInfoCmd)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDeleted,
-		backupInfoShowDeletedFlagName,
+		showDeletedFlagName,
 		false,
 		"show deleted backups",
 	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowFailed,
-		backupInfoShowFailedFlagName,
+		showFailedFlagName,
 		false,
 		"show failed backups",
 	)
@@ -72,66 +68,79 @@ func init() {
 
 func doBackupInfo() {
 	logHeadersDebug()
+	err := backupInfo()
+	if err != nil {
+		execOSExit(exitErrorCode)
+	}
+}
+
+func backupInfo() error {
+	t := table.NewWriter()
+	initTable(t)
 	if historyDB {
-		backupInfoDB()
+		hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+			return err
+		}
+		defer func() {
+			closeErr := hDB.Close()
+			if closeErr != nil {
+				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+			}
+		}()
+		err = backupInfoDB(backupInfoShowDeleted, backupInfoShowFailed, hDB, t)
+		if err != nil {
+			return err
+		}
 	} else {
-		backupInfoFile()
-	}
-}
-
-func backupInfoDB() {
-	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
-	}
-	backupList, err := gpbckpconfig.GetBackupNamesDB(backupInfoShowDeleted, backupInfoShowFailed, hDB)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
-	}
-	t := table.NewWriter()
-	initTable(t)
-	for _, backupName := range backupList {
-		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
-			continue
-		}
-		addBackupToTable(backupData, t)
-
-	}
-	hDB.Close()
-	t.Render()
-}
-
-func backupInfoFile() {
-	t := table.NewWriter()
-	initTable(t)
-	for _, historyFile := range rootHistoryFiles {
-		hFile := getHistoryFilePath(historyFile)
-		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
-			continue
-		}
-		parseHData, err := gpbckpconfig.ParseResult(historyData)
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
-			continue
-		}
-		if len(parseHData.BackupConfigs) != 0 {
-			for _, backupData := range parseHData.BackupConfigs {
-				backupDateDeleted, err := backupData.GetBackupDateDeleted()
+		for _, historyFile := range rootHistoryFiles {
+			hFile := getHistoryFilePath(historyFile)
+			parseHData, err := getDataFromHistoryFile(hFile)
+			if err != nil {
+				return err
+			}
+			if len(parseHData.BackupConfigs) != 0 {
+				err = backupInfoFile(backupInfoShowDeleted, backupInfoShowFailed, parseHData, t)
 				if err != nil {
-					gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
-				}
-				validBackup := gpbckpconfig.GetBackupNameFile(backupInfoShowDeleted, backupInfoShowFailed, backupData.Status, backupDateDeleted)
-				if validBackup {
-					addBackupToTable(backupData, t)
+					return err
 				}
 			}
 		}
 	}
 	t.Render()
+	return nil
+}
+
+func backupInfoDB(showDeleted, showFailed bool, hDB *sql.DB, t table.Writer) error {
+	backupList, err := gpbckpconfig.GetBackupNamesDB(showDeleted, showFailed, hDB)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
+		return err
+	}
+	for _, backupName := range backupList {
+		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
+		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
+			return err
+		}
+		addBackupToTable(backupData, t)
+	}
+	return nil
+}
+
+func backupInfoFile(showDeleted, showFailed bool, parseHData gpbckpconfig.History, t table.Writer) error {
+	for _, backupData := range parseHData.BackupConfigs {
+		backupDateDeleted, err := backupData.GetBackupDateDeleted()
+		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
+		}
+		validBackup := gpbckpconfig.GetBackupNameFile(showDeleted, showFailed, backupData.Status, backupDateDeleted)
+		if validBackup {
+			addBackupToTable(backupData, t)
+		}
+	}
+	return nil
 }
 
 func initTable(t table.Writer) {
@@ -152,6 +161,9 @@ func initTable(t table.Writer) {
 	t.SortBy([]table.SortBy{{Name: "timestamp", Mode: table.Dsc}})
 }
 
+// If errors occur, they are logged, but they are not returned.
+// The main idea is to show the maximum available information and display all errors that occur.
+// But do not fall when errors occur. So, display anyway.
 func addBackupToTable(backupData gpbckpconfig.BackupConfig, t table.Writer) {
 	backupDate, err := backupData.GetBackupDate()
 	if err != nil {

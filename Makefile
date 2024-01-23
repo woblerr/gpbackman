@@ -36,6 +36,13 @@ test-e2e_backup-delete:
 	$(call run_docker_compose,backup-delete)
 	$(call down_docker_compose)
 
+.PHONY: test-e2e_backup-clean
+test-e2e_backup-clean:
+	@echo "Run end-to-end tests for $(APP_NAME) for backup-clean command"
+	$(call down_docker_compose)
+	$(call run_docker_compose,backup-clean)
+	$(call down_docker_compose)
+
 .PHONY: test-e2e_history-migrate
 test-e2e_history-migrate:
 	@echo "Run end-to-end tests for $(APP_NAME) for history-migrate command"
@@ -95,6 +102,7 @@ define e2e_command
 endef
 
 define run_docker_compose
+	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker-compose -f e2e_tests/docker-compose.yml build --force-rm --parallel ${1}
 	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker-compose -f e2e_tests/docker-compose.yml run --rm --name ${1} ${1}
 endef
 

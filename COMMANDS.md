@@ -1,28 +1,126 @@
-- [Delete existing backup (`backup-delete`)](#delete-existing-backup-backup-delete)
+- [Delete all existing backups older than the specified time condition (`backup-clean`)](#delete-all-existing-backups-older-than-the-specified-time-condition-backup-clean)
   - [Examples](#examples)
+    - [Delete all backups from local storage older than the specified time condition](#delete-all-backups-from-local-storage-older-than-the-specified-time-condition)
+    - [Delete all backups using storage plugin older than n days](#delete-all-backups-using-storage-plugin-older-than-n-days)
+    - [Delete all backups using storage plugin older than timestamp](#delete-all-backups-using-storage-plugin-older-than-timestamp)
+  - [Using container](#using-container)
+- [Delete a specific existing backup (`backup-delete`)](#delete-a-specific-existing-backup-backup-delete)
+  - [Examples](#examples-1)
     - [Delete existing backup from local storage](#delete-existing-backup-from-local-storage)
     - [Delete existing backup using storage plugin](#delete-existing-backup-using-storage-plugin)
-  - [Using container](#using-container)
-- [Display information about backups (`backup-info`)](#display-information-about-backups-backup-info)
-  - [Examples](#examples-1)
   - [Using container](#using-container-1)
-- [Migrate history database (`history-migrate`)](#migrate-history-database-history-migrate)
+- [Display information about backups (`backup-info`)](#display-information-about-backups-backup-info)
   - [Examples](#examples-2)
   - [Using container](#using-container-2)
-- [Display the backup report (`report-info`)](#display-the-backup-report-report-info)
+- [Migrate history database (`history-migrate`)](#migrate-history-database-history-migrate)
   - [Examples](#examples-3)
+  - [Using container](#using-container-3)
+- [Display the report for a specific backup (`report-info`)](#display-the-report-for-a-specific-backup-report-info)
+  - [Examples](#examples-4)
     - [Display the backup report from local storage](#display-the-backup-report-from-local-storage)
     - [Display the backup report using storage plugin](#display-the-backup-report-using-storage-plugin)
-  - [Using container](#using-container-3)
+  - [Using container](#using-container-4)
 
+# Delete all existing backups older than the specified time condition (`backup-clean`)
 
-# Delete existing backup (`backup-delete`)
+Available options for `backup-clean` command and their description:
+```bash
+./gpbackman backup-clean -h
+Delete all existing backups older than the specified time condition.
+
+To delete backup sets older than the given timestamp, use the --before-timestamp option. 
+To delete backup sets older than the given number of days, use the --older-than-day option. 
+Only --older-than-days or --before-timestamp option must be specified, not both.
+
+By default, the existence of dependent backups is checked and deletion process is not performed,
+unless the --cascade option is passed in.
+
+By default, the deletion will be performed for local backup (in development).
+
+The storage plugin config file location can be set using the --plugin-config option.
+The full path to the file is required. In this case, the deletion will be performed using the storage plugin.
+
+The gpbackup_history.db file location can be set using the --history-db option.
+Can be specified only once. The full path to the file is required.
+
+The gpbackup_history.yaml file location can be set using the --history-file option.
+Can be specified multiple times. The full path to the file is required.
+
+If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
+
+Only --history-file or --history-db option can be specified, not both.
+
+Usage:
+  gpbackman backup-clean [flags]
+
+Flags:
+      --before-timestamp string   delete backup sets older than the given timestamp
+      --cascade                   delete all dependent backups
+  -h, --help                      help for backup-clean
+      --older-than-days uint      delete backup sets older than the given number of days
+      --plugin-config string      the full path to plugin config file
+
+Global Flags:
+      --history-db string          full path to the gpbackup_history.db file
+      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
+      --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
+      --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
+      --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
+```
+
+## Examples
+### Delete all backups from local storage older than the specified time condition
+
+The functionality is in development.
+
+gpBackMan returns a message:
+```bash
+[WARNING]:-The functionality is still in development
+```
+
+### Delete all backups using storage plugin older than n days
+Delete all backups older than 7 days and all dependent backups:
+```bash
+./gpbackman backup-clean \
+  --older-than-day 7 \
+  --plugin-config /tmp/gpbackup_plugin_config.yaml \
+  --cascade
+```
+
+### Delete all backups using storage plugin older than timestamp
+Delete all backups older than timestamp `20240101100000` and all dependent backups:
+```bash
+./gpbackman backup-clean \
+  --before-timestamp 20240101100000 \
+  --plugin-config /tmp/gpbackup_plugin_config.yaml \
+  --cascade
+```
+
+## Using container
+
+Delete all backups using `gpbackup_s3_plugin` storage plugin: older than 7 days:
+```bash
+docker run \
+  --name gpbackman \
+  -e GPBACKMAN_UID=$(id -u) \
+  -e GPBACKMAN_GID=$(id -g) \
+  -v /data/master/gpseg-1/gpbackup_history.db:/data/master/gpseg-1/gpbackup_history.db \
+  -v /path/to/gpbackup_s3_plugin:/tmp/gpbackup_s3_plugin \
+  -v /path/to/gpbackup_plugin_config.yaml:/tmp/gpbackup_plugin_config.yaml \
+  gpbackman \
+  gpbackman backup-clean \
+  --older-than-day 7 \
+  --history-db /data/master/gpseg-1/gpbackup_history.db \
+  --plugin-config /tmp/gpbackup_plugin_config.yaml
+```
+
+# Delete a specific existing backup (`backup-delete`)
 
 Available options for `backup-delete` command and their description:
 
 ```bash
 ./gpbackman backup-delete -h
-Delete a specific backup set.
+Delete a specific existing backup.
 
 The --timestamp option must be specified. It could be specified multiple times.
 
@@ -83,7 +181,7 @@ Delete specific backup:
 
 Delete specific backup and all dependent backups:
 ```bash
-./gpbackman backup-delete\
+./gpbackman backup-delete \
   --timestamp 20230725101115 \
   --plugin-config /tmp/gpbackup_plugin_config.yaml \
   --cascade
@@ -107,15 +205,13 @@ docker run \
   --plugin-config /tmp/gpbackup_plugin_config.yaml
 ```
 
-
-
 # Display information about backups (`backup-info`)
 
 Available options for `backup-info` command and their description:
 
 ```bash
 ./gpbackman backup-info -h
-Display a list of backups.
+Display information about backups.
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
@@ -280,13 +376,13 @@ docker run \
   --history-db /data/master/gpseg-1/gpbackup_history.db
 ```
 
-# Display the backup report (`report-info`)
+# Display the report for a specific backup (`report-info`)
 
 Available options for `report-info` command and their description:
 
 ```bash
 ./gpbackman.go report-info -h
-Display the report for specific backup set.
+Display the report for a specific backup.
 
 The --timestamp option must be specified.
 

@@ -17,6 +17,22 @@ const (
 	historyFileNameConst               = historyFileNameBaseConst + historyFileNameSuffixConst
 	historyDBNameConst                 = historyFileNameBaseConst + historyFileDBSuffixConst
 
+	// Flags.
+	historyDBFlagName            = "history-db"
+	historyFilesFlagName         = "history-file"
+	logFileFlagName              = "log-file"
+	logLevelConsoleFlagName      = "log-level-console"
+	logLevelFileFlagName         = "log-level-file"
+	timestampFlagName            = "timestamp"
+	pluginConfigFileFlagName     = "plugin-config"
+	reportFilePluginPathFlagName = "plugin-report-file-path"
+	showDeletedFlagName          = "show-deleted"
+	showFailedFlagName           = "show-failed"
+	cascadeFlagName              = "cascade"
+	forceFlagName                = "force"
+	olderThenDaysFlagName        = "older-than-days"
+	beforeTimestampFlagName      = "before-timestamp"
+
 	exitErrorCode = 1
 )
 
@@ -24,4 +40,6 @@ var (
 	// Variable for determining history db format: file or sqlite db.
 	// By default, true - sqlite db.
 	historyDB bool = true
+	// Timestamp to delete all backups before.
+	beforeTimestamp string = ""
 )
