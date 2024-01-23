@@ -32,6 +32,7 @@ const (
 	forceFlagName                = "force"
 	olderThenDaysFlagName        = "older-than-days"
 	beforeTimestampFlagName      = "before-timestamp"
+	typeFlagName                 = "type"
 
 	exitErrorCode = 1
 )

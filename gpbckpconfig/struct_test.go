@@ -19,7 +19,7 @@ func TestGetBackupType(t *testing.T) {
 				DataOnly:     false,
 				MetadataOnly: false,
 			},
-			want:    backupTypeIncremental,
+			want:    BackupTypeIncremental,
 			wantErr: false,
 		},
 		{
@@ -29,7 +29,7 @@ func TestGetBackupType(t *testing.T) {
 				DataOnly:     true,
 				MetadataOnly: false,
 			},
-			want:    backupTypeDataOnly,
+			want:    BackupTypeDataOnly,
 			wantErr: false,
 		},
 		{
@@ -39,7 +39,7 @@ func TestGetBackupType(t *testing.T) {
 				DataOnly:     false,
 				MetadataOnly: true,
 			},
-			want:    backupTypeMetadataOnly,
+			want:    BackupTypeMetadataOnly,
 			wantErr: false,
 		},
 		{
@@ -49,7 +49,7 @@ func TestGetBackupType(t *testing.T) {
 				DataOnly:     true,
 				MetadataOnly: true,
 			},
-			want:    backupTypeMetadataOnly,
+			want:    BackupTypeMetadataOnly,
 			wantErr: false,
 		},
 		{
@@ -59,7 +59,7 @@ func TestGetBackupType(t *testing.T) {
 				DataOnly:     false,
 				MetadataOnly: false,
 			},
-			want:    backupTypeFull,
+			want:    BackupTypeFull,
 			wantErr: false,
 		},
 		{
