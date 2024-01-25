@@ -2,6 +2,7 @@ package gpbckpconfig
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/greenplum-db/gpbackup/history"
 )
@@ -38,49 +39,45 @@ func GetBackupNamesBeforeTimestamp(timestamp string, historyDB *sql.DB) ([]strin
 }
 
 func getBackupNameQuery(showD, showF bool) string {
-	orderBy := " ORDER BY timestamp DESC;"
+	orderBy := "ORDER BY timestamp DESC;"
 	getBackupsQuery := "SELECT timestamp FROM backups"
 	switch {
 	// Displaying all backups (active, deleted, failed)
 	case showD && showF:
-		getBackupsQuery += orderBy
+		getBackupsQuery = fmt.Sprintf("%s %s", getBackupsQuery, orderBy)
 	// Displaying only active and deleted backups; failed - hidden.
 	case showD && !showF:
-		getBackupsQuery += " WHERE status != '" + BackupStatusFailure + "'" + orderBy
+		getBackupsQuery = fmt.Sprintf("%s WHERE status != '%s' %s", getBackupsQuery, BackupStatusFailure, orderBy)
 	// Displaying only active and failed backups; deleted - hidden.
 	case !showD && showF:
-		getBackupsQuery += " WHERE date_deleted IN ('', '" +
-			DateDeletedInProgress + "', '" +
-			DateDeletedPluginFailed + "', '" +
-			DateDeletedLocalFailed + "')" + orderBy
+		getBackupsQuery = fmt.Sprintf("%s WHERE date_deleted IN ('', '%s', '%s', '%s') %s", getBackupsQuery, DateDeletedInProgress, DateDeletedPluginFailed, DateDeletedLocalFailed, orderBy)
 	// Displaying only active backups or backups with deletion status "In progress", deleted and failed - hidden.
 	default:
-		getBackupsQuery += " WHERE status != '" + BackupStatusFailure + "'" +
-			" AND date_deleted IN ('', '" +
-			DateDeletedInProgress + "', '" +
-			DateDeletedPluginFailed + "', '" +
-			DateDeletedLocalFailed + "')" + orderBy
+		getBackupsQuery = fmt.Sprintf("%s WHERE status != '%s' AND date_deleted IN ('', '%s', '%s', '%s') %s", getBackupsQuery, BackupStatusFailure, DateDeletedInProgress, DateDeletedPluginFailed, DateDeletedLocalFailed, orderBy)
 	}
 	return getBackupsQuery
 }
 
 func getBackupDependenciesQuery(backupName string) string {
-	getDependenciesQuery := `SELECT timestamp FROM restore_plans ` +
-		`WHERE timestamp != '` + backupName +
-		`' AND restore_plan_timestamp = '` + backupName +
-		`' ORDER BY timestamp DESC;`
-	return getDependenciesQuery
+	return fmt.Sprintf(`
+SELECT timestamp 
+FROM restore_plans
+WHERE timestamp != '%s'
+	AND restore_plan_timestamp = '%s'
+ORDER BY timestamp DESC;
+`, backupName, backupName)
 }
 
 // Only active backups,  "In progress", deleted and failed  statuses - hidden.
 func getBackupNameBeforeTimestampQuery(timestamp string) string {
-	getBackupBeforeTimestampQuery := `SELECT timestamp FROM backups`
-	getBackupBeforeTimestampQuery += " WHERE timestamp < '" + timestamp + "'" +
-		" AND status != '" + BackupStatusFailure + "'" +
-		" AND date_deleted IN ('', '" +
-		DateDeletedPluginFailed + "', '" +
-		DateDeletedLocalFailed + "') ORDER BY timestamp DESC;"
-	return getBackupBeforeTimestampQuery
+	return fmt.Sprintf(`
+SELECT timestamp 
+FROM backups 
+WHERE timestamp < '%s' 
+	AND status != '%s' 
+	AND date_deleted IN ('', '%s', '%s') 
+ORDER BY timestamp DESC;
+`, timestamp, BackupStatusFailure, DateDeletedPluginFailed, DateDeletedLocalFailed)
 }
 
 func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
