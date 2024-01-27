@@ -54,13 +54,13 @@ func init() {
 	rootCmd.AddCommand(backupInfoCmd)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDeleted,
-		showDeletedFlagName,
+		deletedFlagName,
 		false,
 		"show deleted backups",
 	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowFailed,
-		showFailedFlagName,
+		failedFlagName,
 		false,
 		"show failed backups",
 	)
