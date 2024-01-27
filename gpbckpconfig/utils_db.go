@@ -3,6 +3,7 @@ package gpbckpconfig
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/greenplum-db/gpbackup/history"
 )
@@ -36,6 +37,10 @@ func GetBackupDependencies(backupName string, historyDB *sql.DB) ([]string, erro
 
 func GetBackupNamesBeforeTimestamp(timestamp string, historyDB *sql.DB) ([]string, error) {
 	return execQueryFunc(getBackupNameBeforeTimestampQuery(timestamp), historyDB)
+}
+
+func GetBackupNamesForCleanBeforeTimestamp(timestamp string, cleanD bool, historyDB *sql.DB) ([]string, error) {
+	return execQueryFunc(getBackupNameForCleanBeforeTimestampQuery(timestamp, cleanD), historyDB)
 }
 
 func getBackupNameQuery(showD, showF bool) string {
@@ -80,6 +85,66 @@ ORDER BY timestamp DESC;
 `, timestamp, BackupStatusFailure, DateDeletedPluginFailed, DateDeletedLocalFailed)
 }
 
+func getBackupNameForCleanBeforeTimestampQuery(timestamp string, cleanD bool) string {
+	orderBy := "ORDER BY timestamp DESC;"
+	getBackupsQuery := fmt.Sprintf("SELECT timestamp FROM backups WHERE timestamp < '%s'", timestamp)
+	switch {
+	case cleanD:
+		// Return  deleted, failed backup.
+		getBackupsQuery = fmt.Sprintf("%s AND (status = '%s' OR date_deleted NOT IN ('', '%s', '%s', '%s')) %s", getBackupsQuery, BackupStatusFailure, DateDeletedPluginFailed, DateDeletedLocalFailed, DateDeletedInProgress, orderBy)
+	default:
+		// Return failed backups.
+		getBackupsQuery = fmt.Sprintf("%s AND status = '%s' %s", getBackupsQuery, BackupStatusFailure, orderBy)
+	}
+	return getBackupsQuery
+}
+
+func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB) error {
+	for i := 0; i < len(list); i += batchSize {
+		end := i + batchSize
+		if end > len(list) {
+			end = len(list)
+		}
+		batchIds := list[i:end]
+		idStr := "'" + strings.Join(batchIds, "','") + "'"
+		err := execDMLFunc(deleteBackupsFormTableQuery("backups", idStr), historyDB)
+		if err != nil {
+			return err
+		}
+		if cleanD {
+			err = execDMLFunc(deleteBackupsFormTableQuery("restore_plans", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execDMLFunc(deleteBackupsFormTableQuery("restore_plan_tables", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execDMLFunc(deleteBackupsFormTableQuery("exclude_relations", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execDMLFunc(deleteBackupsFormTableQuery("exclude_schemas", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execDMLFunc(deleteBackupsFormTableQuery("include_relations", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execDMLFunc(deleteBackupsFormTableQuery("include_schemas", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func deleteBackupsFormTableQuery(db, value string) string {
+	return fmt.Sprintf(`DELETE FROM %s WHERE timestamp IN (%s)`, db, value)
+}
+
 func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
 	sqlRow, err := historyDB.Query(query)
 	if err != nil {
@@ -99,4 +164,15 @@ func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
 		return nil, err
 	}
 	return resultList, nil
+}
+
+func execDMLFunc(query string, historyDB *sql.DB) error {
+	tx, _ := historyDB.Begin()
+	_, err := tx.Exec(query)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
 }

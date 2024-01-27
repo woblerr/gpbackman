@@ -104,6 +104,12 @@ func TestInfoTextFunctionAndMultipleListArgs(t *testing.T) {
 			function: InfoTextBackupDeleteList,
 			want:     "The following backups will be deleted: TestBackup1, TestBackup2",
 		},
+		{
+			name:     "Test InfoTextBackupDeleteListFromHistory",
+			values:   []string{"TestBackup1", "TestBackup2"},
+			function: InfoTextBackupDeleteListFromHistory,
+			want:     "The following backups will be deleted from history: TestBackup1, TestBackup2",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
