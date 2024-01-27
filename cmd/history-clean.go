@@ -118,8 +118,8 @@ func cleanHistory() error {
 		if err != nil {
 			return err
 		}
-	} else {
-		/*for _, historyFile := range rootHistoryFiles {
+	} /* else {
+		for _, historyFile := range rootHistoryFiles {
 			hFile := getHistoryFilePath(historyFile)
 			parseHData, err := getDataFromHistoryFile(hFile)
 			if err != nil {
@@ -136,8 +136,8 @@ func cleanHistory() error {
 				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("update", errUpdateHFile))
 				return errUpdateHFile
 			}
-		}*/
-	}
+		}
+	}*/
 	return nil
 }
 
