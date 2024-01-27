@@ -13,21 +13,27 @@ backupconfigs:
   excludeschemas: []
   excludetablefiltered: false
   includerelations: []
-  includeschemafiltered: false
-  includeschemas: []
+  includeschemafiltered: true
+  includeschemas:
+  - test1
+  - test2
   includetablefiltered: false
-  incremental: false
+  incremental: true
   leafpartitiondata: true
   metadataonly: false
   plugin: gpbackup_s3_plugin
   pluginversion: 1.8.1
-  restoreplan: []
+  restoreplan:
+  - timestamp: "20230523101115"
+    tablefqns: []
+  - timestamp: "20230524101152"
+    tablefqns: []
   singledatafile: false
-  timestamp: "20230806230400"
-  endtime: "20230806230438"
+  timestamp: "20230524101152"
+  endtime: "20230524104152"
   withoutglobals: false
   withstatistics: false
-  status: Failure
+  status: Success
 - backupdir: ""
   backupversion: 1.27.0
   compressed: true
@@ -42,47 +48,22 @@ backupconfigs:
   excludeschemas: []
   excludetablefiltered: false
   includerelations: []
-  includeschemafiltered: false
-  includeschemas: []
+  includeschemafiltered: true
+  includeschemas:
+  - test1
+  - test2
   includetablefiltered: false
   incremental: false
   leafpartitiondata: true
   metadataonly: false
   plugin: gpbackup_s3_plugin
   pluginversion: 1.8.1
-  restoreplan: []
+  restoreplan:
+  - timestamp: "20230523101115"
+    tablefqns: []
   singledatafile: false
-  timestamp: "20230706230400"
-  endtime: "20230706230438"
+  timestamp: "20230523101115"
+  endtime: "20230523111215"
   withoutglobals: false
   withstatistics: false
-  status: Failure
-- backupdir: ""
-  backupversion: 1.27.0
-  compressed: true
-  compressiontype: gzip
-  databasename: demo
-  databaseversion: 6.23.3
-  segmentcount: 8
-  dataonly: false
-  datedeleted: ""
-  excluderelations: []
-  excludeschemafiltered: false
-  excludeschemas: []
-  excludetablefiltered: false
-  includerelations: []
-  includeschemafiltered: false
-  includeschemas: []
-  includetablefiltered: false
-  incremental: false
-  leafpartitiondata: true
-  metadataonly: false
-  plugin: gpbackup_s3_plugin
-  pluginversion: 1.8.1
-  restoreplan: []
-  singledatafile: false
-  timestamp: "20230606230400"
-  endtime: "20230606230438"
-  withoutglobals: false
-  withstatistics: false
-  status: Failure
+  status: Success
