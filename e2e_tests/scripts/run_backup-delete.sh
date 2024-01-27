@@ -48,11 +48,11 @@ gpbackman ${GPBACKMAN_TEST_COMMAND} \
 
 GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml \
---show-deleted | grep -w ${TIMESTAMP})
+--deleted | grep -w ${TIMESTAMP})
 
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
---show-deleted | grep -w ${TIMESTAMP})
+--deleted | grep -w ${TIMESTAMP})
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
@@ -86,7 +86,7 @@ gpbackman ${GPBACKMAN_TEST_COMMAND} \
 
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
---show-deleted)
+--deleted)
 
 result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 if [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then

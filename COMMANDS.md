@@ -215,9 +215,9 @@ Display information about backups.
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
-To additional display deleted backups, use the --show-deleted option.
-To additional display failed backups, use the --show-failed option.
-To display all backups, use --show-deleted  and --show-failed options together.
+To additional display deleted backups, use the --deleted option.
+To additional display failed backups, use the --failed option.
+To display all backups, use --deleted and --failed options together.
 
 To display backups of a specific type, use the --type option.
 
@@ -235,10 +235,10 @@ Usage:
   gpbackman backup-info [flags]
 
 Flags:
-  -h, --help           help for backup-info
-      --show-deleted   show deleted backups
-      --show-failed    show failed backups
-      --type string    backup type filter (full, incremental, data-only, metadata-only)
+      --deleted       show deleted backups
+      --failed        show failed backups
+  -h, --help          help for backup-info
+      --type string   backup type filter (full, incremental, data-only, metadata-only)
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
@@ -295,8 +295,8 @@ Display info for active backups from `gpbackup_history.db`:
 Display info for all backups from `gpbackup_history.yaml`:
 ```bash
 ./gpbackman backup-info \
-  --show-deleted \
-  --show-failed \
+  --deleted \
+  --failed \
   --history-file /data/master/gpseg-1/gpbackup_history.yaml
  TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED 
 ----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+--------------

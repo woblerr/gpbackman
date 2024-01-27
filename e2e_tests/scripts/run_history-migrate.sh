@@ -49,15 +49,15 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
 GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --history-file ${WORK_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml.migrated \
 --history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml.migrated \
---show-deleted \
---show-failed)
+--deleted \
+--failed)
 
 # backup-info commnad for sqlite backup history format.
 # This result from migrated data.
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
---show-deleted \
---show-failed)
+--deleted \
+--failed)
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2."

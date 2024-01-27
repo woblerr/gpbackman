@@ -38,7 +38,7 @@ gpbackman ${GPBACKMAN_TEST_COMMAND} \
 
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
---show-deleted)
+--deleted)
 
 TEST_CNT_SQL=1
 
@@ -71,11 +71,11 @@ gpbackman ${GPBACKMAN_TEST_COMMAND} \
 
 GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --history-file ${WORK_DIR}/gpbackup_history_incremental_plugin.yaml \
---show-deleted)
+--deleted)
 
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
---show-deleted)
+--deleted)
 
 # After successful delete, in history there should be 11 fo sql and 7 for yaml backup with date deleted info.
 TEST_CNT_YAML=7
