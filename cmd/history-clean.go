@@ -118,7 +118,7 @@ func cleanHistory() error {
 		if err != nil {
 			return err
 		}
-	} /* else {
+	} else {
 		for _, historyFile := range rootHistoryFiles {
 			hFile := getHistoryFilePath(historyFile)
 			parseHData, err := getDataFromHistoryFile(hFile)
@@ -137,7 +137,7 @@ func cleanHistory() error {
 				return errUpdateHFile
 			}
 		}
-	}*/
+	}
 	return nil
 }
 
@@ -153,6 +153,42 @@ func historyCleanDB(cutOffTimestamp string, cleanDeleted bool, hDB *sql.DB) erro
 		if err != nil {
 			return err
 		}
+	} else {
+		gplog.Info(textmsg.InfoTextNothingToDo())
+	}
+	return nil
+}
+
+func historyCleanFile(cutOffTimestamp string, cleanDeleted bool, parseHData *gpbckpconfig.History) error {
+	backupIdxs := make([]int, 0)
+	backupList := make([]string, 0)
+	for idx, backupConfig := range parseHData.BackupConfigs {
+		// In history file we have sorted timestamps by descending order.
+		if backupConfig.Timestamp < cutOffTimestamp {
+			backupSuccessStatus, err := backupConfig.IsSuccess()
+			if err != nil {
+				gplog.Error(textmsg.ErrorTextUnableGetBackupValue("status", backupConfig.Timestamp, err))
+				return err
+			}
+			if !backupSuccessStatus {
+				backupIdxs = append(backupIdxs, idx)
+				backupList = append(backupList, backupConfig.Timestamp)
+			} else if cleanDeleted {
+				backupDateDeleted, errDateDeleted := backupConfig.GetBackupDateDeleted()
+				if errDateDeleted != nil {
+					gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupConfig.Timestamp, errDateDeleted))
+					return err
+				}
+				if !gpbckpconfig.IsBackupActive(backupDateDeleted) && (backupDateDeleted != gpbckpconfig.DateDeletedInProgress) {
+					backupIdxs = append(backupIdxs, idx)
+					backupList = append(backupList, backupConfig.Timestamp)
+				}
+			}
+		}
+	}
+	if len(backupList) > 0 {
+		gplog.Debug(textmsg.InfoTextBackupDeleteListFromHistory(backupList))
+		parseHData.RemoveMultipleFromHistoryFile(backupIdxs)
 	} else {
 		gplog.Info(textmsg.InfoTextNothingToDo())
 	}
