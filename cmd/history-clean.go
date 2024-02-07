@@ -19,8 +19,8 @@ var (
 
 var historyCleanCmd = &cobra.Command{
 	Use:   "history-clean",
-	Short: "Clean failed and deleted backups from the the history database",
-	Long: `Clean failed and deleted backups from the the history database.
+	Short: "Clean failed and deleted backups from the history database",
+	Long: `Clean failed and deleted backups from the history database.
 Only the database is being cleaned up.
 
 By default, information is deleted only about failed backups from gpbackup_history.db.

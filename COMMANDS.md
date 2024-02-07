@@ -12,14 +12,19 @@
 - [Display information about backups (`backup-info`)](#display-information-about-backups-backup-info)
   - [Examples](#examples-2)
   - [Using container](#using-container-2)
-- [Migrate history database (`history-migrate`)](#migrate-history-database-history-migrate)
+- [Clean failed and deleted backups from the history database (`history-clean`)](#clean-failed-and-deleted-backups-from-the-history-database-history-clean)
   - [Examples](#examples-3)
+    - [Delete information about failed and deleted backups from history database older than n days](#delete-information-about-failed-and-deleted-backups-from-history-database-older-than-n-days)
+    - [Delete all backups using storage plugin older than timestamp](#delete-all-backups-using-storage-plugin-older-than-timestamp-1)
   - [Using container](#using-container-3)
-- [Display the report for a specific backup (`report-info`)](#display-the-report-for-a-specific-backup-report-info)
+- [Migrate history database (`history-migrate`)](#migrate-history-database-history-migrate)
   - [Examples](#examples-4)
+  - [Using container](#using-container-4)
+- [Display the report for a specific backup (`report-info`)](#display-the-report-for-a-specific-backup-report-info)
+  - [Examples](#examples-5)
     - [Display the backup report from local storage](#display-the-backup-report-from-local-storage)
     - [Display the backup report using storage plugin](#display-the-backup-report-using-storage-plugin)
-  - [Using container](#using-container-4)
+  - [Using container](#using-container-5)
 
 # Delete all existing backups older than the specified time condition (`backup-clean`)
 
@@ -82,7 +87,7 @@ gpBackMan returns a message:
 Delete all backups older than 7 days and all dependent backups:
 ```bash
 ./gpbackman backup-clean \
-  --older-than-day 7 \
+  --older-than-days 7 \
   --plugin-config /tmp/gpbackup_plugin_config.yaml \
   --cascade
 ```
@@ -98,7 +103,7 @@ Delete all backups older than timestamp `20240101100000` and all dependent backu
 
 ## Using container
 
-Delete all backups using `gpbackup_s3_plugin` storage plugin: older than 7 days:
+Delete all backups using `gpbackup_s3_plugin` storage plugin older than 7 days:
 ```bash
 docker run \
   --name gpbackman \
@@ -109,7 +114,7 @@ docker run \
   -v /path/to/gpbackup_plugin_config.yaml:/tmp/gpbackup_plugin_config.yaml \
   gpbackman \
   gpbackman backup-clean \
-  --older-than-day 7 \
+  --older-than-days 7 \
   --history-db /data/master/gpseg-1/gpbackup_history.db \
   --plugin-config /tmp/gpbackup_plugin_config.yaml
 ```
@@ -319,6 +324,84 @@ docker run \
   gpbackman \
   gpbackman backup-info \
   --history-db /data/master/gpseg-1/gpbackup_history.db
+```
+
+# Clean failed and deleted backups from the history database (`history-clean`)
+
+Available options for `history-clean` command and their description:
+
+```bash
+./gpbackman history-clean -h
+
+Clean failed and deleted backups from the history database.
+Only the database is being cleaned up.
+
+By default, information is deleted only about failed backups from gpbackup_history.db.
+
+To delete information about deleted backups, use the --deleted option.
+
+To delete information about backups older than the given timestamp, use the --before-timestamp option. 
+To delete information about backups older than the given number of days, use the --older-than-day option. 
+Only --older-than-days or --before-timestamp option must be specified, not both.
+
+The gpbackup_history.db file location can be set using the --history-db option.
+Can be specified only once. The full path to the file is required.
+
+The gpbackup_history.yaml file location can be set using the --history-file option.
+Can be specified multiple times. The full path to the file is required.
+
+If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
+
+Only --history-file or --history-db option can be specified, not both.
+
+Usage:
+  gpbackman history-clean [flags]
+
+Flags:
+      --before-timestamp string   delete information about backups older than the given timestamp
+      --deleted                   delete information about deleted backups
+  -h, --help                      help for history-clean
+      --older-than-days uint      delete information about backups older than the given number of days
+
+Global Flags:
+      --history-db string          full path to the gpbackup_history.db file
+      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
+      --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
+      --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
+      --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
+```
+
+## Examples
+### Delete information about failed and deleted backups from history database older than n days
+Delete information about failed and deleted backups from history database older than 7 days:
+```bash
+./gpbackman history-clean \
+  --older-than-days 7 \
+  --deleted
+```
+
+### Delete all backups using storage plugin older than timestamp
+Delete information about failed and deleted backups from history database older than timestamp `20240101100000`:
+```bash
+./gpbackman history-clean \
+  --before-timestamp 20240101100000 \
+  --deleted
+```
+
+## Using container
+
+Delete information about failed and deleted backups from history database older than 7 days:
+```bash
+docker run \
+  --name gpbackman \
+  -e GPBACKMAN_UID=$(id -u) \
+  -e GPBACKMAN_GID=$(id -g) \
+  -v /data/master/gpseg-1/gpbackup_history.db:/data/master/gpseg-1/gpbackup_history.db \
+  gpbackman \
+  gpbackman history-clean \
+  --older-than-days 7 \
+  --history-db /data/master/gpseg-1/gpbackup_history.db \
+  --deleted
 ```
 
 # Migrate history database (`history-migrate`)
