@@ -77,6 +77,19 @@ services:
       - e2e
 
   ################################################################
+  # Test history-clean command.
+  history-clean:
+    image: ${IMAGE_GPBACKMAN}
+    container_name: history-clean
+    hostname: history-clean
+    volumes:
+      - "./src_data:/home/gpbackman/src_data"
+      - "./scripts/run_history-clean.sh:/home/gpbackman/run_history-clean.sh"
+    command: /home/gpbackman/run_history-clean.sh
+    networks:
+      - e2e
+
+  ################################################################
   # Test history-migrate command.
   history-migrate:
     image: ${IMAGE_GPBACKMAN}

@@ -21,6 +21,7 @@ test-e2e:
 	@make test-e2e_report-info
 	@make test-e2e_backup-delete
 	@make test-e2e_history-migrate
+	@make test-e2e_history-clean
 
 .PHONY: test-e2e_backup-info
 test-e2e_backup-info:
@@ -41,6 +42,13 @@ test-e2e_backup-clean:
 	@echo "Run end-to-end tests for $(APP_NAME) for backup-clean command"
 	$(call down_docker_compose)
 	$(call run_docker_compose,backup-clean)
+	$(call down_docker_compose)
+
+.PHONY: test-e2e_history-clean
+test-e2e_history-clean:
+	@echo "Run end-to-end tests for $(APP_NAME) for history-clean command"
+	$(call down_docker_compose)
+	$(call run_docker_compose,history-clean)
 	$(call down_docker_compose)
 
 .PHONY: test-e2e_history-migrate
