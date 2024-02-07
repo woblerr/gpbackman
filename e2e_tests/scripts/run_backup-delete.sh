@@ -58,12 +58,12 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
 bckp_date_deleted=$(echo "${GPBACKMAN_RESULT_YAML}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX})
 if [ $? != 0 ]; then
-    echo -e "[ERROR] results do not match with date regex.\nget_yaml:\n${bckp_date_deleted}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 1 failed.\nget_yaml:\n${bckp_date_deleted}"
     exit 1
 fi
 bckp_date_deleted=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX})
 if [ $? != 0 ]; then
-    echo -e "[ERROR] results do not match with date regex.\nget_sqlite:\n${bckp_date_deleted}"
+    echo -e "[ERROR] r${GPBACKMAN_TEST_COMMAND} test 1 failed.\nget_sqlite:\n${bckp_date_deleted}"
     exit 1
 fi
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
@@ -90,7 +90,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 
 result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 if [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then
-    echo -e "[ERROR] on cascade delition test.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 2 failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
     exit 1
 fi
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2 passed."
@@ -103,7 +103,7 @@ TIMESTAMP="20230725101959"
 TEST_CNT=5
 logs_errors=$(grep -r ERROR ${HOME_DIR}/gpAdminLogs/)
 if [ $? == 0 ]; then
-    echo -e "[ERROR] logs contain errors.\nget_logs:\n${logs_errors}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 3 failed.\nget_logs:\n${logs_errors}"
     exit 1
 fi
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 3 passed."
