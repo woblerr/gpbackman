@@ -99,6 +99,16 @@ func getBackupNameForCleanBeforeTimestampQuery(timestamp string, cleanD bool) st
 	return getBackupsQuery
 }
 
+// UpdateDeleteStatus Updates the date_deleted column in the history database.
+func UpdateDeleteStatus(backupName, dateDeleted string, historyDB *sql.DB) error {
+	err := execStatementFunc(updateDeleteStatusQuery(backupName, dateDeleted), historyDB)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// CleanBackupsDB cleans the backup history database by deleting backups based on the given list of backup names.
 func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB) error {
 	for i := 0; i < len(list); i += batchSize {
 		end := i + batchSize
@@ -107,32 +117,32 @@ func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB
 		}
 		batchIds := list[i:end]
 		idStr := "'" + strings.Join(batchIds, "','") + "'"
-		err := execDMLFunc(deleteBackupsFormTableQuery("backups", idStr), historyDB)
+		err := execStatementFunc(deleteBackupsFormTableQuery("backups", idStr), historyDB)
 		if err != nil {
 			return err
 		}
 		if cleanD {
-			err = execDMLFunc(deleteBackupsFormTableQuery("restore_plans", idStr), historyDB)
+			err = execStatementFunc(deleteBackupsFormTableQuery("restore_plans", idStr), historyDB)
 			if err != nil {
 				return err
 			}
-			err = execDMLFunc(deleteBackupsFormTableQuery("restore_plan_tables", idStr), historyDB)
+			err = execStatementFunc(deleteBackupsFormTableQuery("restore_plan_tables", idStr), historyDB)
 			if err != nil {
 				return err
 			}
-			err = execDMLFunc(deleteBackupsFormTableQuery("exclude_relations", idStr), historyDB)
+			err = execStatementFunc(deleteBackupsFormTableQuery("exclude_relations", idStr), historyDB)
 			if err != nil {
 				return err
 			}
-			err = execDMLFunc(deleteBackupsFormTableQuery("exclude_schemas", idStr), historyDB)
+			err = execStatementFunc(deleteBackupsFormTableQuery("exclude_schemas", idStr), historyDB)
 			if err != nil {
 				return err
 			}
-			err = execDMLFunc(deleteBackupsFormTableQuery("include_relations", idStr), historyDB)
+			err = execStatementFunc(deleteBackupsFormTableQuery("include_relations", idStr), historyDB)
 			if err != nil {
 				return err
 			}
-			err = execDMLFunc(deleteBackupsFormTableQuery("include_schemas", idStr), historyDB)
+			err = execStatementFunc(deleteBackupsFormTableQuery("include_schemas", idStr), historyDB)
 			if err != nil {
 				return err
 			}
@@ -142,9 +152,14 @@ func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB
 }
 
 func deleteBackupsFormTableQuery(db, value string) string {
-	return fmt.Sprintf(`DELETE FROM %s WHERE timestamp IN (%s)`, db, value)
+	return fmt.Sprintf(`DELETE FROM %s WHERE timestamp IN (%s);`, db, value)
 }
 
+func updateDeleteStatusQuery(timestamp, status string) string {
+	return fmt.Sprintf(`UPDATE backups SET date_deleted = '%s' WHERE timestamp = '%s';`, status, timestamp)
+}
+
+// Execute a query that returns rows.
 func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
 	sqlRow, err := historyDB.Query(query)
 	if err != nil {
@@ -166,7 +181,8 @@ func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
 	return resultList, nil
 }
 
-func execDMLFunc(query string, historyDB *sql.DB) error {
+// Execute a query that doesn't return rows.
+func execStatementFunc(query string, historyDB *sql.DB) error {
 	tx, _ := historyDB.Begin()
 	_, err := tx.Exec(query)
 	if err != nil {

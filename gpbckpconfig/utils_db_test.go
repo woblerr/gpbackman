@@ -112,3 +112,36 @@ func TestGetBackupNameForCleanBeforeTimestampQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestTextQueryFunctionsArg(t *testing.T) {
+	testBackupName := "TestBackup"
+	tests := []struct {
+		name     string
+		value1   string
+		value2   string
+		function func(string, string) string
+		want     string
+	}{
+		{
+			name:     "Test deleteBackupsFormTableQuery",
+			value1:   testBackupName,
+			value2:   "'20220401102430', '20220401102430'",
+			function: deleteBackupsFormTableQuery,
+			want:     "DELETE FROM TestBackup WHERE timestamp IN ('20220401102430', '20220401102430');",
+		},
+		{
+			name:     "Test updateDeleteStatusQuery",
+			value1:   testBackupName,
+			value2:   "20220401102430",
+			function: updateDeleteStatusQuery,
+			want:     "UPDATE backups SET date_deleted = '20220401102430' WHERE timestamp = 'TestBackup';",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.function(tt.value1, tt.value2); got != tt.want {
+				t.Errorf("\nVariables do not match:\n%s\nwant:\n%s", got, tt.want)
+			}
+		})
+	}
+}

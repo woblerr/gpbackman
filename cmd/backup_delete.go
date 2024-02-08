@@ -245,7 +245,7 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 	var err error
 	dateDeleted := getCurrentTimestamp()
 	gplog.Info(textmsg.InfoTextBackupDeleteStart(backupName))
-	err = updateDeleteStatus(backupName, gpbckpconfig.DateDeletedInProgress, hDB)
+	err = gpbckpconfig.UpdateDeleteStatus(backupName, gpbckpconfig.DateDeletedInProgress, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
 		return err
@@ -256,7 +256,7 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 		gplog.Error(stderr)
 	}
 	if errdel != nil {
-		err = updateDeleteStatus(backupName, gpbckpconfig.DateDeletedPluginFailed, hDB)
+		err = gpbckpconfig.UpdateDeleteStatus(backupName, gpbckpconfig.DateDeletedPluginFailed, hDB)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedPluginFailed, backupName, err))
 		}
@@ -264,7 +264,7 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 		return errdel
 	}
 	gplog.Info(stdout)
-	err = updateDeleteStatus(backupName, dateDeleted, hDB)
+	err = gpbckpconfig.UpdateDeleteStatus(backupName, dateDeleted, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(dateDeleted, backupName, err))
 		return err
@@ -383,18 +383,4 @@ func execDeleteBackup(executablePath, deleteBackupPluginCommand, pluginConfigFil
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	return stdout.String(), stderr.String(), err
-}
-
-func updateDeleteStatus(timestamp, deleteStatus string, historyDB *sql.DB) error {
-	tx, _ := historyDB.Begin()
-	_, err := tx.Exec(`UPDATE backups
-		SET date_deleted = ?
-		WHERE timestamp = ?;`,
-		deleteStatus, timestamp)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
 }
