@@ -7,27 +7,36 @@ backupconfigs:
   databaseversion: 6.23.3
   segmentcount: 8
   dataonly: false
-  datedeleted: ""
+  datedeleted: "Plugin Backup Delete Failed"
   excluderelations: []
   excludeschemafiltered: false
   excludeschemas: []
   excludetablefiltered: false
-  includerelations: []
+  includerelations:
+  - test.test1
+  - test.test2
+  - test.test3
   includeschemafiltered: false
   includeschemas: []
-  includetablefiltered: false
-  incremental: false
+  includetablefiltered: true
+  incremental: true
   leafpartitiondata: true
   metadataonly: false
   plugin: gpbackup_s3_plugin
   pluginversion: 1.8.1
-  restoreplan: []
+  restoreplan:
+  - timestamp: "20230623101115"
+    tablefqns: []
+  - timestamp: "20230624101152"
+    tablefqns: []
+  - timestamp: "20230625110310"
+    tablefqns: []
   singledatafile: false
-  timestamp: "20230806230400"
-  endtime: "20230806230438"
+  timestamp: "20230625110310"
+  endtime: "20230625114328"
   withoutglobals: false
   withstatistics: false
-  status: Failure
+  status: Success
 - backupdir: ""
   backupversion: 1.27.0
   compressed: true
@@ -41,22 +50,29 @@ backupconfigs:
   excludeschemafiltered: false
   excludeschemas: []
   excludetablefiltered: false
-  includerelations: []
+  includerelations:
+  - test.test1
+  - test.test2
+  - test.test3
   includeschemafiltered: false
   includeschemas: []
-  includetablefiltered: false
-  incremental: false
+  includetablefiltered: true
+  incremental: true
   leafpartitiondata: true
   metadataonly: false
   plugin: gpbackup_s3_plugin
   pluginversion: 1.8.1
-  restoreplan: []
+  restoreplan:
+  - timestamp: "20230623101115"
+    tablefqns: []
+  - timestamp: "20230624101152"
+    tablefqns: []
   singledatafile: false
-  timestamp: "20230706230400"
-  endtime: "20230706230438"
+  timestamp: "20230624101152"
+  endtime: "20230624104152"
   withoutglobals: false
   withstatistics: false
-  status: Failure
+  status: Success
 - backupdir: ""
   backupversion: 1.27.0
   compressed: true
@@ -70,19 +86,24 @@ backupconfigs:
   excludeschemafiltered: false
   excludeschemas: []
   excludetablefiltered: false
-  includerelations: []
+  includerelations:
+  - test.test1
+  - test.test2
+  - test.test3
   includeschemafiltered: false
   includeschemas: []
-  includetablefiltered: false
+  includetablefiltered: true
   incremental: false
   leafpartitiondata: true
   metadataonly: false
   plugin: gpbackup_s3_plugin
   pluginversion: 1.8.1
-  restoreplan: []
+  restoreplan:
+  - timestamp: "20230623101115"
+    tablefqns: []
   singledatafile: false
-  timestamp: "20230606230400"
-  endtime: "20230606230438"
+  timestamp: "20230623101115"
+  endtime: "20230623111215"
   withoutglobals: false
   withstatistics: false
-  status: Failure
+  status: Success

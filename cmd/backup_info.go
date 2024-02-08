@@ -26,9 +26,9 @@ var backupInfoCmd = &cobra.Command{
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
-To additional display deleted backups, use the --show-deleted option.
-To additional display failed backups, use the --show-failed option.
-To display all backups, use --show-deleted  and --show-failed options together.
+To additional display deleted backups, use the --deleted option.
+To additional display failed backups, use the --failed option.
+To display all backups, use --deleted and --failed options together.
 
 To display backups of a specific type, use the --type option.
 
@@ -54,13 +54,13 @@ func init() {
 	rootCmd.AddCommand(backupInfoCmd)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDeleted,
-		showDeletedFlagName,
+		deletedFlagName,
 		false,
 		"show deleted backups",
 	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowFailed,
-		showFailedFlagName,
+		failedFlagName,
 		false,
 		"show failed backups",
 	)

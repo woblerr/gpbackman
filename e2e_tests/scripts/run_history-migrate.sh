@@ -37,7 +37,7 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
 for i in ${REGEX_LIST}
 do
     if [ ! -f "${WORK_DIR}/${i}" ]; then
-        echo "[ERROR] file ${i} not found."
+        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 1 failed.\nFile ${i} not found."
         exit 1
     fi
 done
@@ -49,20 +49,20 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
 GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --history-file ${WORK_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml.migrated \
 --history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml.migrated \
---show-deleted \
---show-failed)
+--deleted \
+--failed)
 
 # backup-info commnad for sqlite backup history format.
 # This result from migrated data.
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
---show-deleted \
---show-failed)
+--deleted \
+--failed)
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2."
 if [ "${GPBACKMAN_RESULT_YAML}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
-    echo -e "[ERROR] results before and after migration do not match.\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 2 failed.\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2 passed."

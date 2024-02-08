@@ -18,14 +18,16 @@ GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-file ${SRC_DIR}/gpbackup_history_full_plugin.yaml \
 --history-file ${SRC_DIR}/gpbackup_history_incremental_plugin.yaml \
 --history-file ${SRC_DIR}/gpbackup_history_metadata_plugin.yaml \
---show-deleted \
---show-failed)
+--history-file ${SRC_DIR}/gpbackup_history_incremental_include_schemas_plugin.yaml \
+--history-file ${SRC_DIR}/gpbackup_history_incremental_include_tables_plugin.yaml \
+--deleted \
+--failed)
 
 # backup-info commnad for sqlite backup history format.
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${SRC_DIR}/gpbackup_history.db \
---show-deleted \
---show-failed)
+--deleted \
+--failed)
 
 IFS=$'\n'
 ################################################################
@@ -36,9 +38,9 @@ IFS=$'\n'
 # For backup without plugin info - blank line, so them skips in this test.
 REGEX_LIST='''Success|data-only|gpbackup_s3_plugin|1
 Success|metadata-only|gpbackup_s3_plugin|2
-Success|full|gpbackup_s3_plugin|2
-Failure|full|gpbackup_s3_plugin|1
-Success|incremental|gpbackup_s3_plugin|6'''
+Success|full|gpbackup_s3_plugin|4
+Failure|full|gpbackup_s3_plugin|3
+Success|incremental|gpbackup_s3_plugin|9'''
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
@@ -51,7 +53,7 @@ do
     result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | grep -w "${bckp_plugin}" | wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | grep -w "${bckp_plugin}" | wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
+        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 1 failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
@@ -107,7 +109,7 @@ do
         grep -w "${bckp_duration}" | \
         wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
+        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 2 failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
@@ -156,7 +158,7 @@ do
         grep -w "${bckp_date_deleted}" | \
         wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
+        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 3 failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
@@ -200,11 +202,37 @@ do
         grep -w "${bckp_duration}" | \
         wc -l | tr -d ' ')
     if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
-        echo "[ERROR] on '${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
+        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 4 failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
 done
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 4 passed."
+
+################################################################
+# Test 5.
+# Simple test to check type iption
+# Format:
+#  status | type| repetitions.
+#   status | type | object filtering| plugin | date deleted | repetitions.
+# For backup without plugin info - blank line, so them skips in this test.
+REGEX_LIST='''Success|full|5
+Failure|full|3'''
+
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 5."
+for i in ${REGEX_LIST}
+do
+    bckp_status=$(echo "${i}" | cut -f1 -d'|')
+    bckp_type=$(echo "${i}" | cut -f2 -d'|')
+    cnt=$(echo "${i}" | cut -f3 -d'|')
+    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | wc -l | tr -d ' ')
+    result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | wc -l | tr -d ' ')
+    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
+        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 5 failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
+        exit 1
+    fi
+done
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 5 passed."
+
 
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
 exit 0

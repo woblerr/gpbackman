@@ -26,8 +26,8 @@ const (
 	timestampFlagName            = "timestamp"
 	pluginConfigFileFlagName     = "plugin-config"
 	reportFilePluginPathFlagName = "plugin-report-file-path"
-	showDeletedFlagName          = "show-deleted"
-	showFailedFlagName           = "show-failed"
+	deletedFlagName              = "deleted"
+	failedFlagName               = "failed"
 	cascadeFlagName              = "cascade"
 	forceFlagName                = "force"
 	olderThenDaysFlagName        = "older-than-days"
@@ -35,6 +35,10 @@ const (
 	typeFlagName                 = "type"
 
 	exitErrorCode = 1
+
+	// Batch size for deleting from sqlite3.
+	// This is to prevent problem with sqlite3.
+	sqliteDeleteBatchSize = 1000
 )
 
 var (

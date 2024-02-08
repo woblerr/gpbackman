@@ -300,6 +300,21 @@ func (history *History) WriteToFileAndMakeReadOnly(filename string) error {
 	return utils.WriteToFileAndMakeReadOnly(filename, historyFileContents)
 }
 
+// RemoveMultipleFromHistoryFile Remove multiple backups from history file.
+// Idxs is a list of sorted indexes of backups to be removed.
+// It iterates over the sorted indices and uses the copy function to shift the elements to the left,
+// effectively removing the element at the current index. Finally, it trims the slice to the correct length.
+func (history *History) RemoveMultipleFromHistoryFile(idxs []int) {
+	j := 0
+	for _, i := range idxs {
+		if i == len(history.BackupConfigs)-1 || i != len(history.BackupConfigs)-j-1 {
+			copy(history.BackupConfigs[i-j:], history.BackupConfigs[i-j+1:])
+			j++
+		}
+	}
+	history.BackupConfigs = history.BackupConfigs[:len(history.BackupConfigs)-j]
+}
+
 func lockHistoryFile(historyFile string) (lockfile.Lockfile, error) {
 	lock, err := lockfile.New(historyFile + ".lck")
 	if err != nil {

@@ -165,6 +165,15 @@ func cleanBackup() error {
 					}
 					err = backupCleanFilePlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig, &parseHData)
 					if err != nil {
+						// In current implementation, there are cases where some backups were deleted, and some were not.
+						// Foe example, the clean command was executed without --cascade option.
+						// In this case - metadata backup was deleted, but full + incrementals - weren't.
+						// We should update the history file even it error occurred.
+						errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
+						if errUpdateHFile != nil {
+							gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("update", errUpdateHFile))
+						}
+						// It is enough to return only one error.
 						return err
 					}
 				} else {

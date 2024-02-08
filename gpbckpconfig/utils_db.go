@@ -2,6 +2,8 @@ package gpbckpconfig
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/greenplum-db/gpbackup/history"
 )
@@ -37,52 +39,127 @@ func GetBackupNamesBeforeTimestamp(timestamp string, historyDB *sql.DB) ([]strin
 	return execQueryFunc(getBackupNameBeforeTimestampQuery(timestamp), historyDB)
 }
 
+func GetBackupNamesForCleanBeforeTimestamp(timestamp string, cleanD bool, historyDB *sql.DB) ([]string, error) {
+	return execQueryFunc(getBackupNameForCleanBeforeTimestampQuery(timestamp, cleanD), historyDB)
+}
+
 func getBackupNameQuery(showD, showF bool) string {
-	orderBy := " ORDER BY timestamp DESC;"
+	orderBy := "ORDER BY timestamp DESC;"
 	getBackupsQuery := "SELECT timestamp FROM backups"
 	switch {
 	// Displaying all backups (active, deleted, failed)
 	case showD && showF:
-		getBackupsQuery += orderBy
+		getBackupsQuery = fmt.Sprintf("%s %s", getBackupsQuery, orderBy)
 	// Displaying only active and deleted backups; failed - hidden.
 	case showD && !showF:
-		getBackupsQuery += " WHERE status != '" + BackupStatusFailure + "'" + orderBy
+		getBackupsQuery = fmt.Sprintf("%s WHERE status != '%s' %s", getBackupsQuery, BackupStatusFailure, orderBy)
 	// Displaying only active and failed backups; deleted - hidden.
 	case !showD && showF:
-		getBackupsQuery += " WHERE date_deleted IN ('', '" +
-			DateDeletedInProgress + "', '" +
-			DateDeletedPluginFailed + "', '" +
-			DateDeletedLocalFailed + "')" + orderBy
+		getBackupsQuery = fmt.Sprintf("%s WHERE date_deleted IN ('', '%s', '%s', '%s') %s", getBackupsQuery, DateDeletedInProgress, DateDeletedPluginFailed, DateDeletedLocalFailed, orderBy)
 	// Displaying only active backups or backups with deletion status "In progress", deleted and failed - hidden.
 	default:
-		getBackupsQuery += " WHERE status != '" + BackupStatusFailure + "'" +
-			" AND date_deleted IN ('', '" +
-			DateDeletedInProgress + "', '" +
-			DateDeletedPluginFailed + "', '" +
-			DateDeletedLocalFailed + "')" + orderBy
+		getBackupsQuery = fmt.Sprintf("%s WHERE status != '%s' AND date_deleted IN ('', '%s', '%s', '%s') %s", getBackupsQuery, BackupStatusFailure, DateDeletedInProgress, DateDeletedPluginFailed, DateDeletedLocalFailed, orderBy)
 	}
 	return getBackupsQuery
 }
 
 func getBackupDependenciesQuery(backupName string) string {
-	getDependenciesQuery := `SELECT timestamp FROM restore_plans ` +
-		`WHERE timestamp != '` + backupName +
-		`' AND restore_plan_timestamp = '` + backupName +
-		`' ORDER BY timestamp DESC;`
-	return getDependenciesQuery
+	return fmt.Sprintf(`
+SELECT timestamp 
+FROM restore_plans
+WHERE timestamp != '%s'
+	AND restore_plan_timestamp = '%s'
+ORDER BY timestamp DESC;
+`, backupName, backupName)
 }
 
 // Only active backups,  "In progress", deleted and failed  statuses - hidden.
 func getBackupNameBeforeTimestampQuery(timestamp string) string {
-	getBackupBeforeTimestampQuery := `SELECT timestamp FROM backups`
-	getBackupBeforeTimestampQuery += " WHERE timestamp < '" + timestamp + "'" +
-		" AND status != '" + BackupStatusFailure + "'" +
-		" AND date_deleted IN ('', '" +
-		DateDeletedPluginFailed + "', '" +
-		DateDeletedLocalFailed + "') ORDER BY timestamp DESC;"
-	return getBackupBeforeTimestampQuery
+	return fmt.Sprintf(`
+SELECT timestamp 
+FROM backups 
+WHERE timestamp < '%s' 
+	AND status != '%s' 
+	AND date_deleted IN ('', '%s', '%s') 
+ORDER BY timestamp DESC;
+`, timestamp, BackupStatusFailure, DateDeletedPluginFailed, DateDeletedLocalFailed)
 }
 
+func getBackupNameForCleanBeforeTimestampQuery(timestamp string, cleanD bool) string {
+	orderBy := "ORDER BY timestamp DESC;"
+	getBackupsQuery := fmt.Sprintf("SELECT timestamp FROM backups WHERE timestamp < '%s'", timestamp)
+	switch {
+	case cleanD:
+		// Return  deleted, failed backup.
+		getBackupsQuery = fmt.Sprintf("%s AND (status = '%s' OR date_deleted NOT IN ('', '%s', '%s', '%s')) %s", getBackupsQuery, BackupStatusFailure, DateDeletedPluginFailed, DateDeletedLocalFailed, DateDeletedInProgress, orderBy)
+	default:
+		// Return failed backups.
+		getBackupsQuery = fmt.Sprintf("%s AND status = '%s' %s", getBackupsQuery, BackupStatusFailure, orderBy)
+	}
+	return getBackupsQuery
+}
+
+// UpdateDeleteStatus Updates the date_deleted column in the history database.
+func UpdateDeleteStatus(backupName, dateDeleted string, historyDB *sql.DB) error {
+	err := execStatementFunc(updateDeleteStatusQuery(backupName, dateDeleted), historyDB)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// CleanBackupsDB cleans the backup history database by deleting backups based on the given list of backup names.
+func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB) error {
+	for i := 0; i < len(list); i += batchSize {
+		end := i + batchSize
+		if end > len(list) {
+			end = len(list)
+		}
+		batchIds := list[i:end]
+		idStr := "'" + strings.Join(batchIds, "','") + "'"
+		err := execStatementFunc(deleteBackupsFormTableQuery("backups", idStr), historyDB)
+		if err != nil {
+			return err
+		}
+		if cleanD {
+			err = execStatementFunc(deleteBackupsFormTableQuery("restore_plans", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execStatementFunc(deleteBackupsFormTableQuery("restore_plan_tables", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execStatementFunc(deleteBackupsFormTableQuery("exclude_relations", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execStatementFunc(deleteBackupsFormTableQuery("exclude_schemas", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execStatementFunc(deleteBackupsFormTableQuery("include_relations", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+			err = execStatementFunc(deleteBackupsFormTableQuery("include_schemas", idStr), historyDB)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func deleteBackupsFormTableQuery(db, value string) string {
+	return fmt.Sprintf(`DELETE FROM %s WHERE timestamp IN (%s);`, db, value)
+}
+
+func updateDeleteStatusQuery(timestamp, status string) string {
+	return fmt.Sprintf(`UPDATE backups SET date_deleted = '%s' WHERE timestamp = '%s';`, status, timestamp)
+}
+
+// Execute a query that returns rows.
 func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
 	sqlRow, err := historyDB.Query(query)
 	if err != nil {
@@ -102,4 +179,16 @@ func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
 		return nil, err
 	}
 	return resultList, nil
+}
+
+// Execute a query that doesn't return rows.
+func execStatementFunc(query string, historyDB *sql.DB) error {
+	tx, _ := historyDB.Begin()
+	_, err := tx.Exec(query)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
 }
