@@ -73,9 +73,9 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
 # Test cascade delete option
 
 TIMESTAMP="20230725101959"
-# After successful delete, in history there should be 5 backup with dete deketed info.
-# 1 from source + 1 from test 1 + 3 from this test.
-TEST_CNT=5
+# After successful delete, in history there should be 5 backup with dete deleted info.
+# 2 from source + 1 from test 1 + 3 from this test.
+TEST_CNT=6
 
 # Execute backup-delete commnad.
 gpbackman ${GPBACKMAN_TEST_COMMAND} \

@@ -40,7 +40,7 @@ REGEX_LIST='''Success|data-only|gpbackup_s3_plugin|1
 Success|metadata-only|gpbackup_s3_plugin|2
 Success|full|gpbackup_s3_plugin|4
 Failure|full|gpbackup_s3_plugin|3
-Success|incremental|gpbackup_s3_plugin|9'''
+Success|incremental|gpbackup_s3_plugin|10'''
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
