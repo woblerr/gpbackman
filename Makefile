@@ -17,11 +17,12 @@ test:
 test-e2e:
 	@echo "Run end-to-end tests for $(APP_NAME)"
 	@make docker
-	@make test-e2e_backup-info
-	@make test-e2e_report-info
+	@make test-e2e_backup-clean
 	@make test-e2e_backup-delete
-	@make test-e2e_history-migrate
+	@make test-e2e_backup-info
 	@make test-e2e_history-clean
+	@make test-e2e_history-migrate
+	@make test-e2e_report-info
 
 .PHONY: test-e2e_backup-info
 test-e2e_backup-info:

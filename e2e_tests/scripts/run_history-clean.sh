@@ -24,6 +24,7 @@ ${WORK_DIR}
 # Test 1.
 # Delete backups from history database older than timestamp.
 # There are no failed or deleted backups after command execution.
+TEST_ID="1"
 
 TIMESTAMP="20231212101500"
 
@@ -52,14 +53,14 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 TEST_CNT=0
 
 # Check results.
-
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 if [ "${result_cnt_yaml}" != "${TEST_CNT}" ] || [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 1 failed.\nget_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
 exit 0
