@@ -7,6 +7,43 @@ backupconfigs:
   databaseversion: 6.23.3
   segmentcount: 8
   dataonly: false
+  datedeleted: "20230625101152"
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: true
+  includeschemas:
+  - test1
+  - test2
+  includetablefiltered: false
+  incremental: true
+  leafpartitiondata: true
+  metadataonly: false
+  plugin: gpbackup_s3_plugin
+  pluginversion: 1.8.1
+  restoreplan:
+  - timestamp: "20230523101115"
+    tablefqns: []
+  - timestamp: "20230524101152"
+    tablefqns: []
+  - timestamp: "20230525101152"
+    tablefqns: []
+  singledatafile: false
+  timestamp: "20230525101152"
+  endtime: "20230525104152"
+  withoutglobals: false
+  withstatistics: false
+  status: Success
+- backupdir: ""
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  segmentcount: 8
+  dataonly: false
   datedeleted: ""
   excluderelations: []
   excludeschemafiltered: false

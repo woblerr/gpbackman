@@ -677,3 +677,135 @@ func TestFindBackupConfigDependencies(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckObjectFilteringExists(t *testing.T) {
+	tests := []struct {
+		name          string
+		tableFilter   string
+		schemaFilter  string
+		objectFilter  string
+		excludeFilter bool
+		want          bool
+		BackupConfig  BackupConfig
+	}{
+		{
+			name:          "no filters specified",
+			tableFilter:   "",
+			schemaFilter:  "",
+			objectFilter:  "",
+			excludeFilter: false,
+			want:          true,
+			BackupConfig:  BackupConfig{},
+		},
+		{
+			name:          "table filter is specified and backup has included table",
+			tableFilter:   "test.table1",
+			schemaFilter:  "",
+			objectFilter:  "include-table",
+			excludeFilter: false,
+			want:          true,
+			BackupConfig: BackupConfig{
+				IncludeRelations: []string{"test.table1", "test.table2"},
+			},
+		},
+		{
+			name:          "table filter is specified and backup hasn't included table",
+			tableFilter:   "test.table1",
+			schemaFilter:  "",
+			objectFilter:  "include-table",
+			excludeFilter: false,
+			want:          false,
+			BackupConfig: BackupConfig{
+				IncludeRelations: []string{"test.table2", "test.table3"},
+			},
+		},
+		{
+			name:          "table filter is specified and backup hasn't object filter",
+			tableFilter:   "test.table1",
+			schemaFilter:  "",
+			objectFilter:  "",
+			excludeFilter: false,
+			want:          false,
+			BackupConfig:  BackupConfig{},
+		},
+		{
+			name:          "table filter is specified and backup has another object filter",
+			tableFilter:   "test.table1",
+			schemaFilter:  "",
+			objectFilter:  "include-schema",
+			excludeFilter: false,
+			want:          false,
+			BackupConfig: BackupConfig{
+				IncludeSchemas: []string{"test"},
+			},
+		},
+		{
+			name:          "table filter is specified and exclude filter is specified, backup has exclude table",
+			tableFilter:   "test.table1",
+			schemaFilter:  "",
+			objectFilter:  "exclude-table",
+			excludeFilter: true,
+			want:          true,
+			BackupConfig: BackupConfig{
+				ExcludeRelations: []string{"test.table1", "test.table2"},
+			},
+		},
+		{
+			name:          "table filter is specified and exclude filter is specified, backup hasn't object filter",
+			tableFilter:   "test.table1",
+			schemaFilter:  "",
+			objectFilter:  "",
+			excludeFilter: true,
+			want:          false,
+			BackupConfig:  BackupConfig{},
+		},
+		{
+			name:          "schema filter is specified and backup has included schema",
+			tableFilter:   "",
+			schemaFilter:  "test",
+			objectFilter:  "include-schema",
+			excludeFilter: false,
+			want:          true,
+			BackupConfig: BackupConfig{
+				IncludeSchemas: []string{"test"},
+			},
+		},
+		{
+			name:          "schema filter is specified and backup hasn't object filter",
+			tableFilter:   "",
+			schemaFilter:  "test",
+			objectFilter:  "",
+			excludeFilter: false,
+			want:          false,
+			BackupConfig:  BackupConfig{},
+		},
+		{
+			name:          "schema filter is specified and exclude filter is specified, backup has exclude schema",
+			tableFilter:   "",
+			schemaFilter:  "test",
+			objectFilter:  "exclude-schema",
+			excludeFilter: true,
+			want:          true,
+			BackupConfig: BackupConfig{
+				ExcludeSchemas: []string{"test"},
+			},
+		},
+		{
+			name:          "schema filter is specified and exclude filter is specified, backup hasn't object filter",
+			tableFilter:   "",
+			schemaFilter:  "test",
+			objectFilter:  "",
+			excludeFilter: true,
+			want:          false,
+			BackupConfig:  BackupConfig{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.BackupConfig.CheckObjectFilteringExists(tt.tableFilter, tt.schemaFilter, tt.objectFilter, tt.excludeFilter)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}

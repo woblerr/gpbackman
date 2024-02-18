@@ -122,6 +122,10 @@ func ErrorIncompatibleFlagsError() error {
 	return errors.New("incompatible flags")
 }
 
+func ErrorNotIndependentFlagsError() error {
+	return errors.New("not an independent flag")
+}
+
 // Error that is returned when backup deletion fails.
 
 func ErrorBackupDeleteInProgressError() error {
@@ -140,6 +144,10 @@ func ErrorBackupLocalStorageError() error {
 
 func ErrorValidationFullPath() error {
 	return errors.New("not an absolute path")
+}
+
+func ErrorValidationTableFQN() error {
+	return errors.New("not a fully qualified table name")
 }
 
 func ErrorValidationTimestamp() error {

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestGetBackupNameFile(t *testing.T) {
+func TestCheckBackupCanBeDisplayed(t *testing.T) {
 	tests := []struct {
 		name        string
 		showD       bool
@@ -89,8 +89,8 @@ func TestGetBackupNameFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetBackupNameFile(tt.showD, tt.showF, tt.status, tt.dateDeleted); got != tt.want {
-				t.Errorf("GetBackupNameFile(%v, %v, %v, %v):\n%v\nwant:\n%v", tt.showD, tt.showF, tt.status, tt.dateDeleted, got, tt.want)
+			if got := CheckBackupCanBeDisplayed(tt.showD, tt.showF, tt.status, tt.dateDeleted); got != tt.want {
+				t.Errorf("CheckBackupIsValid(%v, %v, %v, %v):\n%v\nwant:\n%v", tt.showD, tt.showF, tt.status, tt.dateDeleted, got, tt.want)
 			}
 		})
 	}

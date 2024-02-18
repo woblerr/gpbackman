@@ -19,7 +19,7 @@ func OpenHistoryDB(historyDBPath string) (*sql.DB, error) {
 
 // GetBackupDataDB Read backup data from history database and return BackupConfig struct.
 func GetBackupDataDB(backupName string, hDB *sql.DB) (BackupConfig, error) {
-	hBackupData, err := history.GetMainBackupInfo(backupName, hDB)
+	hBackupData, err := history.GetBackupConfig(backupName, hDB)
 	if err != nil {
 		return BackupConfig{}, err
 	}

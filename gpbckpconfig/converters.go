@@ -9,7 +9,7 @@ import (
 
 // ConvertFromHistoryBackupConfig converts a history.BackupConfig to a BackupConfig.
 // It maps the fields from the history.BackupConfig struct to the BackupConfig struct.
-func ConvertFromHistoryBackupConfig(hBackupConfig history.BackupConfig) BackupConfig {
+func ConvertFromHistoryBackupConfig(hBackupConfig *history.BackupConfig) BackupConfig {
 	return BackupConfig{
 		BackupDir:             hBackupConfig.BackupDir,
 		BackupVersion:         hBackupConfig.BackupVersion,
