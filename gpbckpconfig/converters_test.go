@@ -158,12 +158,12 @@ func TestConvertToHistoryRestorePlanEntry(t *testing.T) {
 func TestConvertFromHistoryBackupConfig(t *testing.T) {
 	tests := []struct {
 		name   string
-		config history.BackupConfig
+		config *history.BackupConfig
 		want   BackupConfig
 	}{
 		{
 			name: "Test correct converting",
-			config: history.BackupConfig{
+			config: &history.BackupConfig{
 				BackupDir:             "/data/backups",
 				BackupVersion:         "1.26.0",
 				Compressed:            true,

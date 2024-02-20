@@ -10,14 +10,6 @@ import (
 	"github.com/woblerr/gpbackman/textmsg"
 )
 
-const (
-	rootHistoryDBFlagName       = historyDBFlagName
-	rootHistoryFilesFlagName    = historyFilesFlagName
-	rootLogFileFlagName         = logFileFlagName
-	rootLogLevelConsoleFlagName = logLevelConsoleFlagName
-	rootLogLevelFileFlagName    = logLevelFileFlagName
-)
-
 // Flags for the gpbackman command (rootCmd)
 var (
 	rootHistoryFiles    []string
@@ -36,31 +28,31 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().StringVar(
 		&rootHistoryDB,
-		rootHistoryDBFlagName,
+		historyDBFlagName,
 		"",
 		"full path to the gpbackup_history.db file",
 	)
 	rootCmd.PersistentFlags().StringArrayVar(
 		&rootHistoryFiles,
-		rootHistoryFilesFlagName,
+		historyFilesFlagName,
 		[]string{""},
 		"full path to the gpbackup_history.yaml file, could be specified multiple times",
 	)
 	rootCmd.PersistentFlags().StringVar(
 		&rootLogFile,
-		rootLogFileFlagName,
+		logFileFlagName,
 		"",
 		"full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory",
 	)
 	rootCmd.PersistentFlags().StringVar(
 		&rootLogLevelConsole,
-		rootLogLevelConsoleFlagName,
+		logLevelConsoleFlagName,
 		"info",
 		"level for console logging (error, info, debug, verbose)",
 	)
 	rootCmd.PersistentFlags().StringVar(
 		&rootLogLevelFile,
-		rootLogLevelFileFlagName,
+		logLevelFileFlagName,
 		"info",
 		"level for file logging (error, info, debug, verbose)",
 	)
@@ -84,19 +76,19 @@ func getVersion() string {
 func doRootFlagValidation(flags *pflag.FlagSet) {
 	var err error
 	// If history-db flag is specified and full path.
-	if flags.Changed(rootHistoryDBFlagName) {
+	if flags.Changed(historyDBFlagName) {
 		err = gpbckpconfig.CheckFullPath(rootHistoryDB)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootHistoryDB, rootHistoryDBFlagName, err))
+			gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootHistoryDB, historyDBFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
 	// If history-file flag is specified and full path.
-	if flags.Changed(rootHistoryFilesFlagName) {
+	if flags.Changed(historyFilesFlagName) {
 		for _, hFile := range rootHistoryFiles {
 			err = gpbckpconfig.CheckFullPath(hFile)
 			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableValidateFlag(hFile, rootHistoryFilesFlagName, err))
+				gplog.Error(textmsg.ErrorTextUnableValidateFlag(hFile, historyFilesFlagName, err))
 				execOSExit(exitErrorCode)
 			}
 		}
@@ -104,31 +96,32 @@ func doRootFlagValidation(flags *pflag.FlagSet) {
 	// Check, that the log level is correct.
 	err = setLogLevelConsole(rootLogLevelConsole)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelConsole, rootLogLevelConsoleFlagName, err))
+		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelConsole, logLevelConsoleFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 	err = setLogLevelFile(rootLogLevelFile)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelFile, rootLogLevelFileFlagName, err))
+		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelFile, logLevelFileFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 }
 
 // These flag checks are applied only to commands:
-// - backup-info
-// - report-info
-// - backup-delete
 // - backup-clean
+// - backup-delete
+// - backup-info
+// - history-clean
+// - report-info
 func doRootBackupFlagValidation(flags *pflag.FlagSet) {
 	// history-file flag and history-db flags cannot be used together.
-	err := checkCompatibleFlags(flags, rootHistoryDBFlagName, rootHistoryFilesFlagName)
+	err := checkCompatibleFlags(flags, historyDBFlagName, historyFilesFlagName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, rootHistoryDBFlagName, rootHistoryFilesFlagName))
+		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, historyDBFlagName, historyFilesFlagName))
 		execOSExit(exitErrorCode)
 	}
 	// If history-files flag is specified, set historyDB = false.
 	// It's file format for history database.
-	if flags.Changed(rootHistoryFilesFlagName) && !flags.Changed(rootHistoryDBFlagName) {
+	if flags.Changed(historyFilesFlagName) && !flags.Changed(historyDBFlagName) {
 		historyDB = false
 	}
 }

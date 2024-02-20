@@ -21,7 +21,7 @@ func ParseResult(output []byte) (History, error) {
 	return hData, err
 }
 
-// GetBackupNameFile Returns true if the backup satisfies the parameters.
+// CheckBackupCanBeDisplayed Returns true if the backup satisfies the parameters.
 // This function is only applicable to processing values obtained from gpbackup history file.
 //
 // The value is calculated, based on:
@@ -29,7 +29,7 @@ func ParseResult(output []byte) (History, error) {
 //   - if showF is true, the function returns true only for backups that active or failed;
 //   - if none of the parameters were passed, the function returns true for backups that have a successful status and have not been deleted;
 //   - If none of the above conditions are met, the function returns false.
-func GetBackupNameFile(showD, showF bool, status, dateDeleted string) bool {
+func CheckBackupCanBeDisplayed(showD, showF bool, status, dateDeleted string) bool {
 	switch {
 	// Displaying all backups (active, deleted, failed)
 	case showD && showF:

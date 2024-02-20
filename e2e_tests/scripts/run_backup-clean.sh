@@ -25,6 +25,7 @@ ${WORK_DIR}
 # Test 1.
 # Delete all backups older than timestamp.
 # Because other backup are incermental and we don't use the option --cascade, no backup will be deleted.
+TEST_ID="1"
 
 TIMESTAMP="20230725101500"
 
@@ -39,22 +40,24 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --deleted)
 
-TEST_CNT_SQL=1
+TEST_CNT_SQL=2
 
 # Check results.
 # In sql db there is one predifined deleted backup - 20230725110310.
 # So, it's ok that one deleted backup exists.
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 if [ "${result_cnt_sqlite}" != "${TEST_CNT_SQL}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 1 failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT_SQL}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT_SQL}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 ################################################################
 # Test 2.
 # Test cascade delete option.
 # All backupd older than timestamp should be deleted.
+TEST_ID="2"
 
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-file ${WORK_DIR}/gpbackup_history_incremental_plugin.yaml \
@@ -78,17 +81,21 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 
 # After successful delete, in history there should be 11 fo sql and 7 for yaml backup with date deleted info.
 TEST_CNT_YAML=7
-TEST_CNT_SQL=11
+TEST_CNT_SQL=17
 
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 if [ "${result_cnt_yaml}" != "${TEST_CNT_YAML}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 2 failed.\nget_yaml=${result_cnt_yaml}, want=${TEST_CNT_YAML}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml=${result_cnt_yaml}, want=${TEST_CNT_YAML}"
     exit 1
 fi
 
 result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 if [ "${result_cnt_sqlite}" != "${TEST_CNT_SQL}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 2 failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT_SQL}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT_SQL}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
+
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
+exit 0

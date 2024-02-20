@@ -30,6 +30,15 @@ func CheckFullPath(path string) error {
 	return nil
 }
 
+// CheckTableFQN Returns error if table FQN is not in the format <schema.table>.
+func CheckTableFQN(table string) error {
+	format := regexp.MustCompile(`^.+\..+$`)
+	if !format.Match([]byte(table)) {
+		return textmsg.ErrorValidationTableFQN()
+	}
+	return nil
+}
+
 // IsBackupActive Returns true if backup is active (not deleted).
 func IsBackupActive(dateDeleted string) bool {
 	return (dateDeleted == "" ||
@@ -72,4 +81,14 @@ func backupS3PluginReportPath(timestamp string, pluginOptions map[string]string)
 // Report file name format: gpbackup_<YYYYMMDDHHMMSS>_report.
 func reportFileName(timestamp string) string {
 	return "gpbackup_" + timestamp + "_report"
+}
+
+// searchFilter returns true if the value is present in the list
+func searchFilter(list []string, value string) bool {
+	for _, item := range list {
+		if item == value {
+			return true
+		}
+	}
+	return false
 }

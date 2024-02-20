@@ -236,6 +236,39 @@ func (backupConfig BackupConfig) GetReportFilePathPlugin(customReportPath string
 	return "", errors.New("the path to the report is not specified")
 }
 
+// CheckObjectFilteringExists checks if the object filtering exists in the backup.
+//
+// This function is responsible for determining whether table or schema filtering exists in the backup, and if so, whether the specified filter type is being used.
+// Returns:
+//   - true - if table or schema filtering exists in the backup or no filters are specified;
+//   - false - if table or schema filtering does not exists in the backup.
+func (backupConfig BackupConfig) CheckObjectFilteringExists(tableFilter, schemaFilter, objectFilter string, excludeFilter bool) bool {
+	switch {
+	case tableFilter != "" && !excludeFilter:
+		if objectFilter == objectFilteringIncludeTable {
+			return searchFilter(backupConfig.IncludeRelations, tableFilter)
+		}
+		return false
+	case tableFilter != "" && excludeFilter:
+		if objectFilter == objectFilteringExcludeTable {
+			return searchFilter(backupConfig.ExcludeRelations, tableFilter)
+		}
+		return false
+	case schemaFilter != "" && !excludeFilter:
+		if objectFilter == objectFilteringIncludeSchema {
+			return searchFilter(backupConfig.IncludeSchemas, schemaFilter)
+		}
+		return false
+	case schemaFilter != "" && excludeFilter:
+		if objectFilter == objectFilteringExcludeSchema {
+			return searchFilter(backupConfig.ExcludeSchemas, schemaFilter)
+		}
+		return false
+	default:
+		return true
+	}
+}
+
 func (history *History) FindBackupConfig(timestamp string) (int, BackupConfig, error) {
 	for idx, backupConfig := range history.BackupConfigs {
 		if backupConfig.Timestamp == timestamp {

@@ -23,6 +23,7 @@ ${WORK_DIR}
 ################################################################
 # Test 1.
 # Get report info for specified backup.
+TEST_ID="1"
 
 # Execute report-info commnad.
 GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
@@ -36,13 +37,13 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml | grep -v 'Reading Plugin Config')
 
 # Check results.
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 bckp_report=$(cat ${SRC_DIR}/gpbackup_${TIMESTAMP}_report)
 if [ "${bckp_report}" != "${GPBACKMAN_RESULT_YAML}" ] ||  [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
-    echo -e "[ERROR] results do not match.\nbckp_report:\n${bckp_report}\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nbckp_report:\n${bckp_report}\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
 exit 0

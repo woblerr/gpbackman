@@ -28,24 +28,28 @@ gpbackman ${GPBACKMAN_TEST_COMMAND} \
 # Check that in source data there are files with .migrated type after migration.
 # Format:
 #   source_file.megrated.
+TEST_ID="1"
+
 REGEX_LIST='''gpbackup_history_dataonly_nodata_plugin.yaml.migrated
 gpbackup_history_metadata_plugin.yaml.migrated
 '''
 
 # Check results.
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 for i in ${REGEX_LIST}
 do
     if [ ! -f "${WORK_DIR}/${i}" ]; then
-        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 1 failed.\nFile ${i} not found."
+        echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nFile ${i} not found."
         exit 1
     fi
 done
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 ################################################################
 # Test 2.
 # Compare results of backup-info command before and after migration.
+TEST_ID="2"
+
 GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --history-file ${WORK_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml.migrated \
 --history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml.migrated \
@@ -60,12 +64,12 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --failed)
 
 # Check results.
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 if [ "${GPBACKMAN_RESULT_YAML}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 2 failed.\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
 exit 0

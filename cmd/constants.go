@@ -33,6 +33,9 @@ const (
 	olderThenDaysFlagName        = "older-than-days"
 	beforeTimestampFlagName      = "before-timestamp"
 	typeFlagName                 = "type"
+	tableFlagName                = "table"
+	schemaFlagName               = "schema"
+	excludeFlagName              = "exclude"
 
 	exitErrorCode = 1
 

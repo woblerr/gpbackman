@@ -229,3 +229,30 @@ func TestGetTimestampOlderThen(t *testing.T) {
 		t.Errorf("Returned timestamp is not within the expected range")
 	}
 }
+
+func TestCheckTableFQN(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   string
+		wantErr bool
+	}{
+		{
+			name:    "Test valid table name",
+			value:   "public.table_1",
+			wantErr: false,
+		},
+		{
+			name:    "Test invalid table name",
+			value:   "invalid_table",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := CheckTableFQN(tt.value)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nCheckTableFQN():\n%v\nwantErr:\n%v", err, tt.wantErr)
+			}
+		})
+	}
+}

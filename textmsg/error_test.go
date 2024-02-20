@@ -236,6 +236,8 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorValidationTimestamp", ErrorValidationTimestamp, "not a timestamp"},
 		{"ErrorBackupLocalStorageError", ErrorBackupLocalStorageError, "is a local backup"},
 		{"ErrorValidationValue", ErrorValidationValue, "value not set"},
+		{"ErrorValidationTableFQN", ErrorValidationTableFQN, "not a fully qualified table name"},
+		{"ErrorNotIndependentFlagsError", ErrorNotIndependentFlagsError, "not an independent flag"},
 	}
 
 	for _, tt := range tests {

@@ -32,6 +32,7 @@ ${WORK_DIR}
 # The sqlite history file format is used.
 # Because this backup was deleted in first call, there are no files in the s3.
 # But the info about deletion attempt is written to log file and DATE DELETED is updated in history file.
+TEST_ID="1"
 
 TIMESTAMP="20230724090000"
 
@@ -55,27 +56,28 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --deleted | grep -w ${TIMESTAMP})
 
 # Check results.
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 bckp_date_deleted=$(echo "${GPBACKMAN_RESULT_YAML}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX})
 if [ $? != 0 ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 1 failed.\nget_yaml:\n${bckp_date_deleted}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml:\n${bckp_date_deleted}"
     exit 1
 fi
 bckp_date_deleted=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX})
 if [ $? != 0 ]; then
-    echo -e "[ERROR] r${GPBACKMAN_TEST_COMMAND} test 1 failed.\nget_sqlite:\n${bckp_date_deleted}"
+    echo -e "[ERROR] r${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite:\n${bckp_date_deleted}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 1 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 ################################################################
 # Test 2.
 # Test cascade delete option
+TEST_ID="2"
 
 TIMESTAMP="20230725101959"
-# After successful delete, in history there should be 5 backup with dete deketed info.
-# 1 from source + 1 from test 1 + 3 from this test.
-TEST_CNT=5
+# After successful delete, in history there should be 5 backup with dete deleted info.
+# 2 from source + 1 from test 1 + 3 from this test.
+TEST_CNT=6
 
 # Execute backup-delete commnad.
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
@@ -88,25 +90,29 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --deleted)
 
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 if [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 2 failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 2 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 ################################################################
 # Test 3.
 # Test errors in logs.
+TEST_ID="3"
 
 TIMESTAMP="20230725101959"
 TEST_CNT=5
+
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 logs_errors=$(grep -r ERROR ${HOME_DIR}/gpAdminLogs/)
 if [ $? == 0 ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test 3 failed.\nget_logs:\n${logs_errors}"
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_logs:\n${logs_errors}"
     exit 1
 fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test 3 passed."
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
 exit 0
