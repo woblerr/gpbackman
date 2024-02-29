@@ -70,7 +70,7 @@ const (
 	DateDeletedInProgress   = "In progress"
 	DateDeletedPluginFailed = "Plugin Backup Delete Failed"
 	DateDeletedLocalFailed  = "Local Delete Failed"
-	// Plugin names.
+	// BackupS3Plugin S3 plugin names.
 	BackupS3Plugin = "gpbackup_s3_plugin"
 )
 
@@ -160,7 +160,7 @@ func (backupConfig BackupConfig) GetBackupDate() (string, error) {
 // GetBackupDuration Get backup duration in seconds.
 // If an error occurs when parsing the date, the zero duration and error are returned.
 func (backupConfig BackupConfig) GetBackupDuration() (float64, error) {
-	var zeroDuration float64 = 0
+	var zeroDuration float64
 	startTime, err := time.Parse(Layout, backupConfig.Timestamp)
 	if err != nil {
 		return zeroDuration, err

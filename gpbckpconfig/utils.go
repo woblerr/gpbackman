@@ -11,7 +11,7 @@ import (
 
 // CheckTimestamp Returns error if timestamp is not valid.
 func CheckTimestamp(timestamp string) error {
-	timestampFormat := regexp.MustCompile(`^([0-9]{14})$`)
+	timestampFormat := regexp.MustCompile(`^(\d{14})$`)
 	if !timestampFormat.MatchString(timestamp) {
 		return textmsg.ErrorValidationTimestamp()
 	}
@@ -33,7 +33,7 @@ func CheckFullPath(path string) error {
 // CheckTableFQN Returns error if table FQN is not in the format <schema.table>.
 func CheckTableFQN(table string) error {
 	format := regexp.MustCompile(`^.+\..+$`)
-	if !format.Match([]byte(table)) {
+	if !format.MatchString(table) {
 		return textmsg.ErrorValidationTableFQN()
 	}
 	return nil

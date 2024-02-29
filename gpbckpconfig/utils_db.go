@@ -115,8 +115,8 @@ func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB
 		if end > len(list) {
 			end = len(list)
 		}
-		batchIds := list[i:end]
-		idStr := "'" + strings.Join(batchIds, "','") + "'"
+		batchIDs := list[i:end]
+		idStr := "'" + strings.Join(batchIDs, "','") + "'"
 		err := execStatementFunc(deleteBackupsFormTableQuery("backups", idStr), historyDB)
 		if err != nil {
 			return err
@@ -183,10 +183,13 @@ func execQueryFunc(query string, historyDB *sql.DB) ([]string, error) {
 
 // Execute a query that doesn't return rows.
 func execStatementFunc(query string, historyDB *sql.DB) error {
-	tx, _ := historyDB.Begin()
-	_, err := tx.Exec(query)
+	tx, err := historyDB.Begin()
 	if err != nil {
-		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(query)
+	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 	err = tx.Commit()

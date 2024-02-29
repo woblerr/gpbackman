@@ -74,7 +74,7 @@ func init() {
 		"",
 		"the full path to plugin report file",
 	)
-	reportInfoCmd.MarkPersistentFlagRequired(timestampFlagName)
+	_ = reportInfoCmd.MarkPersistentFlagRequired(timestampFlagName)
 }
 
 // These flag checks are applied only for report-info command.
@@ -128,7 +128,7 @@ func reportInfo() error {
 				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 			}
 		}()
-		if len(reportInfoPluginConfigFile) > 0 {
+		if reportInfoPluginConfigFile != "" {
 			pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
 			if err != nil {
 				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
@@ -158,7 +158,7 @@ func reportInfo() error {
 				return err
 			}
 			if len(parseHData.BackupConfigs) != 0 {
-				if len(reportInfoPluginConfigFile) > 0 {
+				if reportInfoPluginConfigFile != "" {
 					pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
 					if err != nil {
 						return err
@@ -225,7 +225,7 @@ func reportInfoPluginFunc(backupData gpbckpconfig.BackupConfig, pluginConfigPath
 	}
 	gplog.Debug(textmsg.InfoTextPluginCommandExecution(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile))
 	stdout, stderr, err := execReportInfo(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile)
-	if len(stderr) > 0 {
+	if stderr != "" {
 		gplog.Error(stderr)
 	}
 	if err != nil {
