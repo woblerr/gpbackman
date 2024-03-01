@@ -10,6 +10,8 @@ linters-settings:
     check-shadowing: true
   revive:
     confidence: 0.1
+  golint:
+    min-confidence: 0.1
   maligned:
     suggest-new: true
   goconst:
@@ -21,6 +23,18 @@ linters-settings:
     line-length: 140
   gocyclo:
     min-complexity: 25
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+    disabled-checks:
+      - filepathJoin
+      - hugeParam
+      - rangeValCopy
+      - octalLiteral
+      - unnamedResult
+      - todoCommentWithoutDetail
 
 linters:
   enable:
@@ -49,13 +63,11 @@ linters:
 
 issues:
   exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
     - text: "at least one file in a package should have a package comment"
       linters:
         - stylecheck
-    - text: "G104: Errors unhandled"
+    - path: _test\.go
       linters:
         - gosec
+        - dupl
   exclude-use-default: false

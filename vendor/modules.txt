@@ -10,10 +10,10 @@ github.com/blang/semver
 # github.com/blang/vfs v1.0.0
 ## explicit
 github.com/blang/vfs
-# github.com/go-openapi/errors v0.20.3
-## explicit; go 1.14
+# github.com/go-openapi/errors v0.21.0
+## explicit; go 1.19
 github.com/go-openapi/errors
-# github.com/go-openapi/strfmt v0.21.7
+# github.com/go-openapi/strfmt v0.22.0
 ## explicit; go 1.19
 github.com/go-openapi/strfmt
 # github.com/google/go-cmp v0.5.9
@@ -23,7 +23,10 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/greenplum-db/gp-common-go-libs v1.0.12
+# github.com/google/uuid v1.6.0
+## explicit
+github.com/google/uuid
+# github.com/greenplum-db/gp-common-go-libs v1.0.15
 ## explicit; go 1.19
 github.com/greenplum-db/gp-common-go-libs/cluster
 github.com/greenplum-db/gp-common-go-libs/dbconn
@@ -31,7 +34,7 @@ github.com/greenplum-db/gp-common-go-libs/gplog
 github.com/greenplum-db/gp-common-go-libs/iohelper
 github.com/greenplum-db/gp-common-go-libs/operating
 github.com/greenplum-db/gp-common-go-libs/testhelper
-# github.com/greenplum-db/gpbackup v0.0.0-20230711125400-c1132cc78e89
+# github.com/greenplum-db/gpbackup v0.0.0-20240215213028-2782cd0fbd9b
 ## explicit; go 1.19
 github.com/greenplum-db/gpbackup/filepath
 github.com/greenplum-db/gpbackup/history
@@ -42,7 +45,7 @@ github.com/inconshreveable/mousetrap
 # github.com/jackc/chunkreader/v2 v2.0.1
 ## explicit; go 1.12
 github.com/jackc/chunkreader/v2
-# github.com/jackc/pgconn v1.14.0
+# github.com/jackc/pgconn v1.14.1
 ## explicit; go 1.12
 github.com/jackc/pgconn
 github.com/jackc/pgconn/internal/ctxwatch
@@ -56,10 +59,10 @@ github.com/jackc/pgpassfile
 # github.com/jackc/pgproto3/v2 v2.3.2
 ## explicit; go 1.12
 github.com/jackc/pgproto3/v2
-# github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a
+# github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9
 ## explicit; go 1.14
 github.com/jackc/pgservicefile
-# github.com/jackc/pgtype v1.14.0
+# github.com/jackc/pgtype v1.14.2
 ## explicit; go 1.13
 github.com/jackc/pgtype
 # github.com/jackc/pgx/v4 v4.18.1
@@ -75,11 +78,11 @@ github.com/jedib0t/go-pretty/text
 ## explicit; go 1.10
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
-# github.com/mattn/go-runewidth v0.0.13
+# github.com/mattn/go-runewidth v0.0.15
 ## explicit; go 1.9
 github.com/mattn/go-runewidth
-# github.com/mattn/go-sqlite3 v2.0.3+incompatible
-## explicit
+# github.com/mattn/go-sqlite3 v1.14.19
+## explicit; go 1.16
 github.com/mattn/go-sqlite3
 # github.com/mitchellh/mapstructure v1.5.0
 ## explicit; go 1.14
@@ -90,7 +93,7 @@ github.com/nightlyone/lockfile
 # github.com/oklog/ulid v1.3.1
 ## explicit
 github.com/oklog/ulid
-# github.com/onsi/gomega v1.27.2
+# github.com/onsi/gomega v1.27.10
 ## explicit; go 1.18
 github.com/onsi/gomega
 github.com/onsi/gomega/format
@@ -106,17 +109,17 @@ github.com/onsi/gomega/types
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/rivo/uniseg v0.2.0
-## explicit; go 1.12
+# github.com/rivo/uniseg v0.4.7
+## explicit; go 1.18
 github.com/rivo/uniseg
-# github.com/spf13/cobra v1.7.0
+# github.com/spf13/cobra v1.8.0
 ## explicit; go 1.15
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# go.mongodb.org/mongo-driver v1.11.3
-## explicit; go 1.13
+# go.mongodb.org/mongo-driver v1.14.0
+## explicit; go 1.18
 go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/bson/bsoncodec
 go.mongodb.org/mongo-driver/bson/bsonoptions
@@ -124,15 +127,15 @@ go.mongodb.org/mongo-driver/bson/bsonrw
 go.mongodb.org/mongo-driver/bson/bsontype
 go.mongodb.org/mongo-driver/bson/primitive
 go.mongodb.org/mongo-driver/x/bsonx/bsoncore
-# golang.org/x/crypto v0.17.0
+# golang.org/x/crypto v0.20.0
 ## explicit; go 1.18
 golang.org/x/crypto/pbkdf2
-# golang.org/x/net v0.17.0
-## explicit; go 1.17
+# golang.org/x/net v0.21.0
+## explicit; go 1.18
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.15.0
+# golang.org/x/sys v0.17.0
 ## explicit; go 1.18
 golang.org/x/sys/unix
 golang.org/x/sys/windows

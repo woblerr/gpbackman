@@ -21,6 +21,11 @@ func TestCheckTimestamp(t *testing.T) {
 			value:   "invalid",
 			wantErr: true,
 		},
+		{
+			name:    "Test invalid timestamp (wrong length)",
+			value:   "2023082212000",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -199,6 +204,14 @@ func TestBackupPluginCustomReportPath(t *testing.T) {
 			args: args{
 				timestamp:   "20230101123456",
 				folderValue: "/backup/folder with spaces",
+			},
+			want: "/backup/folder with spaces/gpbackup_20230101123456_report",
+		},
+		{
+			name: "folder without leading /",
+			args: args{
+				timestamp:   "20230101123456",
+				folderValue: "backup/folder with spaces",
 			},
 			want: "/backup/folder with spaces/gpbackup_20230101123456_report",
 		},

@@ -133,7 +133,7 @@ func cleanBackup() error {
 				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 			}
 		}()
-		if len(backupCleanPluginConfigFile) > 0 {
+		if backupCleanPluginConfigFile != "" {
 			pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
 			if err != nil {
 				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
@@ -157,7 +157,7 @@ func cleanBackup() error {
 				return err
 			}
 			if len(parseHData.BackupConfigs) != 0 {
-				if len(backupCleanPluginConfigFile) > 0 {
+				if backupCleanPluginConfigFile != "" {
 					pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
 					if err != nil {
 						gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))

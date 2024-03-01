@@ -83,7 +83,7 @@ func init() {
 		false,
 		"try to delete, even if the backup already mark as deleted",
 	)
-	backupDeleteCmd.MarkPersistentFlagRequired(timestampFlagName)
+	_ = backupDeleteCmd.MarkPersistentFlagRequired(timestampFlagName)
 }
 
 // These flag checks are applied only for backup-delete command.
@@ -130,7 +130,7 @@ func deleteBackup() error {
 				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 			}
 		}()
-		if len(backupDeletePluginConfigFile) > 0 {
+		if backupDeletePluginConfigFile != "" {
 			pluginConfig, err := utils.ReadPluginConfig(backupDeletePluginConfigFile)
 			if err != nil {
 				return err
@@ -153,7 +153,7 @@ func deleteBackup() error {
 				return err
 			}
 			if len(parseHData.BackupConfigs) != 0 {
-				if len(backupDeletePluginConfigFile) > 0 {
+				if backupDeletePluginConfigFile != "" {
 					pluginConfig, err := utils.ReadPluginConfig(backupDeletePluginConfigFile)
 					if err != nil {
 						return err
@@ -252,7 +252,7 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 	}
 	gplog.Debug(textmsg.InfoTextPluginCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
 	stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName)
-	if len(stderr) > 0 {
+	if stderr != "" {
 		gplog.Error(stderr)
 	}
 	if errdel != nil {
@@ -343,7 +343,7 @@ func backupDeleteFilePluginFunc(backupData gpbckpconfig.BackupConfig, parseHData
 	}
 	gplog.Debug(textmsg.InfoTextPluginCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
 	stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName)
-	if len(stderr) > 0 {
+	if stderr != "" {
 		gplog.Error(stderr)
 	}
 	if errdel != nil {

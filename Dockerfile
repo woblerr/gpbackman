@@ -1,8 +1,6 @@
 ARG REPO_BUILD_TAG="unknown"
 
-# Pin alpine 3.18. 
-# See https://github.com/mattn/go-sqlite3/issues/1164#issuecomment-1848677118
-FROM golang:1.20-alpine3.18 AS builder
+FROM golang:1.21-alpine3.19 AS builder
 ARG REPO_BUILD_TAG
 COPY . /build
 WORKDIR /build
@@ -12,7 +10,7 @@ RUN apk add --no-cache --update build-base \
         -ldflags "-X main.version=${REPO_BUILD_TAG}" \
         -o gpbackman gpbackman.go
 
-FROM alpine:3.18
+FROM alpine:3.19
 ARG REPO_BUILD_TAG
 ENV TZ="Etc/UTC" \
     GPBACKMAN_USER="gpbackman" \

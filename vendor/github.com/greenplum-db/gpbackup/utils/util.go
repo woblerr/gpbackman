@@ -24,7 +24,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const MINIMUM_GPDB4_VERSION = "4.3.17"
 const MINIMUM_GPDB5_VERSION = "5.1.0"
 
 /*
@@ -114,16 +113,16 @@ func MakeFQN(schema string, object string) string {
 	return fmt.Sprintf("%s.%s", schema, object)
 }
 
-// Since we currently split schema and table on the dot (.), we can't allow
-// users to filter backup or restore tables with dots in the schema or table.
+// We require users to include schema and table, separated by a dot.  So, check that there's at
+// least one dot with stuff on either side of it.  The remainder of validation is done in the
+// ValidateTablesExist routine
 func ValidateFQNs(tableList []string) error {
-	validFormat := regexp.MustCompile(`^[^.]+\.[^.]+$`)
+	validFormat := regexp.MustCompile(`^.+\..+$`)
 	for _, fqn := range tableList {
 		if !validFormat.Match([]byte(fqn)) {
-			return errors.Errorf(`Table "%s" is not correctly fully-qualified.  Please ensure table is in the format "schema.table" and both the schema and table does not contain a dot (.).`, fqn)
+			return errors.Errorf(`Table "%s" is not correctly fully-qualified.  Please ensure table is in the format "schema.table".`, fqn)
 		}
 	}
-
 	return nil
 }
 
@@ -165,9 +164,9 @@ func InitializeSignalHandler(cleanupFunc func(bool), procDesc string, termFlag *
 		fmt.Println() // Add newline after "^C" is printed
 		switch sig {
 		case unix.SIGINT:
-				gplog.Warn("Received an interrupt signal, aborting %s", procDesc)
+			gplog.Warn("Received an interrupt signal, aborting %s", procDesc)
 		case unix.SIGTERM:
-				gplog.Warn("Received a termination signal, aborting %s", procDesc)
+			gplog.Warn("Received a termination signal, aborting %s", procDesc)
 		}
 		*termFlag = true
 		cleanupFunc(true)
@@ -199,9 +198,7 @@ func TerminateHangingCopySessions(connectionPool *dbconn.DBConn, fpInfo filepath
 }
 
 func ValidateGPDBVersionCompatibility(connectionPool *dbconn.DBConn) {
-	if connectionPool.Version.Before(MINIMUM_GPDB4_VERSION) {
-		gplog.Fatal(errors.Errorf(`GPDB version %s is not supported. Please upgrade to GPDB %s.0 or later.`, connectionPool.Version.VersionString, MINIMUM_GPDB4_VERSION), "")
-	} else if connectionPool.Version.Is("5") && connectionPool.Version.Before(MINIMUM_GPDB5_VERSION) {
+	if connectionPool.Version.Before(MINIMUM_GPDB5_VERSION) {
 		gplog.Fatal(errors.Errorf(`GPDB version %s is not supported. Please upgrade to GPDB %s or later.`, connectionPool.Version.VersionString, MINIMUM_GPDB5_VERSION), "")
 	}
 }
@@ -262,6 +259,10 @@ func EscapeSingleQuotes(str string) string {
 	return strings.Replace(str, "'", "''", -1)
 }
 
+func UnEscapeDoubleQuotes(str string) string {
+	return strings.Replace(str, "\"\"", "\"", -1)
+}
+
 func GetFileHash(filename string) ([32]byte, error) {
 	contents, err := operating.System.ReadFile(filename)
 	if err != nil {
@@ -275,4 +276,3 @@ func GetFileHash(filename string) ([32]byte, error) {
 	}
 	return filehash, nil
 }
-
