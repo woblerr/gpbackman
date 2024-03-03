@@ -1,6 +1,8 @@
 package gpbckpconfig
 
 import (
+	"fmt"
+	"os"
 	"testing"
 	"time"
 )
@@ -38,15 +40,28 @@ func TestCheckTimestamp(t *testing.T) {
 }
 
 func TestCheckFullPath(t *testing.T) {
+	// Create a temporary file to simulate an existing file
+	tempFile, err := os.CreateTemp("", "testfile")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	// Clean up
+	defer os.Remove(tempFile.Name())
+
 	tests := []struct {
 		name    string
 		value   string
 		wantErr bool
 	}{
 		{
-			name:    "Test full path",
-			value:   "/som/path/test.txt",
+			name:    "Test exist file and full path",
+			value:   tempFile.Name(),
 			wantErr: false,
+		},
+		{
+			name:    "Test full path and not exist file",
+			value:   "/some/path/test.txt",
+			wantErr: true,
 		},
 		{
 			name:    "Test zero length path",
@@ -59,6 +74,7 @@ func TestCheckFullPath(t *testing.T) {
 			wantErr: true,
 		},
 	}
+	fmt.Print(tempFile.Name())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := CheckFullPath(tt.value)

@@ -1,6 +1,8 @@
 package gpbckpconfig
 
 import (
+	"errors"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -22,10 +24,16 @@ func GetTimestampOlderThen(value uint) string {
 	return time.Now().AddDate(0, 0, -int(value)).Format(Layout)
 }
 
-// CheckFullPath Returns error if path is not full path.
+// CheckFullPath Returns error if path is not an absolute path or
+// file does not exist.
 func CheckFullPath(path string) error {
 	if !filepath.IsAbs(path) {
 		return textmsg.ErrorValidationFullPath()
+	}
+	// It's better to check if the file exists as early as possible.
+	// This simple check will resolve errors  with non-existent files.
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return textmsg.ErrorFileNotExist()
 	}
 	return nil
 }
