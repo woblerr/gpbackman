@@ -49,35 +49,40 @@ func TestCheckFullPath(t *testing.T) {
 	defer os.Remove(tempFile.Name())
 
 	tests := []struct {
-		name    string
-		value   string
-		wantErr bool
+		name            string
+		value           string
+		checkFileExists bool
+		wantErr         bool
 	}{
 		{
-			name:    "Test exist file and full path",
-			value:   tempFile.Name(),
-			wantErr: false,
+			name:            "Test exist file and full path",
+			value:           tempFile.Name(),
+			checkFileExists: true,
+			wantErr:         false,
 		},
 		{
-			name:    "Test full path and not exist file",
-			value:   "/some/path/test.txt",
-			wantErr: true,
+			name:            "Test full path and not exist file",
+			value:           "/some/path/test.txt",
+			checkFileExists: true,
+			wantErr:         true,
 		},
 		{
-			name:    "Test zero length path",
-			value:   "",
-			wantErr: true,
+			name:            "Test zero length path",
+			value:           "",
+			checkFileExists: false,
+			wantErr:         true,
 		},
 		{
-			name:    "Test not full path",
-			value:   "test.txt",
-			wantErr: true,
+			name:            "Test not full path",
+			value:           "test.txt",
+			checkFileExists: false,
+			wantErr:         true,
 		},
 	}
 	fmt.Print(tempFile.Name())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckFullPath(tt.value)
+			err := CheckFullPath(tt.value, tt.checkFileExists)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\nVariables do not match:\n%v\nwantErr:\n%v", err, tt.wantErr)
 			}

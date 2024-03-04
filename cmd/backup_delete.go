@@ -48,7 +48,7 @@ If no --history-file or --history-db options are specified, the history database
 Only --history-file or --history-db option can be specified, not both.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		doRootFlagValidation(cmd.Flags())
+		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
 		doRootBackupFlagValidation(cmd.Flags())
 		doDeleteBackupFlagValidation(cmd.Flags())
 		doDeleteBackup()
@@ -99,9 +99,9 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 			}
 		}
 	}
-	// If plugin-config flag is specified and full path.
+	// If the plugin-config flag is specified and it exists and the full path is specified.
 	if flags.Changed(pluginConfigFileFlagName) {
-		err = gpbckpconfig.CheckFullPath(backupDeletePluginConfigFile)
+		err = gpbckpconfig.CheckFullPath(backupDeletePluginConfigFile, checkFileExistsConst)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupDeletePluginConfigFile, pluginConfigFileFlagName, err))
 			execOSExit(exitErrorCode)

@@ -26,7 +26,8 @@ Can be specified multiple times. The full path to the file is required.
 If no --history-file and/or --history-db options are specified, the files will be searched in the current directory.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		doRootFlagValidation(cmd.Flags())
+		// No need to check historyDB existence.
+		doRootFlagValidation(cmd.Flags(), false)
 		doMigrateHistory()
 	},
 }

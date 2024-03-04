@@ -47,7 +47,7 @@ If no --history-file or --history-db options are specified, the history database
 Only --history-file or --history-db option can be specified, not both.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		doRootFlagValidation(cmd.Flags())
+		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
 		doRootBackupFlagValidation(cmd.Flags())
 		doCleanBackupFlagValidation(cmd.Flags())
 		doCleanBackup()
@@ -86,7 +86,7 @@ func init() {
 // These flag checks are applied only for backup-clean command.
 func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	var err error
-	// If before-timestamp are specified and have correct values.
+	// If before-timestamp flag is specified and have correct values.
 	if flags.Changed(beforeTimestampFlagName) {
 		err = gpbckpconfig.CheckTimestamp(backupCleanBeforeTimestamp)
 		if err != nil {
@@ -98,9 +98,9 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(olderThenDaysFlagName) {
 		beforeTimestamp = gpbckpconfig.GetTimestampOlderThen(backupCleanOlderThenDays)
 	}
-	// If plugin-config flag is specified and full path.
+	// If plugin-config flag is specified and it exists and the full path is specified.
 	if flags.Changed(pluginConfigFileFlagName) {
-		err = gpbckpconfig.CheckFullPath(backupCleanPluginConfigFile)
+		err = gpbckpconfig.CheckFullPath(backupCleanPluginConfigFile, checkFileExistsConst)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupCleanPluginConfigFile, pluginConfigFileFlagName, err))
 			execOSExit(exitErrorCode)
