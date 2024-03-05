@@ -47,7 +47,7 @@ If no --history-file or --history-db options are specified, the history database
 Only --history-file or --history-db option can be specified, not both.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		doRootFlagValidation(cmd.Flags())
+		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
 		doRootBackupFlagValidation(cmd.Flags())
 		doReportInfoFlagValidation(cmd.Flags())
 		doReportInfo()
@@ -89,17 +89,18 @@ func doReportInfoFlagValidation(flags *pflag.FlagSet) {
 		}
 
 	}
-	// If plugin-config flag is specified and full path.
+	// If plugin-config flag is specified and it exists and the full path is specified.
 	if flags.Changed(pluginConfigFileFlagName) {
-		err = gpbckpconfig.CheckFullPath(reportInfoPluginConfigFile)
+		err = gpbckpconfig.CheckFullPath(reportInfoPluginConfigFile, checkFileExistsConst)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoPluginConfigFile, pluginConfigFileFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
-	// If plugin-report-file-pat flag is specified and full path.
+	// If plugin-report-file-path flag is specified and full path.
 	if flags.Changed(reportFilePluginPathFlagName) {
-		err = gpbckpconfig.CheckFullPath(reportInfoReportFilePluginPath)
+		// No need to check path existence.
+		err = gpbckpconfig.CheckFullPath(reportInfoReportFilePluginPath, false)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableValidateFlag(reportInfoReportFilePluginPath, reportFilePluginPathFlagName, err))
 			execOSExit(exitErrorCode)

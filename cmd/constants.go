@@ -39,6 +39,9 @@ const (
 
 	exitErrorCode = 1
 
+	// Default for checking the existence of the file.
+	checkFileExistsConst = true
+
 	// Batch size for deleting from sqlite3.
 	// This is to prevent problem with sqlite3.
 	sqliteDeleteBatchSize = 1000

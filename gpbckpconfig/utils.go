@@ -1,6 +1,8 @@
 package gpbckpconfig
 
 import (
+	"errors"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -22,10 +24,18 @@ func GetTimestampOlderThen(value uint) string {
 	return time.Now().AddDate(0, 0, -int(value)).Format(Layout)
 }
 
-// CheckFullPath Returns error if path is not full path.
-func CheckFullPath(path string) error {
+// CheckFullPath Returns error if path is not an absolute path or
+// file does not exist.
+func CheckFullPath(path string, checkFileExists bool) error {
 	if !filepath.IsAbs(path) {
 		return textmsg.ErrorValidationFullPath()
+	}
+	// In most cases this check should be mandatory.
+	// But there are commands, that allows the history db file to be missing.
+	if checkFileExists {
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			return textmsg.ErrorFileNotExist()
+		}
 	}
 	return nil
 }

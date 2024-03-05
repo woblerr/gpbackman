@@ -146,6 +146,10 @@ func ErrorValidationFullPath() error {
 	return errors.New("not an absolute path")
 }
 
+func ErrorFileNotExist() error {
+	return errors.New("file not exist")
+}
+
 func ErrorValidationTableFQN() error {
 	return errors.New("not a fully qualified table name")
 }

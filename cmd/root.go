@@ -73,20 +73,23 @@ func getVersion() string {
 }
 
 // These flag checks are applied for all commands:
-func doRootFlagValidation(flags *pflag.FlagSet) {
+func doRootFlagValidation(flags *pflag.FlagSet, checkFileExists bool) {
 	var err error
 	// If history-db flag is specified and full path.
+	// The existence of the file is checked by condition from each specific command.
+	// Not all commands (see history-migrate command, report-info command flags) require a history db file to exist.
 	if flags.Changed(historyDBFlagName) {
-		err = gpbckpconfig.CheckFullPath(rootHistoryDB)
+		err = gpbckpconfig.CheckFullPath(rootHistoryDB, checkFileExists)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootHistoryDB, historyDBFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
-	// If history-file flag is specified and full path.
+	// If the plugin-config flag is specified and it exists and the full path is specified.
 	if flags.Changed(historyFilesFlagName) {
 		for _, hFile := range rootHistoryFiles {
-			err = gpbckpconfig.CheckFullPath(hFile)
+			// Always check the existence of the file.
+			err = gpbckpconfig.CheckFullPath(hFile, checkFileExistsConst)
 			if err != nil {
 				gplog.Error(textmsg.ErrorTextUnableValidateFlag(hFile, historyFilesFlagName, err))
 				execOSExit(exitErrorCode)
