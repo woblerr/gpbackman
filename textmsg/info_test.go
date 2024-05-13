@@ -76,10 +76,10 @@ func TestInfoTextFunctionAndMultipleSeparateArgs(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "Test InfoTextPluginCommandExecution",
+			name:     "Test InfoTextCommandExecution",
 			values:   []string{"execution_command", "some_argument"},
-			function: InfoTextPluginCommandExecution,
-			want:     "Executing Plugin command: execution_command some_argument",
+			function: InfoTextCommandExecution,
+			want:     "Executing command: execution_command some_argument",
 		},
 	}
 	for _, tt := range tests {

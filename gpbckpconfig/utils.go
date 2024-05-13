@@ -60,7 +60,7 @@ func IsBackupActive(dateDeleted string) bool {
 //
 //	<folder>/gpbackup_<YYYYMMDDHHMMSS>_report
 func backupPluginCustomReportPath(timestamp, folderValue string) string {
-	return filepath.Join("/", folderValue, reportFileName(timestamp))
+	return filepath.Join("/", folderValue, ReportFileName(timestamp))
 }
 
 // backupS3PluginReportPath Returns path to report file name for gpbackup_s3_plugin plugin.
@@ -84,12 +84,12 @@ func backupS3PluginReportPath(timestamp string, pluginOptions map[string]string)
 	// So we need to remove leading '/' and add it back.
 	folderValue = strings.TrimPrefix(folderValue, "/")
 	folderValue = strings.TrimSuffix(folderValue, "/")
-	return filepath.Join("/", folderValue, reportPathBasic, reportFileName(timestamp)), nil
+	return filepath.Join("/", folderValue, reportPathBasic, ReportFileName(timestamp)), nil
 }
 
-// reportFileName Returns report file name for specific timestamp.
+// ReportFileName Returns report file name for specific timestamp.
 // Report file name format: gpbackup_<YYYYMMDDHHMMSS>_report.
-func reportFileName(timestamp string) string {
+func ReportFileName(timestamp string) string {
 	return "gpbackup_" + timestamp + "_report"
 }
 

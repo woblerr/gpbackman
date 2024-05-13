@@ -187,8 +187,8 @@ func TestReportFileName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := reportFileName(tt.timestamp); got != tt.want {
-				t.Errorf("\nreportFileName():\n%v\nwant:\n%v", got, tt.want)
+			if got := ReportFileName(tt.timestamp); got != tt.want {
+				t.Errorf("\nReportFileName():\n%v\nwant:\n%v", got, tt.want)
 			}
 		})
 	}

@@ -107,13 +107,6 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			want:     "Unable to get report for the backup TestBackup. Error: test error",
 		},
 		{
-			name:     "Test ErrorTextUnableGetBackupReportPath",
-			value:    testBackupName,
-			testErr:  testError,
-			function: ErrorTextUnableGetBackupReportPath,
-			want:     "Unable to get path to report for the backup TestBackup. Error: test error",
-		},
-		{
 			name:     "Test ErrorTextUnableActionHistoryDB",
 			value:    "open",
 			testErr:  testError,
@@ -170,6 +163,14 @@ func TestErrorTextFunctionsErrorAndTwoArgs(t *testing.T) {
 			testErr:  testError,
 			function: ErrorTextUnableGetBackupValue,
 			want:     "Unable to get backup test parameter for backup TestBackup. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableGetBackupReportPath",
+			value1:   "report",
+			value2:   "TestBackup",
+			testErr:  testError,
+			function: ErrorTextUnableGetBackupPath,
+			want:     "Unable to get path to report for the backup TestBackup. Error: test error",
 		},
 	}
 	for _, tt := range tests {

@@ -170,15 +170,17 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 	// Initializes gplog,
 	testhelper.SetupTestLogger()
 	testCases := []struct {
-		name         string
-		deleteForce  bool
-		backupConfig gpbckpconfig.BackupConfig
-		want         bool
-		wantErr      bool
+		name            string
+		deleteForce     bool
+		skipLocalBackup bool
+		backupConfig    gpbckpconfig.BackupConfig
+		want            bool
+		wantErr         bool
 	}{
 		{
-			name:        "Successful backup with plugin and force",
-			deleteForce: true,
+			name:            "Successful backup with plugin and force, skipLocalBackup true",
+			deleteForce:     true,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -188,8 +190,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Successful backup with plugin and without force",
-			deleteForce: false,
+			name:            "Successful backup with plugin and without force",
+			deleteForce:     false,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -199,8 +202,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Failed backup with plugin and force",
-			deleteForce: true,
+			name:            "Failed backup with plugin and force",
+			deleteForce:     true,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusFailure,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -210,8 +214,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Failed backup with plugin and without force",
-			deleteForce: false,
+			name:            "Failed backup with plugin and without force",
+			deleteForce:     false,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusFailure,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -221,30 +226,33 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Successful backup without plugin and force",
-			deleteForce: true,
+			name:            "Successful backup without plugin and force",
+			deleteForce:     true,
+			skipLocalBackup: false,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      "",
 				DateDeleted: "",
 			},
-			want:    false,
-			wantErr: true,
+			want:    true,
+			wantErr: false,
 		},
 		{
-			name:        "Successful backup without plugin and without force",
-			deleteForce: false,
+			name:            "Successful backup without plugin and without force",
+			deleteForce:     false,
+			skipLocalBackup: false,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      "",
 				DateDeleted: "",
 			},
-			want:    false,
-			wantErr: true,
+			want:    true,
+			wantErr: false,
 		},
 		{
-			name:        "Successful deleted backup with plugin and force",
-			deleteForce: true,
+			name:            "Successful deleted backup with plugin and force",
+			deleteForce:     true,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -254,8 +262,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Successful deleted backup with plugin and without force",
-			deleteForce: false,
+			name:            "Successful deleted backup with plugin and without force",
+			deleteForce:     false,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -265,8 +274,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Invalid backup status with plugin and without force",
-			deleteForce: false,
+			name:            "Invalid backup status with plugin and without force",
+			deleteForce:     false,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      "some_status",
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -276,8 +286,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:        "Successful backup with plugin with deletion in progress and force",
-			deleteForce: true,
+			name:            "Successful backup with plugin with deletion in progress and force",
+			deleteForce:     true,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -287,8 +298,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Successful backup with plugin with deletion in progress and without force",
-			deleteForce: false,
+			name:            "Successful backup with plugin with deletion in progress and without force",
+			deleteForce:     false,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -298,8 +310,9 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Successful backup with plugin with invalid deletion date and without force",
-			deleteForce: false,
+			name:            "Successful backup with plugin with invalid deletion date and without force",
+			deleteForce:     false,
+			skipLocalBackup: true,
 			backupConfig: gpbckpconfig.BackupConfig{
 				Status:      gpbckpconfig.BackupStatusSuccess,
 				Plugin:      gpbckpconfig.BackupS3Plugin,
@@ -308,11 +321,35 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 			want:    true,
 			wantErr: false,
 		},
+		{
+			name:            "Successful backup with plugin with invalid skipLocalBackup variable",
+			deleteForce:     false,
+			skipLocalBackup: false,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      gpbckpconfig.BackupS3Plugin,
+				DateDeleted: "some date",
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:            "Successful backup without plugin with invalid skipLocalBackup variable",
+			deleteForce:     false,
+			skipLocalBackup: true,
+			backupConfig: gpbckpconfig.BackupConfig{
+				Status:      gpbckpconfig.BackupStatusSuccess,
+				Plugin:      "",
+				DateDeleted: "some date",
+			},
+			want:    false,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := checkBackupCanBeUsed(tt.deleteForce, tt.backupConfig)
+			got, err := checkBackupCanBeUsed(tt.deleteForce, tt.skipLocalBackup, tt.backupConfig)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\ncheckBackupCanBeUsed() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
 			}
