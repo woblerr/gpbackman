@@ -240,6 +240,7 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorValidationTableFQN", ErrorValidationTableFQN, "not a fully qualified table name"},
 		{"ErrorNotIndependentFlagsError", ErrorNotIndependentFlagsError, "not an independent flag"},
 		{"ErrorFileNotExist", ErrorFileNotExist, "file not exist"},
+		{"ErrorEmptyDatabase", ErrorEmptyDatabase, "database name cannot be empty"},
 	}
 
 	for _, tt := range tests {

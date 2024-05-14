@@ -182,7 +182,7 @@ func reportInfo() error {
 				return err
 			}
 		} else {
-			err := reportInfoDBLocal()
+			err := reportInfoDBLocal(reportInfoTimestamp, reportInfoBackupDir, hDB)
 			if err != nil {
 				return err
 			}
@@ -228,16 +228,9 @@ func reportInfoDBPlugin(backupName, pluginConfigPath string, pluginConfig *utils
 		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 		return err
 	}
-	// Skip local backup.
-	canGetReport, err := checkBackupCanBeUsed(false, true, backupData)
+	err = reportInfoPluginFunc(backupData, pluginConfigPath, pluginConfig)
 	if err != nil {
 		return err
-	}
-	if canGetReport {
-		err = reportInfoPluginFunc(backupData, pluginConfigPath, pluginConfig)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -248,45 +241,51 @@ func reportInfoFilePlugin(backupName, pluginConfigPath string, pluginConfig *uti
 		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 		return err
 	}
+	err = reportInfoPluginFunc(backupData, pluginConfigPath, pluginConfig)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func reportInfoPluginFunc(backupData gpbckpconfig.BackupConfig, pluginConfigPath string, pluginConfig *utils.PluginConfig) error {
 	// Skip local backup.
 	canGetReport, err := checkBackupCanBeUsed(false, true, backupData)
 	if err != nil {
 		return err
 	}
 	if canGetReport {
-		err = reportInfoPluginFunc(backupData, pluginConfigPath, pluginConfig)
+		reportFile, err := backupData.GetReportFilePathPlugin(reportInfoReportFilePluginPath, pluginConfig.Options)
 		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableGetBackupPath("report", backupData.Timestamp, err))
 			return err
 		}
+		gplog.Debug(textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile))
+		stdout, stderr, err := execReportInfo(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile)
+		if stderr != "" {
+			gplog.Error(stderr)
+		}
+		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableGetBackupReport(backupData.Timestamp, err))
+			return err
+		}
+		// Display the report.
+		fmt.Println(stdout)
 	}
 	return nil
 }
 
-func reportInfoPluginFunc(backupData gpbckpconfig.BackupConfig, pluginConfigPath string, pluginConfig *utils.PluginConfig) error {
-	reportFile, err := backupData.GetReportFilePathPlugin(reportInfoReportFilePluginPath, pluginConfig.Options)
+func reportInfoDBLocal(backupName, backupDir string, hDB *sql.DB) error {
+	backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupPath("report", backupData.Timestamp, err))
+		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 		return err
 	}
-	gplog.Debug(textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile))
-	stdout, stderr, err := execReportInfo(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile)
-	if stderr != "" {
-		gplog.Error(stderr)
-	}
+	err = reportInfoFileLocalFunc(backupData, backupDir)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupReport(backupData.Timestamp, err))
 		return err
 	}
-	// Display the report.
-	fmt.Println(stdout)
 	return nil
-}
-
-// TODO
-func reportInfoDBLocal() error {
-	gplog.Warn("The functionality is still in development")
-	return nil
-
 }
 
 func reportInfoFileLocal(backupName, backupDir string, parseHData gpbckpconfig.History) error {
@@ -295,6 +294,14 @@ func reportInfoFileLocal(backupName, backupDir string, parseHData gpbckpconfig.H
 		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 		return err
 	}
+	err = reportInfoFileLocalFunc(backupData, backupDir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func reportInfoFileLocalFunc(backupData gpbckpconfig.BackupConfig, backupDir string) error {
 	// Include local backup.
 	canGetReport, err := checkBackupCanBeUsed(false, false, backupData)
 	if err != nil {
@@ -308,7 +315,9 @@ func reportInfoFileLocal(backupName, backupDir string, parseHData gpbckpconfig.H
 			return err
 		}
 		reportFile := filepath.Join(bckpDir, "backups", timestamp[0:8], timestamp, gpbckpconfig.ReportFileName(timestamp))
-		gplog.Debug(textmsg.InfoTextCommandExecution(reportFile))
+		// Sanitize the file path
+		reportFile = filepath.Clean(reportFile)
+		gplog.Debug(textmsg.InfoTextCommandExecution("read file", reportFile))
 		content, err := os.ReadFile(reportFile)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableGetBackupReport(backupData.Timestamp, err))

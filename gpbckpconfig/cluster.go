@@ -1,20 +1,20 @@
 package gpbckpconfig
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
 // NewClusterLocalClusterConn creates a new connection to the local postgres database
 // Returns an error if the connection could not be established.
 func NewClusterLocalClusterConn(dbName string) (*sqlx.DB, error) {
 	if dbName == "" {
-		return nil, errors.New("Database name cannot be empty")
+		return nil, textmsg.ErrorEmptyDatabase()
 	}
 	username := operating.System.Getenv("PGUSER")
 	if username == "" {

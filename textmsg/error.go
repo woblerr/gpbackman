@@ -176,6 +176,10 @@ func ErrorValidationValue() error {
 	return errors.New("value not set")
 }
 
+func ErrorEmptyDatabase() error {
+	return errors.New("database name cannot be empty")
+}
+
 // Error that is returned when some plugin options validation fails
 
 func ErrorValidationPluginOption(value, pluginName string) error {
