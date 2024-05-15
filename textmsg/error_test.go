@@ -37,6 +37,18 @@ func TestErrorTextFunctionsErrorOnly(t *testing.T) {
 			function: ErrorTextUnableReadPluginConfigFile,
 			want:     "Unable to read plugin config file. Error: test error",
 		},
+		{
+			name:     "Test ErrorTextUnableConnectLocalCluster",
+			testErr:  testError,
+			function: ErrorTextUnableConnectLocalCluster,
+			want:     "Unable to connect to the cluster locally. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableGetBackupDirLocalClusterConn",
+			testErr:  testError,
+			function: ErrorTextUnableGetBackupDirLocalClusterConn,
+			want:     "Unable to get backup directory from a local connection to the cluster. Error: test error",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -241,6 +253,7 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorNotIndependentFlagsError", ErrorNotIndependentFlagsError, "not an independent flag"},
 		{"ErrorFileNotExist", ErrorFileNotExist, "file not exist"},
 		{"ErrorEmptyDatabase", ErrorEmptyDatabase, "database name cannot be empty"},
+		{"ErrorBackupNotLocalStorageError", ErrorBackupNotLocalStorageError, "is not a local backup"},
 	}
 
 	for _, tt := range tests {
