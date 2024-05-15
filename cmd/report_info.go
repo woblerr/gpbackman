@@ -37,7 +37,8 @@ The full path to the data directory is required.
 
 For local backups the following logic are applied:
   * If the --backup-dir option is specified, the report will be searched in provided path.
-  * If the --backup-dir option is not specified, the utility try to connect to local cluster and get master data directory.
+  * If the --backup-dir option is not specified, but the backup was made with --backup-dir flag for gpbackup, the report will be searched in provided path from backup manifest.
+  * If the --backup-dir option is not specified and backup directory is not specified in backup manifest, the utility try to connect to local cluster and get master data directory.
     If this information is available, the report will be in master data directory.
   * If backup is not local, the error will be returned.
 
