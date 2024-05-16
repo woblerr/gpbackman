@@ -180,8 +180,22 @@ func ErrorEmptyDatabase() error {
 	return errors.New("database name cannot be empty")
 }
 
-// Error that is returned when some plugin options validation fails
+// Error that is returned when some plugin options validation fails.
 
 func ErrorValidationPluginOption(value, pluginName string) error {
 	return fmt.Errorf("invalid plugin %s option value for plugin %s", value, pluginName)
+}
+
+// Errors that are returned when some backup directory validation fails.
+
+func ErrorFindBackupDirIn(value string, err error) error {
+	return fmt.Errorf("can not find backup directory in %s, error: %v", value, err.Error())
+}
+
+func ErrorNotFoundBackupDirIn(value string) error {
+	return fmt.Errorf("no backup directory found in %s", value)
+}
+
+func ErrorSeveralFoundBackupDirIn(value string) error {
+	return fmt.Errorf("several backup directory found in %s", value)
 }

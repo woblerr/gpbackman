@@ -2,12 +2,15 @@ package gpbckpconfig
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"github.com/woblerr/gpbackman/textmsg"
 )
 
@@ -91,6 +94,46 @@ func backupS3PluginReportPath(timestamp string, pluginOptions map[string]string)
 // Report file name format: gpbackup_<YYYYMMDDHHMMSS>_report.
 func ReportFileName(timestamp string) string {
 	return "gpbackup_" + timestamp + "_report"
+}
+
+// CheckSingleBackupDir Returns backup directory path and segment prefix if they exist.
+func CheckSingleBackupDir(backupDir string) (string, string, error) {
+	// Try to find the backup directory in the single-backup-dir format.
+	_, err := operating.System.Stat(fmt.Sprintf("%s/backups", backupDir))
+	// The single-backup-dir directory format is not used.
+	if err != nil && !os.IsNotExist(err) {
+		return "", "", textmsg.ErrorFindBackupDirIn(backupDir, err)
+	}
+	if err == nil {
+		// The single-backup-dir directory format is used, there's no prefix to parse.
+		return backupDir, "", nil
+	}
+	// Try to find the backup directory with segment prefix format.
+	backupDirForMaster, err := operating.System.Glob(fmt.Sprintf("%s/*-1/backups", backupDir))
+	if err != nil {
+		return "", "", textmsg.ErrorFindBackupDirIn(backupDir, err)
+	}
+	if len(backupDirForMaster) == 0 {
+		return "", "", textmsg.ErrorNotFoundBackupDirIn(backupDir)
+	}
+	if len(backupDirForMaster) != 1 {
+		return "", "", textmsg.ErrorSeveralFoundBackupDirIn(backupDir)
+	}
+	segPrefix := GetSegPrefix(backupDirForMaster[0])
+	returnDir := filepath.Join(backupDir, fmt.Sprintf("%s-1", segPrefix))
+	return returnDir, segPrefix, nil
+}
+
+// GetSegPrefix Returns segment prefix from the master backup directory.
+func GetSegPrefix(backupDir string) string {
+	indexOfBackupsSubstr := strings.LastIndex(backupDir, "-1/backups")
+	_, segPrefix := path.Split(backupDir[:indexOfBackupsSubstr])
+	return segPrefix
+}
+
+// ReportFilePath Returns path to report file.
+func ReportFilePath(backupDir, timestamp string) string {
+	return filepath.Join(backupDir, "backups", timestamp[0:8], timestamp, ReportFileName(timestamp))
 }
 
 // searchFilter returns true if the value is present in the list

@@ -289,3 +289,56 @@ func TestErrorFunctionsTwoArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestErrorFunctionsOneoArg(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   string
+		errFunc func(string) error
+		want    string
+	}{
+		{
+			name:    "ErrorNotFoundBackupDirIn",
+			value:   "TestValue",
+			errFunc: ErrorNotFoundBackupDirIn,
+			want:    "no backup directory found in TestValue",
+		},
+		{
+			name:    "ErrorSeveralFoundBackupDirIn",
+			value:   "TestValue",
+			errFunc: ErrorSeveralFoundBackupDirIn,
+			want:    "several backup directory found in TestValue",
+		},
+	}
+	for _, tt := range tests {
+		err := tt.errFunc(tt.value)
+		if err == nil || err.Error() != tt.want {
+			t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.want)
+		}
+	}
+}
+
+func TestErrorFunctionsOneoArgAndErr(t *testing.T) {
+	testErr := errors.New("test error")
+	tests := []struct {
+		name    string
+		value   string
+		err     error
+		errFunc func(string, error) error
+		want    string
+	}{
+		{
+			name:    "ErrorFindBackupDirIn",
+			value:   "TestValue",
+			err:     testErr,
+			errFunc: ErrorFindBackupDirIn,
+			want:    "can not find backup directory in TestValue, error: test error",
+		},
+	}
+	for _, tt := range tests {
+		err := tt.errFunc(tt.value, tt.err)
+		if err == nil || err.Error() != tt.want {
+			t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.want)
+		}
+	}
+}

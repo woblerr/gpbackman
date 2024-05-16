@@ -205,24 +205,24 @@ func checkLocalBackupStatus(skipLocalBackup, isLocalBackup bool) error {
 	return nil
 }
 
-func getBackupDir(backupDir, backupDataBackupDir, backupDataDBName string) (string, error) {
+func getBackupMasterDir(backupDir, backupDataBackupDir, backupDataDBName string) (string, string, error) {
 	if backupDir != "" {
-		return backupDir, nil
+		return gpbckpconfig.CheckSingleBackupDir(backupDir)
 	}
 	if backupDataBackupDir != "" {
-		return backupDataBackupDir, nil
+		return gpbckpconfig.CheckSingleBackupDir(backupDataBackupDir)
 	}
 	// Try to get the backup directory from the cluster configuration.
 	// If the script executed not on the master host, the backup directory will not be found.
 	// And we return "value not set" error.
-	backupDirClusterInfo := getBackupDirClusterInfo(backupDataDBName)
+	backupDirClusterInfo := getBackupMasterDirClusterInfo(backupDataDBName)
 	if backupDirClusterInfo != "" {
-		return backupDirClusterInfo, nil
+		return backupDirClusterInfo, gpbckpconfig.GetSegPrefix(filepath.Join(backupDirClusterInfo, "backups")), nil
 	}
-	return "", textmsg.ErrorValidationValue()
+	return "", "", textmsg.ErrorValidationValue()
 }
 
-func getBackupDirClusterInfo(dbName string) string {
+func getBackupMasterDirClusterInfo(dbName string) string {
 	db, err := gpbckpconfig.NewClusterLocalClusterConn(dbName)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableConnectLocalCluster(err))
@@ -235,5 +235,6 @@ func getBackupDirClusterInfo(dbName string) string {
 		gplog.Error(textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
 		return ""
 	}
+	gplog.Debug("Master data directory: %s", backupDir)
 	return backupDir
 }

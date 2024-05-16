@@ -310,12 +310,14 @@ func reportInfoFileLocalFunc(backupData gpbckpconfig.BackupConfig, backupDir str
 	}
 	if canGetReport {
 		timestamp := backupData.Timestamp
-		bckpDir, err := getBackupDir(backupDir, backupData.BackupDir, backupData.DatabaseName)
+		bckpDir, segPrefix, err := getBackupMasterDir(backupDir, backupData.BackupDir, backupData.DatabaseName)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableGetBackupPath("backup directory", timestamp, err))
 			return err
 		}
-		reportFile := filepath.Join(bckpDir, "backups", timestamp[0:8], timestamp, gpbckpconfig.ReportFileName(timestamp))
+		gplog.Debug("Path to backup directory: %s", bckpDir)
+		gplog.Debug("Segment Prefix: %s", segPrefix)
+		reportFile := gpbckpconfig.ReportFilePath(bckpDir, timestamp)
 		// Sanitize the file path
 		reportFile = filepath.Clean(reportFile)
 		gplog.Debug(textmsg.InfoTextCommandExecution("read file", reportFile))
