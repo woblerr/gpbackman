@@ -180,7 +180,8 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 # For local backups plugin field is empty.
 TEST_ID="4"
 
-REGEX_LIST="20230809232817|Wed Aug 09 2023 23:28:17|Success|demo|full|04:00:03|1"
+REGEX_LIST='''20240505201504|Sun May 05 2024 20:15:04|Success|demo|full|00:00:15|1
+20240506201504|Mon May 06 2024 20:15:04|Success|demo|full|00:00:15|1'''
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
@@ -224,7 +225,7 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 # For backup without plugin info - blank line, so them skips in this test.
 TEST_ID="5"
 
-REGEX_LIST='''Success|full|5
+REGEX_LIST='''Success|full|6
 Failure|full|3'''
 
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
