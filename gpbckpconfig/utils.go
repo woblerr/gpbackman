@@ -29,14 +29,14 @@ func GetTimestampOlderThen(value uint) string {
 
 // CheckFullPath Returns error if path is not an absolute path or
 // file does not exist.
-func CheckFullPath(path string, checkFileExists bool) error {
-	if !filepath.IsAbs(path) {
+func CheckFullPath(checkPath string, checkFileExists bool) error {
+	if !filepath.IsAbs(checkPath) {
 		return textmsg.ErrorValidationFullPath()
 	}
 	// In most cases this check should be mandatory.
 	// But there are commands, that allows the history db file to be missing.
 	if checkFileExists {
-		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(checkPath); errors.Is(err, os.ErrNotExist) {
 			return textmsg.ErrorFileNotExist()
 		}
 	}
