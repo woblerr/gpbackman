@@ -33,6 +33,18 @@ func TestInfoTextFunctionAndArg(t *testing.T) {
 			function: InfoTextBackupFailedStatus,
 			want:     "Backup TestBackup has failed status.",
 		},
+		{
+			name:     "Test InfoTextBackupDirPath",
+			value:    "/test/path",
+			function: InfoTextBackupDirPath,
+			want:     "Path to backup directory: /test/path",
+		},
+		{
+			name:     "Test InfoTextSegmentPrefix",
+			value:    "TestValue",
+			function: InfoTextSegmentPrefix,
+			want:     "Segment Prefix: TestValue",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

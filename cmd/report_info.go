@@ -315,8 +315,8 @@ func reportInfoFileLocalFunc(backupData gpbckpconfig.BackupConfig, backupDir str
 			gplog.Error(textmsg.ErrorTextUnableGetBackupPath("backup directory", timestamp, err))
 			return err
 		}
-		gplog.Debug("Path to backup directory: %s", bckpDir)
-		gplog.Debug("Segment Prefix: %s", segPrefix)
+		gplog.Debug(textmsg.InfoTextBackupDirPath(bckpDir))
+		gplog.Debug(textmsg.InfoTextSegmentPrefix(segPrefix))
 		reportFile := gpbckpconfig.ReportFilePath(bckpDir, timestamp)
 		// Sanitize the file path
 		reportFile = filepath.Clean(reportFile)

@@ -37,6 +37,14 @@ func InfoTextCommandExecution(list ...string) string {
 	return fmt.Sprintf("Executing command: %s", strings.Join(list, " "))
 }
 
+func InfoTextBackupDirPath(backupDir string) string {
+	return fmt.Sprintf("Path to backup directory: %s", backupDir)
+}
+
+func InfoTextSegmentPrefix(segPrefix string) string {
+	return fmt.Sprintf("Segment Prefix: %s", segPrefix)
+}
+
 func InfoTextNothingToDo() string {
 	return "Nothing to do"
 }
