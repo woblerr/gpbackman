@@ -186,7 +186,8 @@ func backupDeleteDBPlugin(backupListForDeletion []string, deleteCascade, deleteF
 			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 			return err
 		}
-		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, backupData)
+		// Skip local backup.
+		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, true, backupData)
 		if err != nil {
 			return err
 		}
@@ -227,7 +228,8 @@ func backupDeleteDBCascade(backupList []string, deleteForce bool, pluginConfigPa
 			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backup, err))
 			return err
 		}
-		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, backupData)
+		// Skip local backup.
+		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, true, backupData)
 		if err != nil {
 			return err
 		}
@@ -250,7 +252,7 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
 		return err
 	}
-	gplog.Debug(textmsg.InfoTextPluginCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
+	gplog.Debug(textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
 	stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName)
 	if stderr != "" {
 		gplog.Error(stderr)
@@ -280,7 +282,8 @@ func backupDeleteFilePlugin(backupListForDeletion []string, deleteCascade, delet
 			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 			return err
 		}
-		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, backupData)
+		// Skip local backup.
+		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, true, backupData)
 		if err != nil {
 			return err
 		}
@@ -317,7 +320,8 @@ func backupDeleteFileCascade(backupList []string, deleteForce bool, parseHData *
 			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backup, err))
 			return err
 		}
-		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, backupData)
+		// Skip local backup.
+		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, true, backupData)
 		if err != nil {
 			return err
 		}
@@ -341,7 +345,7 @@ func backupDeleteFilePluginFunc(backupData gpbckpconfig.BackupConfig, parseHData
 		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
 		return err
 	}
-	gplog.Debug(textmsg.InfoTextPluginCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
+	gplog.Debug(textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
 	stdout, stderr, errdel := execDeleteBackup(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName)
 	if stderr != "" {
 		gplog.Error(stderr)

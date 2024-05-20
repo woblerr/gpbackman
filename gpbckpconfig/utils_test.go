@@ -3,6 +3,7 @@ package gpbckpconfig
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -187,8 +188,8 @@ func TestReportFileName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := reportFileName(tt.timestamp); got != tt.want {
-				t.Errorf("\nreportFileName():\n%v\nwant:\n%v", got, tt.want)
+			if got := ReportFileName(tt.timestamp); got != tt.want {
+				t.Errorf("\nReportFileName():\n%v\nwant:\n%v", got, tt.want)
 			}
 		})
 	}
@@ -286,6 +287,94 @@ func TestCheckTableFQN(t *testing.T) {
 			err := CheckTableFQN(tt.value)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\nCheckTableFQN():\n%v\nwantErr:\n%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+func TestReportFilePath(t *testing.T) {
+	backupDir := "/path/to/backup"
+	timestamp := "20230101123456"
+	want := "/path/to/backup/backups/20230101/20230101123456/gpbackup_20230101123456_report"
+	got := ReportFilePath(backupDir, timestamp)
+	if got != want {
+		t.Errorf("\nReportFilePath():\n%v\nwant:\n%v", got, want)
+	}
+}
+
+func TestGetSegPrefix(t *testing.T) {
+	backupDir := "/path/to/backup/segment-1/backups"
+	want := "segment"
+	got := GetSegPrefix(backupDir)
+	if got != want {
+		t.Errorf("\nGetSegPrefix():\n%v\nwant:\n%v", got, want)
+	}
+}
+
+func TestCheckSingleBackupDir(t *testing.T) {
+	tempDir := os.TempDir()
+
+	tests := []struct {
+		name       string
+		testDir    string
+		backupDir  string
+		wantDir    string
+		wantPrefix string
+		wantErr    bool
+	}{
+		{
+			name:       "Valid single backup dir",
+			testDir:    filepath.Join(tempDir, "noSegPrefix", "backups"),
+			backupDir:  filepath.Join(tempDir, "noSegPrefix"),
+			wantDir:    filepath.Join(tempDir, "noSegPrefix"),
+			wantPrefix: "",
+			wantErr:    false,
+		},
+		{
+			name:       "Valid single backup dir with segment prefix",
+			testDir:    filepath.Join(tempDir, "segPrefix", "segment-1", "backups"),
+			backupDir:  filepath.Join(tempDir, "segPrefix"),
+			wantDir:    filepath.Join(tempDir, "segPrefix", "segment-1"),
+			wantPrefix: "segment",
+			wantErr:    false,
+		},
+		{
+			name:       "Invalid backup dir",
+			testDir:    filepath.Join(tempDir, "invalid"),
+			backupDir:  filepath.Join(tempDir, "invalid"),
+			wantDir:    "",
+			wantPrefix: "",
+			wantErr:    true,
+		},
+		{
+			name:       "Multiple backup dirs",
+			testDir:    tempDir,
+			backupDir:  "some/path",
+			wantDir:    "",
+			wantPrefix: "",
+			wantErr:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := os.MkdirAll(tt.testDir, 0755)
+			if err != nil {
+				t.Fatalf("Failed to create temp dir: %v", err)
+			}
+			defer os.Remove(tt.testDir)
+			gotDir, gotPrefix, err := CheckSingleBackupDir(tt.backupDir)
+			// Check for unexpected error
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CheckSingleBackupDir() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+			}
+
+			// Check the returned directory
+			if gotDir != tt.wantDir {
+				t.Errorf("CheckSingleBackupDir() gotDir:\n%v\nwantDir:\n%v", gotDir, tt.wantDir)
+			}
+
+			// Check the returned prefix
+			if gotPrefix != tt.wantPrefix {
+				t.Errorf("CheckSingleBackupDir() gotPrefix:\n%v\nwantPrefix:\n%v", gotPrefix, tt.wantPrefix)
 			}
 		})
 	}

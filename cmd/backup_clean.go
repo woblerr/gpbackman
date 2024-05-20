@@ -167,7 +167,7 @@ func cleanBackup() error {
 					if err != nil {
 						// In current implementation, there are cases where some backups were deleted, and some were not.
 						// Foe example, the clean command was executed without --cascade option.
-						// In this case - metadata backup was deleted, but full + incrementals - weren't.
+						// In this case - metadata backup was deleted, but full + incremental - weren't.
 						// We should update the history file even it error occurred.
 						errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
 						if errUpdateHFile != nil {
@@ -215,7 +215,7 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath s
 }
 
 func backupCleanFilePlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData *gpbckpconfig.History) error {
-	backupList := GetBackupNamesBeforeTimestampFile(cutOffTimestamp, parseHData)
+	backupList := getBackupNamesBeforeTimestampFile(cutOffTimestamp, true, parseHData)
 	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
 	// Execute deletion for each backup.
 	// Use backupDeleteFilePlugin function from backup-delete command.
@@ -239,13 +239,13 @@ func backupCleanFileLocal() error {
 	return nil
 }
 
-func GetBackupNamesBeforeTimestampFile(timestamp string, parseHData *gpbckpconfig.History) []string {
+func getBackupNamesBeforeTimestampFile(timestamp string, skipLocalBackup bool, parseHData *gpbckpconfig.History) []string {
 	backupNames := make([]string, 0)
 	for idx, backupConfig := range parseHData.BackupConfigs {
 		// In history file we have sorted timestamps by descending order.
 		if backupConfig.Timestamp < timestamp {
 			for i := idx; i < len(parseHData.BackupConfigs); i++ {
-				backupCanBeDeleted, _ := checkBackupCanBeUsed(false, parseHData.BackupConfigs[i])
+				backupCanBeDeleted, _ := checkBackupCanBeUsed(false, skipLocalBackup, parseHData.BackupConfigs[i])
 				if backupCanBeDeleted {
 					backupNames = append(backupNames, parseHData.BackupConfigs[i].Timestamp)
 				}

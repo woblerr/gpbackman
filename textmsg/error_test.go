@@ -37,6 +37,18 @@ func TestErrorTextFunctionsErrorOnly(t *testing.T) {
 			function: ErrorTextUnableReadPluginConfigFile,
 			want:     "Unable to read plugin config file. Error: test error",
 		},
+		{
+			name:     "Test ErrorTextUnableConnectLocalCluster",
+			testErr:  testError,
+			function: ErrorTextUnableConnectLocalCluster,
+			want:     "Unable to connect to the cluster locally. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableGetBackupDirLocalClusterConn",
+			testErr:  testError,
+			function: ErrorTextUnableGetBackupDirLocalClusterConn,
+			want:     "Unable to get backup directory from a local connection to the cluster. Error: test error",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -107,13 +119,6 @@ func TestErrorTextFunctionsErrorAndArg(t *testing.T) {
 			want:     "Unable to get report for the backup TestBackup. Error: test error",
 		},
 		{
-			name:     "Test ErrorTextUnableGetBackupReportPath",
-			value:    testBackupName,
-			testErr:  testError,
-			function: ErrorTextUnableGetBackupReportPath,
-			want:     "Unable to get path to report for the backup TestBackup. Error: test error",
-		},
-		{
 			name:     "Test ErrorTextUnableActionHistoryDB",
 			value:    "open",
 			testErr:  testError,
@@ -170,6 +175,14 @@ func TestErrorTextFunctionsErrorAndTwoArgs(t *testing.T) {
 			testErr:  testError,
 			function: ErrorTextUnableGetBackupValue,
 			want:     "Unable to get backup test parameter for backup TestBackup. Error: test error",
+		},
+		{
+			name:     "Test ErrorTextUnableGetBackupReportPath",
+			value1:   "report",
+			value2:   "TestBackup",
+			testErr:  testError,
+			function: ErrorTextUnableGetBackupPath,
+			want:     "Unable to get path to report for the backup TestBackup. Error: test error",
 		},
 	}
 	for _, tt := range tests {
@@ -239,6 +252,8 @@ func TestErrorFunctions(t *testing.T) {
 		{"ErrorValidationTableFQN", ErrorValidationTableFQN, "not a fully qualified table name"},
 		{"ErrorNotIndependentFlagsError", ErrorNotIndependentFlagsError, "not an independent flag"},
 		{"ErrorFileNotExist", ErrorFileNotExist, "file not exist"},
+		{"ErrorEmptyDatabase", ErrorEmptyDatabase, "database name cannot be empty"},
+		{"ErrorBackupNotLocalStorageError", ErrorBackupNotLocalStorageError, "is not a local backup"},
 	}
 
 	for _, tt := range tests {
@@ -269,6 +284,59 @@ func TestErrorFunctionsTwoArgs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		err := tt.errFunc(tt.value1, tt.value2)
+		if err == nil || err.Error() != tt.want {
+			t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.want)
+		}
+	}
+}
+
+func TestErrorFunctionsOneoArg(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   string
+		errFunc func(string) error
+		want    string
+	}{
+		{
+			name:    "ErrorNotFoundBackupDirIn",
+			value:   "TestValue",
+			errFunc: ErrorNotFoundBackupDirIn,
+			want:    "no backup directory found in TestValue",
+		},
+		{
+			name:    "ErrorSeveralFoundBackupDirIn",
+			value:   "TestValue",
+			errFunc: ErrorSeveralFoundBackupDirIn,
+			want:    "several backup directory found in TestValue",
+		},
+	}
+	for _, tt := range tests {
+		err := tt.errFunc(tt.value)
+		if err == nil || err.Error() != tt.want {
+			t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.want)
+		}
+	}
+}
+
+func TestErrorFunctionsOneoArgAndErr(t *testing.T) {
+	testErr := errors.New("test error")
+	tests := []struct {
+		name    string
+		value   string
+		err     error
+		errFunc func(string, error) error
+		want    string
+	}{
+		{
+			name:    "ErrorFindBackupDirIn",
+			value:   "TestValue",
+			err:     testErr,
+			errFunc: ErrorFindBackupDirIn,
+			want:    "can not find backup directory in TestValue, error: test error",
+		},
+	}
+	for _, tt := range tests {
+		err := tt.errFunc(tt.value, tt.err)
 		if err == nil || err.Error() != tt.want {
 			t.Errorf("\n%s() error:\n%v\nwant:\n%v", tt.name, err, tt.want)
 		}

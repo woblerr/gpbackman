@@ -1,0 +1,61 @@
+Greenplum Database Backup Report
+
+timestamp key:         20240506201504
+gpdb version:          6.23.3
+gpbackup version:      1.27.0
+
+database name:         demo
+command line:          gpbackup --backup-dir /tmp/testNoPrefix  --single-backup-dir --dbname demo
+compression:           gzip
+plugin executable:     None
+backup section:        All Sections
+object filtering:      None
+includes statistics:   No
+data file format:      Multiple Data Files Per Segment
+incremental:           False
+
+start time:            Wed May 06 2024 20:15:04
+end time:              Wed May 06 2024 20:15:19
+duration:              0:00:15
+
+backup status:         Success
+
+database size:         500 MB
+segment count:         4
+
+count of database objects in backup:
+aggregates                   0
+casts                        0
+collations                   0
+constraints                  0
+conversions                  0
+default privileges           0
+database gucs                0
+event triggers               0
+extensions                   3
+foreign data wrappers        0
+foreign servers              1
+functions                    0
+indexes                      0
+operator classes             0
+operator families            0
+operators                    0
+procedural languages         0
+protocols                    1
+resource groups              2
+resource queues              1
+roles                        50
+rules                        0
+schemas                      4
+sequences                    0
+tables                       100
+tablespaces                  0
+text search configurations   0
+text search dictionaries     0
+text search parsers          0
+text search templates        0
+triggers                     0
+types                        0
+user mappings                1
+views                        0
+

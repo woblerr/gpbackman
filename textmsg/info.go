@@ -33,8 +33,16 @@ func InfoTextBackupDeleteListFromHistory(list []string) string {
 	return fmt.Sprintf("The following backups will be deleted from history: %s", strings.Join(list, ", "))
 }
 
-func InfoTextPluginCommandExecution(list ...string) string {
-	return fmt.Sprintf("Executing Plugin command: %s", strings.Join(list, " "))
+func InfoTextCommandExecution(list ...string) string {
+	return fmt.Sprintf("Executing command: %s", strings.Join(list, " "))
+}
+
+func InfoTextBackupDirPath(backupDir string) string {
+	return fmt.Sprintf("Path to backup directory: %s", backupDir)
+}
+
+func InfoTextSegmentPrefix(segPrefix string) string {
+	return fmt.Sprintf("Segment Prefix: %s", segPrefix)
 }
 
 func InfoTextNothingToDo() string {

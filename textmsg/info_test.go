@@ -33,6 +33,18 @@ func TestInfoTextFunctionAndArg(t *testing.T) {
 			function: InfoTextBackupFailedStatus,
 			want:     "Backup TestBackup has failed status.",
 		},
+		{
+			name:     "Test InfoTextBackupDirPath",
+			value:    "/test/path",
+			function: InfoTextBackupDirPath,
+			want:     "Path to backup directory: /test/path",
+		},
+		{
+			name:     "Test InfoTextSegmentPrefix",
+			value:    "TestValue",
+			function: InfoTextSegmentPrefix,
+			want:     "Segment Prefix: TestValue",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -76,10 +88,10 @@ func TestInfoTextFunctionAndMultipleSeparateArgs(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "Test InfoTextPluginCommandExecution",
+			name:     "Test InfoTextCommandExecution",
 			values:   []string{"execution_command", "some_argument"},
-			function: InfoTextPluginCommandExecution,
-			want:     "Executing Plugin command: execution_command some_argument",
+			function: InfoTextCommandExecution,
+			want:     "Executing command: execution_command some_argument",
 		},
 	}
 	for _, tt := range tests {

@@ -2,12 +2,15 @@ package gpbckpconfig
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"github.com/woblerr/gpbackman/textmsg"
 )
 
@@ -26,14 +29,14 @@ func GetTimestampOlderThen(value uint) string {
 
 // CheckFullPath Returns error if path is not an absolute path or
 // file does not exist.
-func CheckFullPath(path string, checkFileExists bool) error {
-	if !filepath.IsAbs(path) {
+func CheckFullPath(checkPath string, checkFileExists bool) error {
+	if !filepath.IsAbs(checkPath) {
 		return textmsg.ErrorValidationFullPath()
 	}
 	// In most cases this check should be mandatory.
 	// But there are commands, that allows the history db file to be missing.
 	if checkFileExists {
-		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(checkPath); errors.Is(err, os.ErrNotExist) {
 			return textmsg.ErrorFileNotExist()
 		}
 	}
@@ -60,7 +63,7 @@ func IsBackupActive(dateDeleted string) bool {
 //
 //	<folder>/gpbackup_<YYYYMMDDHHMMSS>_report
 func backupPluginCustomReportPath(timestamp, folderValue string) string {
-	return filepath.Join("/", folderValue, reportFileName(timestamp))
+	return filepath.Join("/", folderValue, ReportFileName(timestamp))
 }
 
 // backupS3PluginReportPath Returns path to report file name for gpbackup_s3_plugin plugin.
@@ -84,13 +87,53 @@ func backupS3PluginReportPath(timestamp string, pluginOptions map[string]string)
 	// So we need to remove leading '/' and add it back.
 	folderValue = strings.TrimPrefix(folderValue, "/")
 	folderValue = strings.TrimSuffix(folderValue, "/")
-	return filepath.Join("/", folderValue, reportPathBasic, reportFileName(timestamp)), nil
+	return filepath.Join("/", folderValue, reportPathBasic, ReportFileName(timestamp)), nil
 }
 
-// reportFileName Returns report file name for specific timestamp.
+// ReportFileName Returns report file name for specific timestamp.
 // Report file name format: gpbackup_<YYYYMMDDHHMMSS>_report.
-func reportFileName(timestamp string) string {
+func ReportFileName(timestamp string) string {
 	return "gpbackup_" + timestamp + "_report"
+}
+
+// CheckSingleBackupDir Returns backup directory path and segment prefix if they exist.
+func CheckSingleBackupDir(backupDir string) (string, string, error) {
+	// Try to find the backup directory in the single-backup-dir format.
+	_, err := operating.System.Stat(fmt.Sprintf("%s/backups", backupDir))
+	// The single-backup-dir directory format is not used.
+	if err != nil && !os.IsNotExist(err) {
+		return "", "", textmsg.ErrorFindBackupDirIn(backupDir, err)
+	}
+	if err == nil {
+		// The single-backup-dir directory format is used, there's no prefix to parse.
+		return backupDir, "", nil
+	}
+	// Try to find the backup directory with segment prefix format.
+	backupDirForMaster, err := operating.System.Glob(fmt.Sprintf("%s/*-1/backups", backupDir))
+	if err != nil {
+		return "", "", textmsg.ErrorFindBackupDirIn(backupDir, err)
+	}
+	if len(backupDirForMaster) == 0 {
+		return "", "", textmsg.ErrorNotFoundBackupDirIn(backupDir)
+	}
+	if len(backupDirForMaster) != 1 {
+		return "", "", textmsg.ErrorSeveralFoundBackupDirIn(backupDir)
+	}
+	segPrefix := GetSegPrefix(backupDirForMaster[0])
+	returnDir := filepath.Join(backupDir, fmt.Sprintf("%s-1", segPrefix))
+	return returnDir, segPrefix, nil
+}
+
+// GetSegPrefix Returns segment prefix from the master backup directory.
+func GetSegPrefix(backupDir string) string {
+	indexOfBackupsSubstr := strings.LastIndex(backupDir, "-1/backups")
+	_, segPrefix := path.Split(backupDir[:indexOfBackupsSubstr])
+	return segPrefix
+}
+
+// ReportFilePath Returns path to report file.
+func ReportFilePath(backupDir, timestamp string) string {
+	return filepath.Join(backupDir, "backups", timestamp[0:8], timestamp, ReportFileName(timestamp))
 }
 
 // searchFilter returns true if the value is present in the list

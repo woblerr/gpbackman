@@ -1,5 +1,5 @@
 backupconfigs:
-- backupdir: ""
+- backupdir: /tmp/testNoPrefix
   backupversion: 1.27.0
   compressed: true
   compressiontype: gzip
@@ -21,11 +21,41 @@ backupconfigs:
   plugin: ""
   pluginversion: ""
   restoreplan:
-  - timestamp: "20230809232817"
+  - timestamp: "20240506201504"
     tablefqdn: []
   singledatafile: false
-  timestamp: "20230809232817"
-  endtime: "20230810032820"
+  timestamp: "20240506201504"
+  endtime: "20240506201519"
+  withoutgoals: false
+  withstatistics: false
+  status: Success
+- backupdir: /tmp/testWithPrefix
+  backupversion: 1.27.0
+  compressed: true
+  compressiontype: gzip
+  databasename: demo
+  databaseversion: 6.23.3
+  dataonly: false
+  datedeleted: ""
+  excluderelations: []
+  excludeschemafiltered: false
+  excludeschemas: []
+  excludetablefiltered: false
+  includerelations: []
+  includeschemafiltered: false
+  includeschemas: []
+  includetablefiltered: false
+  incremental: false
+  leafpartitiondata: false
+  metadataonly: false
+  plugin: ""
+  pluginversion: ""
+  restoreplan:
+  - timestamp: "20240505201504"
+    tablefqdn: []
+  singledatafile: false
+  timestamp: "20240505201504"
+  endtime: "20240505201519"
   withoutgoals: false
   withstatistics: false
   status: Success

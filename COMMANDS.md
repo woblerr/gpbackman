@@ -541,12 +541,28 @@ The --timestamp option must be specified.
 
 The report could be displayed only for active backups.
 
+The full path to the backup directory can be set using the --backup-dir option.
+The full path to the data directory is required.
+
+For local backups the following logic are applied:
+  * If the --backup-dir option is specified, the report will be searched in provided path.
+  * If the --backup-dir option is not specified, but the backup was made with --backup-dir flag for gpbackup, the report will be searched in provided path from backup manifest.
+  * If the --backup-dir option is not specified and backup directory is not specified in backup manifest, the utility try to connect to local cluster and get master data directory.
+    If this information is available, the report will be in master data directory.
+  * If backup is not local, the error will be returned.
+
 The storage plugin config file location can be set using the --plugin-config option.
 The full path to the file is required.
 
+For non local backups the following logic are applied:
+  * If the --plugin-config option is specified, the report will be searched in provided location.
+  * If backup is local, the error will be returned.
+
+Only --backup-dir or --plugin-config option can be specified, not both.
+
 If a custom plugin is used, it is required to specify the path to the directory with the repo file using the --plugin-report-file-path option.
 It is not necessary to use the --plugin-report-file-path flag for the following plugins (the path is generated automatically):
-  * gpbackup_s3_plugin,
+  * gpbackup_s3_plugin.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -562,6 +578,7 @@ Usage:
   gpbackman report-info [flags]
 
 Flags:
+      --backup-dir string                the full path to backup directory
   -h, --help                             help for report-info
       --plugin-config string             the full path to plugin config file
       --plugin-report-file-path string   the full path to plugin report file
@@ -578,11 +595,17 @@ Global Flags:
 ## Examples
 ### Display the backup report from local storage
 
-The functionality is in development.
-
-gpBackMan returns a message:
+With specifying backup directory path:
 ```bash
-[WARNING]:-The functionality is still in development
+./gpbackman report-info \
+  --timestamp 20230809232817 \
+  --backup-dir /some/path
+```
+
+With specifying backup directory path:
+```bash
+./gpbackman report-info \
+  --timestamp 20230809232817 \
 ```
 
 ### Display the backup report using storage plugin

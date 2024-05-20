@@ -36,6 +36,7 @@ const (
 	tableFlagName                = "table"
 	schemaFlagName               = "schema"
 	excludeFlagName              = "exclude"
+	backupDirFlagName            = "backup-dir"
 
 	exitErrorCode = 1
 

@@ -134,7 +134,7 @@ func formatBackupDuration(value float64) string {
 // - true, if backup can be used;
 // - false, if backup can't be used.
 // Errors and warnings will also returned and logged.
-func checkBackupCanBeUsed(deleteForce bool, backupData gpbckpconfig.BackupConfig) (bool, error) {
+func checkBackupCanBeUsed(deleteForce, skipLocalBackup bool, backupData gpbckpconfig.BackupConfig) (bool, error) {
 	result := false
 	backupSuccessStatus, err := backupData.IsSuccess()
 	if err != nil {
@@ -147,15 +147,11 @@ func checkBackupCanBeUsed(deleteForce bool, backupData gpbckpconfig.BackupConfig
 		gplog.Info(textmsg.InfoTextNothingToDo())
 		return result, nil
 	}
-	// Checks, if this is local backup.
-	// In this case	the backup can't be deleted.
-	// TODO
-	// The same check for backup, which was done with the storage plugin,
-	// but the storage plugin is not specified. And the deletion is set as local.
-	// Now it is only necessary to check whether the backup is in the local storage.
-	if backupData.IsLocal() {
-		gplog.Error(textmsg.ErrorTextUnableWorkBackup(backupData.Timestamp, textmsg.ErrorBackupLocalStorageError()))
-		return result, textmsg.ErrorBackupLocalStorageError()
+	err = checkLocalBackupStatus(skipLocalBackup, backupData.IsLocal())
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableWorkBackup(backupData.Timestamp, err))
+		return result, err
+
 	}
 	backupDateDeleted, errDateDeleted := backupData.GetBackupDateDeleted()
 	if errDateDeleted != nil {
@@ -183,15 +179,62 @@ func checkBackupCanBeUsed(deleteForce bool, backupData gpbckpconfig.BackupConfig
 }
 
 // Check that specified backup type is supported.
-func checkBackupType(backuType string) error {
+func checkBackupType(backupType string) error {
 	var validVType = map[string]bool{
 		gpbckpconfig.BackupTypeFull:         true,
 		gpbckpconfig.BackupTypeIncremental:  true,
 		gpbckpconfig.BackupTypeMetadataOnly: true,
 		gpbckpconfig.BackupTypeDataOnly:     true,
 	}
-	if !validVType[backuType] {
+	if !validVType[backupType] {
 		return textmsg.ErrorInvalidValueError()
 	}
 	return nil
+}
+
+// Check skip flag and local backup status.
+// SkipLocalBackup - true, local backup - true, returns "is a local backup" error.
+// SkipLocalBackup - false,local backup - false, returns "is not a local backup" error.
+func checkLocalBackupStatus(skipLocalBackup, isLocalBackup bool) error {
+	if skipLocalBackup && isLocalBackup {
+		return textmsg.ErrorBackupLocalStorageError()
+	}
+	if !skipLocalBackup && !isLocalBackup {
+		return textmsg.ErrorBackupNotLocalStorageError()
+	}
+	return nil
+}
+
+func getBackupMasterDir(backupDir, backupDataBackupDir, backupDataDBName string) (string, string, error) {
+	if backupDir != "" {
+		return gpbckpconfig.CheckSingleBackupDir(backupDir)
+	}
+	if backupDataBackupDir != "" {
+		return gpbckpconfig.CheckSingleBackupDir(backupDataBackupDir)
+	}
+	// Try to get the backup directory from the cluster configuration.
+	// If the script executed not on the master host, the backup directory will not be found.
+	// And we return "value not set" error.
+	backupDirClusterInfo := getBackupMasterDirClusterInfo(backupDataDBName)
+	if backupDirClusterInfo != "" {
+		return backupDirClusterInfo, gpbckpconfig.GetSegPrefix(filepath.Join(backupDirClusterInfo, "backups")), nil
+	}
+	return "", "", textmsg.ErrorValidationValue()
+}
+
+func getBackupMasterDirClusterInfo(dbName string) string {
+	db, err := gpbckpconfig.NewClusterLocalClusterConn(dbName)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableConnectLocalCluster(err))
+		return ""
+	}
+	defer db.Close()
+	sqlQuery := "SELECT datadir FROM gp_segment_configuration WHERE content = -1 AND role = 'p';"
+	backupDir, err := gpbckpconfig.ExecuteQueryLocalClusterConn(db, sqlQuery)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
+		return ""
+	}
+	gplog.Debug("Master data directory: %s", backupDir)
+	return backupDir
 }

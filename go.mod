@@ -6,6 +6,8 @@ require (
 	github.com/greenplum-db/gp-common-go-libs v1.0.15
 	github.com/greenplum-db/gpbackup v0.0.0-20240215213028-2782cd0fbd9b
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
+	github.com/jmoiron/sqlx v1.3.5
+	github.com/lib/pq v1.10.7
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
@@ -30,7 +32,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
 	github.com/jackc/pgtype v1.14.2 // indirect
 	github.com/jackc/pgx/v4 v4.18.2 // indirect
-	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mattn/go-sqlite3 v1.14.19 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
