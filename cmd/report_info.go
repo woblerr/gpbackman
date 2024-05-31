@@ -310,7 +310,7 @@ func reportInfoFileLocalFunc(backupData gpbckpconfig.BackupConfig, backupDir str
 	}
 	if canGetReport {
 		timestamp := backupData.Timestamp
-		bckpDir, segPrefix, err := getBackupMasterDir(backupDir, backupData.BackupDir, backupData.DatabaseName)
+		bckpDir, segPrefix, _, err := getBackupMasterDir(backupDir, backupData.BackupDir, backupData.DatabaseName)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableGetBackupPath("backup directory", timestamp, err))
 			return err
