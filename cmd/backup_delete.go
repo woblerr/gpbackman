@@ -181,7 +181,7 @@ func deleteBackup() error {
 				return err
 			}
 		} else {
-			err := backupDeleteDBLocal()
+			err := backupDeleteDBLocal(backupDeleteTimestamp, backupDeleteBackupDir, backupDeleteCascade, backupDeleteForce, backupDeleteParallelProcesses, hDB)
 			if err != nil {
 				return err
 			}
@@ -221,14 +221,31 @@ func deleteBackup() error {
 }
 
 func backupDeleteDBPlugin(backupListForDeletion []string, deleteCascade, deleteForce bool, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
+	deleter := &backupPluginDeleter{
+		pluginConfigPath: pluginConfigPath,
+		pluginConfig:     pluginConfig}
+	// Skip local backups.
+	skipLocalBackup := true
+	return backupDeleteDB(backupListForDeletion, deleteCascade, deleteForce, skipLocalBackup, deleter, hDB)
+}
+
+func backupDeleteDBLocal(backupListForDeletion []string, backupDir string, deleteCascade, deleteForce bool, maxParallelProcesses int, hDB *sql.DB) error {
+	deleter := &backupLocalDeleter{
+		backupDir:            backupDir,
+		maxParallelProcesses: maxParallelProcesses}
+	// Include local backups.
+	skipLocalBackups := false
+	return backupDeleteDB(backupListForDeletion, deleteCascade, deleteForce, skipLocalBackups, deleter, hDB)
+}
+
+func backupDeleteDB(backupListForDeletion []string, deleteCascade, deleteForce, skipLocalBackup bool, deleter backupDeleteInterface, hDB *sql.DB) error {
 	for _, backupName := range backupListForDeletion {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 			return err
 		}
-		// Skip local backup.
-		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, true, backupData)
+		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, skipLocalBackup, backupData)
 		if err != nil {
 			return err
 		}
@@ -243,7 +260,7 @@ func backupDeleteDBPlugin(backupListForDeletion []string, deleteCascade, deleteF
 				if deleteCascade {
 					gplog.Debug(textmsg.InfoTextBackupDeleteList(backupDependencies))
 					// If the deletion of at least one dependent backup fails, we fail full entire chain.
-					err = backupDeleteDBCascade(backupDependencies, deleteForce, pluginConfigPath, pluginConfig, hDB)
+					err = backupDeleteDBCascade(backupDependencies, deleteForce, skipLocalBackup, deleter, hDB)
 					if err != nil {
 						gplog.Error(textmsg.ErrorTextUnableDeleteBackupCascade(backupName, err))
 						return err
@@ -253,7 +270,7 @@ func backupDeleteDBPlugin(backupListForDeletion []string, deleteCascade, deleteF
 					return textmsg.ErrorBackupDeleteCascadeOptionError()
 				}
 			}
-			err = backupDeleteDBPluginFunc(backupName, pluginConfigPath, pluginConfig, hDB)
+			err = deleter.backupDeleteDB(backupName, hDB)
 			if err != nil {
 				return err
 			}
@@ -262,7 +279,7 @@ func backupDeleteDBPlugin(backupListForDeletion []string, deleteCascade, deleteF
 	return nil
 }
 
-func backupDeleteDBCascade(backupList []string, deleteForce bool, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
+func backupDeleteDBCascade(backupList []string, deleteForce bool, skipLocalBackup bool, deleter backupDeleteInterface, hDB *sql.DB) error {
 	for _, backup := range backupList {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backup, hDB)
 		if err != nil {
@@ -270,12 +287,12 @@ func backupDeleteDBCascade(backupList []string, deleteForce bool, pluginConfigPa
 			return err
 		}
 		// Skip local backup.
-		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, true, backupData)
+		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, skipLocalBackup, backupData)
 		if err != nil {
 			return err
 		}
 		if canBeDeleted {
-			err = backupDeleteDBPluginFunc(backup, pluginConfigPath, pluginConfig, hDB)
+			err = deleter.backupDeleteDB(backup, hDB)
 			if err != nil {
 				return err
 			}
@@ -316,8 +333,65 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 	return nil
 }
 
+func backupDeleteDBLocalFunc(backupName, backupDir string, maxParallelProcesses int, hDB *sql.DB) error {
+	var err error
+	dateDeleted := getCurrentTimestamp()
+	gplog.Info(textmsg.InfoTextBackupDeleteStart(backupName))
+	err = gpbckpconfig.UpdateDeleteStatus(backupName, gpbckpconfig.DateDeletedInProgress, hDB)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
+		return err
+	}
+	backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
+		return err
+	}
+	bckpDir, segPrefix, isSingleBackupDir, err := getBackupMasterDir(backupDir, backupData.BackupDir, backupData.DatabaseName)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupPath("backup directory", backupName, err))
+		return err
+	}
+	gplog.Debug(textmsg.InfoTextBackupDirPath(bckpDir))
+	gplog.Debug(textmsg.InfoTextSegmentPrefix(segPrefix))
+	backupType, err := backupData.GetBackupType()
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("type", backupData.Timestamp, err))
+	}
+	// If backup type is not "metadata-only", we should delete files on segments and master.
+	// If backup type is "metadata-only", we should not delete files only on master.
+	if backupType != gpbckpconfig.BackupTypeMetadataOnly {
+		var errSeg error
+		segConfig, errSeg := getSegmentConfigurationClusterInfo(backupData.DatabaseName)
+		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableGetBackupPath("segment configuration", backupName, errSeg))
+			return errSeg
+		}
+		// Execute on segments.
+		errSeg = executeDeleteBackupOnSegments(backupDir, backupData.BackupDir, backupName, segPrefix, isSingleBackupDir, segConfig, maxParallelProcesses)
+		if errSeg != nil {
+			gplog.Error(textmsg.ErrorTextUnableDeleteBackup(backupName, errSeg))
+			return errSeg
+		}
+	}
+	// Delete files on master.
+	gplog.Debug(textmsg.InfoTextCommandExecution("delete directory", gpbckpconfig.BackupDirPath(bckpDir, backupName)))
+	err = os.RemoveAll(gpbckpconfig.BackupDirPath(bckpDir, backupName))
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableDeleteBackup(backupName, err))
+		return err
+	}
+	err = gpbckpconfig.UpdateDeleteStatus(backupName, dateDeleted, hDB)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(dateDeleted, backupName, err))
+		return err
+	}
+	gplog.Info(textmsg.InfoTextBackupDeleteSuccess(backupName))
+	return nil
+}
+
 func backupDeleteFilePlugin(backupListForDeletion []string, deleteCascade, deleteForce bool, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData *gpbckpconfig.History) error {
-	deleter := &BackupPluginDeleter{
+	deleter := &backupPluginDeleter{
 		pluginConfigPath: pluginConfigPath,
 		pluginConfig:     pluginConfig}
 	// Skip local backups.
@@ -326,7 +400,7 @@ func backupDeleteFilePlugin(backupListForDeletion []string, deleteCascade, delet
 }
 
 func backupDeleteFileLocal(backupListForDeletion []string, backupDir string, deleteCascade, deleteForce bool, maxParallelProcesses int, parseHData *gpbckpconfig.History) error {
-	deleter := &BackupLocalDeleter{
+	deleter := &backupLocalDeleter{
 		backupDir:            backupDir,
 		maxParallelProcesses: maxParallelProcesses}
 	// Include local backups.
@@ -334,7 +408,7 @@ func backupDeleteFileLocal(backupListForDeletion []string, backupDir string, del
 	return backupDeleteFile(backupListForDeletion, deleteCascade, deleteForce, skipLocalBackups, deleter, parseHData)
 }
 
-func backupDeleteFile(backupListForDeletion []string, deleteCascade, deleteForce, skipLocalBackup bool, deleter BackupDeleteFileInterface, parseHData *gpbckpconfig.History) error {
+func backupDeleteFile(backupListForDeletion []string, deleteCascade, deleteForce, skipLocalBackup bool, deleter backupDeleteInterface, parseHData *gpbckpconfig.History) error {
 	for _, backupName := range backupListForDeletion {
 		backupPositionInHistoryFile, backupData, err := parseHData.FindBackupConfig(backupName)
 		if err != nil {
@@ -362,7 +436,7 @@ func backupDeleteFile(backupListForDeletion []string, deleteCascade, deleteForce
 					return textmsg.ErrorBackupDeleteCascadeOptionError()
 				}
 			}
-			err = deleter.BackupDeleteFile(backupData, parseHData)
+			err = deleter.backupDeleteFile(backupData, parseHData)
 			if err != nil {
 				return err
 			}
@@ -371,7 +445,7 @@ func backupDeleteFile(backupListForDeletion []string, deleteCascade, deleteForce
 	return nil
 }
 
-func backupDeleteFileCascade(backupList []string, deleteForce, skipLocalBackup bool, deleter BackupDeleteFileInterface, parseHData *gpbckpconfig.History) error {
+func backupDeleteFileCascade(backupList []string, deleteForce, skipLocalBackup bool, deleter backupDeleteInterface, parseHData *gpbckpconfig.History) error {
 	for _, backup := range backupList {
 		_, backupData, err := parseHData.FindBackupConfig(backup)
 		if err != nil {
@@ -384,7 +458,7 @@ func backupDeleteFileCascade(backupList []string, deleteForce, skipLocalBackup b
 			return err
 		}
 		if canBeDeleted {
-			err = deleter.BackupDeleteFile(backupData, parseHData)
+			err = deleter.backupDeleteFile(backupData, parseHData)
 			if err != nil {
 				return err
 			}
@@ -476,12 +550,6 @@ func backupDeleteFileLocalFunc(backupData gpbckpconfig.BackupConfig, parseHData 
 		return err
 	}
 	gplog.Info(textmsg.InfoTextBackupDeleteSuccess(backupName))
-	return nil
-}
-
-// TODO
-func backupDeleteDBLocal() error {
-	gplog.Warn("The functionality is still in development")
 	return nil
 }
 

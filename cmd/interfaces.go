@@ -1,28 +1,39 @@
 package cmd
 
 import (
+	"database/sql"
+
 	"github.com/greenplum-db/gpbackup/utils"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
 )
 
-type BackupDeleteFileInterface interface {
-	BackupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error
+type backupDeleteInterface interface {
+	backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error
+	backupDeleteDB(backupName string, hDB *sql.DB) error
 }
 
-type BackupPluginDeleter struct {
+type backupPluginDeleter struct {
 	pluginConfigPath string
 	pluginConfig     *utils.PluginConfig
 }
 
-func (bpd *BackupPluginDeleter) BackupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error {
+func (bpd *backupPluginDeleter) backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error {
 	return backupDeleteFilePluginFunc(backupData, parseHData, bpd.pluginConfigPath, bpd.pluginConfig)
 }
 
-type BackupLocalDeleter struct {
+func (bpd *backupPluginDeleter) backupDeleteDB(backupName string, hDB *sql.DB) error {
+	return backupDeleteDBPluginFunc(backupName, bpd.pluginConfigPath, bpd.pluginConfig, hDB)
+}
+
+type backupLocalDeleter struct {
 	backupDir            string
 	maxParallelProcesses int
 }
 
-func (bld *BackupLocalDeleter) BackupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error {
+func (bld *backupLocalDeleter) backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error {
 	return backupDeleteFileLocalFunc(backupData, parseHData, bld.backupDir, bld.maxParallelProcesses)
+}
+
+func (bld *backupLocalDeleter) backupDeleteDB(backupName string, hDB *sql.DB) error {
+	return backupDeleteDBLocalFunc(backupName, bld.backupDir, bld.maxParallelProcesses, hDB)
 }
