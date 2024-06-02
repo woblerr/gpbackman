@@ -1,9 +1,14 @@
 ARG S3_PLUGIN_VERSION="1.10.1"
 
+# Starting from 25.05.2024, all Greenplum repositories (including gpbackup-s3-plugin) were transferred
+# to the archive on GitHub. At the same time, all tags have been deleted from the archives.
+# The fork containing the necessary tags is used for testing.
+
 FROM golang:1.21-alpine3.19 AS s3_plugin-builder
 ARG S3_PLUGIN_VERSION
 RUN apk add --no-cache --update build-base bash perl \
-    && wget https://github.com/greenplum-db/gpbackup-s3-plugin/archive/refs/tags/${S3_PLUGIN_VERSION}.tar.gz -O /tmp/gpbackup-s3-plugin-${S3_PLUGIN_VERSION}.tar.gz \
+    # && wget https://github.com/greenplum-db/gpbackup-s3-plugin/archive/refs/tags/${S3_PLUGIN_VERSION}.tar.gz -O /tmp/gpbackup-s3-plugin-${S3_PLUGIN_VERSION}.tar.gz \
+    && wget https://github.com/woblerr/gpbackup-s3-plugin/archive/refs/tags/${S3_PLUGIN_VERSION}.tar.gz -O /tmp/gpbackup-s3-plugin-${S3_PLUGIN_VERSION}.tar.gz \
     && mkdir -p /tmp/gpbackup-s3-plugin \
     && tar -xzf  /tmp/gpbackup-s3-plugin-${S3_PLUGIN_VERSION}.tar.gz --strip-components=1 -C /tmp/gpbackup-s3-plugin \
     && cd /tmp/gpbackup-s3-plugin \
