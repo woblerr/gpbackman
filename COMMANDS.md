@@ -134,10 +134,24 @@ unless the --cascade option is passed in.
 
 If backup already deleted, the deletion process is skipped, unless --force option is specified.
 
-By default, he deletion will be performed for local backup (in development).
+By default, the deletion will be performed for local backup.
+
+The full path to the backup directory can be set using the --backup-dir option.
+
+For local backups the following logic are applied:
+  * If the --backup-dir option is specified, the deletion will be performed in provided path.
+  * If the --backup-dir option is not specified, but the backup was made with --backup-dir flag for gpbackup, the deletion will be performed in the backup manifest path.
+  * If the --backup-dir option is not specified and backup directory is not specified in backup manifest, the deletion will be performed in backup folder in the master and segments data directories.
+  * If backup is not local, the error will be returned.
+
+For control over the number of parallel processes and ssh connections to delete local backups, the --parallel-processes option can be used.
 
 The storage plugin config file location can be set using the --plugin-config option.
 The full path to the file is required. In this case, the deletion will be performed using the storage plugin.
+
+For non local backups the following logic are applied:
+  * If the --plugin-config option is specified, the deletion will be performed using the storage plugin.
+  * If backup is local, the error will be returned.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -153,9 +167,11 @@ Usage:
   gpbackman backup-delete [flags]
 
 Flags:
+      --backup-dir string       the full path to backup directory
       --cascade                 delete all dependent backups for the specified backup timestamp
       --force                   try to delete, even if the backup already mark as deleted
   -h, --help                    help for backup-delete
+      --parallel-process int    the number of parallel processes to delete local backups (default 1)
       --plugin-config string    the full path to plugin config file
       --timestamp stringArray   the backup timestamp for deleting, could be specified multiple times
 
@@ -169,13 +185,20 @@ Global Flags:
 
 ## Examples
 ### Delete existing backup from local storage
-
-The functionality is in development.
-
-gpBackMan returns a message:
+Delete specific backup with specifying directory path:
 ```bash
-[WARNING]:-The functionality is still in development
+./gpbackman backup-delete \
+  --timestamp 20230809232817 \
+  --backup-dir /some/path
 ```
+
+Delete specific backup with specifying the number of parallel processes:
+```bash
+./gpbackman backup-delete \
+  --timestamp 20230809212220 \
+   --parallel-process 5
+```
+
 ### Delete existing backup using storage plugin
 Delete specific backup:
 ```bash
