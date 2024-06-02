@@ -227,10 +227,10 @@ func getBackupSegmentDir(backupDir, backupDataBackupDir, backupDataDir, segPrefi
 		return checkSingleBackupDir(backupDir, segPrefix, segID, isSingleBackupDir), nil
 	}
 	if backupDataBackupDir != "" {
-		return checkSingleBackupDir(backupDir, segPrefix, segID, isSingleBackupDir), nil
+		return checkSingleBackupDir(backupDataBackupDir, segPrefix, segID, isSingleBackupDir), nil
 	}
 	if backupDataDir != "" {
-		return filepath.Join(backupDataDir), nil
+		return backupDataDir, nil
 	}
 	return "", textmsg.ErrorValidationValue()
 }
