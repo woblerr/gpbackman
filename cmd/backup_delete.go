@@ -279,7 +279,7 @@ func backupDeleteDB(backupListForDeletion []string, deleteCascade, deleteForce, 
 	return nil
 }
 
-func backupDeleteDBCascade(backupList []string, deleteForce bool, skipLocalBackup bool, deleter backupDeleteInterface, hDB *sql.DB) error {
+func backupDeleteDBCascade(backupList []string, deleteForce, skipLocalBackup bool, deleter backupDeleteInterface, hDB *sql.DB) error {
 	for _, backup := range backupList {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backup, hDB)
 		if err != nil {
