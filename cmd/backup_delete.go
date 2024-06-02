@@ -450,17 +450,17 @@ func backupDeleteFileLocalFunc(backupData gpbckpconfig.BackupConfig, parseHData 
 	// If backup type is not "metadata-only", we should delete files on segments and master.
 	// If backup type is "metadata-only", we should not delete files only on master.
 	if backupType != gpbckpconfig.BackupTypeMetadataOnly {
-		segConfig, err := getSegmentConfigurationClusterInfo(backupData.DatabaseName)
+		var errSeg error
+		segConfig, errSeg := getSegmentConfigurationClusterInfo(backupData.DatabaseName)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableGetBackupPath("segment configuration", backupName, err))
-			return err
+			gplog.Error(textmsg.ErrorTextUnableGetBackupPath("segment configuration", backupName, errSeg))
+			return errSeg
 		}
-		fmt.Print(segConfig)
 		// Execute on segments.
-		err = executeDeleteBackupOnSegments(backupDir, backupData.BackupDir, backupName, segPrefix, isSingleBackupDir, segConfig, maxParallelProcesses)
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableDeleteBackup(backupName, err))
-			return err
+		errSeg = executeDeleteBackupOnSegments(backupDir, backupData.BackupDir, backupName, segPrefix, isSingleBackupDir, segConfig, maxParallelProcesses)
+		if errSeg != nil {
+			gplog.Error(textmsg.ErrorTextUnableDeleteBackup(backupName, errSeg))
+			return errSeg
 		}
 	}
 	// Delete files on master.
@@ -618,6 +618,9 @@ func getSSHConfig() (*ssh.ClientConfig, error) {
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
+		// Disable known_hosts check.
+		// This check also disables in gpbackup utility.
+		// #nosec G106
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         30 * time.Second,
 	}
