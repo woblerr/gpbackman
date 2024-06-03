@@ -273,6 +273,5 @@ func getSegmentConfigurationClusterInfo(dbName string) ([]gpbckpconfig.SegmentCo
 		gplog.Error(textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
 		return queryResult, err
 	}
-	gplog.Debug("Some tests: %v", queryResult)
 	return queryResult, nil
 }
