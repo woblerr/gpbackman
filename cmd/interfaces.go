@@ -8,8 +8,8 @@ import (
 )
 
 type backupDeleteInterface interface {
-	backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error
-	backupDeleteDB(backupName string, hDB *sql.DB) error
+	backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History, ignoreErrors bool) error
+	backupDeleteDB(backupName string, hDB *sql.DB, ignoreErrors bool) error
 }
 
 type backupPluginDeleter struct {
@@ -17,12 +17,12 @@ type backupPluginDeleter struct {
 	pluginConfig     *utils.PluginConfig
 }
 
-func (bpd *backupPluginDeleter) backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error {
-	return backupDeleteFilePluginFunc(backupData, parseHData, bpd.pluginConfigPath, bpd.pluginConfig)
+func (bpd *backupPluginDeleter) backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History, ignoreErrors bool) error {
+	return backupDeleteFilePluginFunc(backupData, parseHData, bpd.pluginConfigPath, bpd.pluginConfig, ignoreErrors)
 }
 
-func (bpd *backupPluginDeleter) backupDeleteDB(backupName string, hDB *sql.DB) error {
-	return backupDeleteDBPluginFunc(backupName, bpd.pluginConfigPath, bpd.pluginConfig, hDB)
+func (bpd *backupPluginDeleter) backupDeleteDB(backupName string, hDB *sql.DB, ignoreErrors bool) error {
+	return backupDeleteDBPluginFunc(backupName, bpd.pluginConfigPath, bpd.pluginConfig, hDB, ignoreErrors)
 }
 
 type backupLocalDeleter struct {
@@ -30,10 +30,10 @@ type backupLocalDeleter struct {
 	maxParallelProcesses int
 }
 
-func (bld *backupLocalDeleter) backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History) error {
-	return backupDeleteFileLocalFunc(backupData, parseHData, bld.backupDir, bld.maxParallelProcesses)
+func (bld *backupLocalDeleter) backupDeleteFile(backupData gpbckpconfig.BackupConfig, parseHData *gpbckpconfig.History, ignoreErrors bool) error {
+	return backupDeleteFileLocalFunc(backupData, parseHData, bld.backupDir, bld.maxParallelProcesses, ignoreErrors)
 }
 
-func (bld *backupLocalDeleter) backupDeleteDB(backupName string, hDB *sql.DB) error {
-	return backupDeleteDBLocalFunc(backupName, bld.backupDir, bld.maxParallelProcesses, hDB)
+func (bld *backupLocalDeleter) backupDeleteDB(backupName string, hDB *sql.DB, ignoreErrors bool) error {
+	return backupDeleteDBLocalFunc(backupName, bld.backupDir, bld.maxParallelProcesses, hDB, ignoreErrors)
 }

@@ -41,10 +41,6 @@ func InfoTextCommandExecutionSucceeded(list ...string) string {
 	return fmt.Sprintf("Command succeeded: %s", strings.Join(list, " "))
 }
 
-func InfoTextCommandExecutionFailed(list ...string) string {
-	return fmt.Sprintf("Command failed: %s", strings.Join(list, " "))
-}
-
 func InfoTextBackupDirPath(backupDir string) string {
 	return fmt.Sprintf("Path to backup directory: %s", backupDir)
 }

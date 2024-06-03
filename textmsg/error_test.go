@@ -224,6 +224,13 @@ func TestErrorTextFunctionsErrorAndMultipleArgs(t *testing.T) {
 			function: ErrorTextUnableValidateValue,
 			want:     "Unable to validate provided arguments. Try to use one of flags: TestFlag1, TestFlag2. Error: test error",
 		},
+		{
+			name:     "Test ErrorTextCommandExecutionFailed",
+			values:   []string{"TestFlag1", "TestFlag2"},
+			testErr:  testError,
+			function: ErrorTextCommandExecutionFailed,
+			want:     "Command failed: TestFlag1 TestFlag2. Error: test error",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -99,12 +99,6 @@ func TestInfoTextFunctionAndMultipleSeparateArgs(t *testing.T) {
 			function: InfoTextCommandExecutionSucceeded,
 			want:     "Command succeeded: execution_command some_argument",
 		},
-		{
-			name:     "Test InfoTextCommandExecutionFailed",
-			values:   []string{"execution_command", "some_argument"},
-			function: InfoTextCommandExecutionFailed,
-			want:     "Command failed: execution_command some_argument",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
