@@ -41,6 +41,8 @@ By default, the existence of dependent backups is checked and deletion process i
 unless the --cascade option is passed in.
 
 If backup already deleted, the deletion process is skipped, unless --force option is specified.
+If errors occur during the deletion process, the errors can be ignored using the --ignore-errors option.
+The --ignore-errors option can be used only with --force option.
 
 By default, the deletion will be performed for local backup.
 

@@ -133,6 +133,8 @@ By default, the existence of dependent backups is checked and deletion process i
 unless the --cascade option is passed in.
 
 If backup already deleted, the deletion process is skipped, unless --force option is specified.
+If errors occur during the deletion process, the errors can be ignored using the --ignore-errors option.
+The --ignore-errors option can be used only with --force option.
 
 By default, the deletion will be performed for local backup.
 
@@ -167,13 +169,14 @@ Usage:
   gpbackman backup-delete [flags]
 
 Flags:
-      --backup-dir string       the full path to backup directory
-      --cascade                 delete all dependent backups for the specified backup timestamp
-      --force                   try to delete, even if the backup already mark as deleted
-  -h, --help                    help for backup-delete
-      --parallel-process int    the number of parallel processes to delete local backups (default 1)
-      --plugin-config string    the full path to plugin config file
-      --timestamp stringArray   the backup timestamp for deleting, could be specified multiple times
+      --backup-dir string        the full path to backup directory
+      --cascade                  delete all dependent backups for the specified backup timestamp
+      --force                    try to delete, even if the backup already mark as deleted
+  -h, --help                     help for backup-delete
+      --ignore-errors            ignore errors when deleting backups
+      --parallel-processes int   the number of parallel processes to delete local backups (default 1)
+      --plugin-config string     the full path to plugin config file
+      --timestamp stringArray    the backup timestamp for deleting, could be specified multiple times
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
@@ -196,7 +199,7 @@ Delete specific backup with specifying the number of parallel processes:
 ```bash
 ./gpbackman backup-delete \
   --timestamp 20230809212220 \
-   --parallel-process 5
+   --parallel-processes 5
 ```
 
 ### Delete existing backup using storage plugin
