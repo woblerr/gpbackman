@@ -203,8 +203,8 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath s
 		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
 		// Execute deletion for each backup.
 		// Use backupDeleteDBPlugin function from backup-delete command.
-		// Don't use force deletes for mass deletion.
-		err = backupDeleteDBPlugin(backupList, deleteCascade, false, pluginConfigPath, pluginConfig, hDB)
+		// Don't use force deletes and ignore errors for mass deletion.
+		err = backupDeleteDBPlugin(backupList, deleteCascade, false, false, pluginConfigPath, pluginConfig, hDB)
 		if err != nil {
 			return err
 		}
@@ -219,8 +219,8 @@ func backupCleanFilePlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath
 	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
 	// Execute deletion for each backup.
 	// Use backupDeleteFilePlugin function from backup-delete command.
-	// Don't use force deletes for mass deletion.
-	err := backupDeleteFilePlugin(backupList, deleteCascade, false, pluginConfigPath, pluginConfig, parseHData)
+	// Don't use force deletes and ignore errors for mass deletion.
+	err := backupDeleteFilePlugin(backupList, deleteCascade, false, false, pluginConfigPath, pluginConfig, parseHData)
 	if err != nil {
 		return err
 	}

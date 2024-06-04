@@ -37,6 +37,8 @@ const (
 	schemaFlagName               = "schema"
 	excludeFlagName              = "exclude"
 	backupDirFlagName            = "backup-dir"
+	parallelProcessesFlagName    = "parallel-processes"
+	ignoreErrorsFlagName         = "ignore-errors"
 
 	exitErrorCode = 1
 

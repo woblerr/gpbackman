@@ -96,32 +96,39 @@ func ReportFileName(timestamp string) string {
 	return "gpbackup_" + timestamp + "_report"
 }
 
-// CheckSingleBackupDir Returns backup directory path and segment prefix if they exist.
-func CheckSingleBackupDir(backupDir string) (string, string, error) {
+// CheckMasterBackupDir checks the backup directory for the master backup.
+// It first tries to find the backup directory in the single-backup-dir format.
+// If the single-backup-dir format is not used, it returns an error.
+// If the single-backup-dir format is used, it returns the backup directory and sets the prefix to an empty string.
+// If the single-backup-dir format is not found, it tries to find the backup directory with segment prefix format.
+// If the backup directory with segment prefix format is not found, it returns an error.
+// If multiple backup directories with segment prefix format are found, it returns an error.
+// Otherwise, it returns the backup directory with segment prefix format, the segment prefix, and useSingleBackupDir flag to false.
+func CheckMasterBackupDir(backupDir string) (string, string, bool, error) {
 	// Try to find the backup directory in the single-backup-dir format.
 	_, err := operating.System.Stat(fmt.Sprintf("%s/backups", backupDir))
 	// The single-backup-dir directory format is not used.
 	if err != nil && !os.IsNotExist(err) {
-		return "", "", textmsg.ErrorFindBackupDirIn(backupDir, err)
+		return "", "", false, textmsg.ErrorFindBackupDirIn(backupDir, err)
 	}
 	if err == nil {
 		// The single-backup-dir directory format is used, there's no prefix to parse.
-		return backupDir, "", nil
+		return backupDir, "", true, nil
 	}
 	// Try to find the backup directory with segment prefix format.
 	backupDirForMaster, err := operating.System.Glob(fmt.Sprintf("%s/*-1/backups", backupDir))
 	if err != nil {
-		return "", "", textmsg.ErrorFindBackupDirIn(backupDir, err)
+		return "", "", false, textmsg.ErrorFindBackupDirIn(backupDir, err)
 	}
 	if len(backupDirForMaster) == 0 {
-		return "", "", textmsg.ErrorNotFoundBackupDirIn(backupDir)
+		return "", "", false, textmsg.ErrorNotFoundBackupDirIn(backupDir)
 	}
 	if len(backupDirForMaster) != 1 {
-		return "", "", textmsg.ErrorSeveralFoundBackupDirIn(backupDir)
+		return "", "", false, textmsg.ErrorSeveralFoundBackupDirIn(backupDir)
 	}
 	segPrefix := GetSegPrefix(backupDirForMaster[0])
 	returnDir := filepath.Join(backupDir, fmt.Sprintf("%s-1", segPrefix))
-	return returnDir, segPrefix, nil
+	return returnDir, segPrefix, false, nil
 }
 
 // GetSegPrefix Returns segment prefix from the master backup directory.
@@ -133,7 +140,12 @@ func GetSegPrefix(backupDir string) string {
 
 // ReportFilePath Returns path to report file.
 func ReportFilePath(backupDir, timestamp string) string {
-	return filepath.Join(backupDir, "backups", timestamp[0:8], timestamp, ReportFileName(timestamp))
+	return filepath.Join(BackupDirPath(backupDir, timestamp), ReportFileName(timestamp))
+}
+
+// BackupDirPath Returns path to full backup directory.
+func BackupDirPath(backupDir, timestamp string) string {
+	return filepath.Join(backupDir, "backups", timestamp[0:8], timestamp)
 }
 
 // searchFilter returns true if the value is present in the list

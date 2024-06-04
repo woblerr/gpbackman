@@ -310,48 +310,53 @@ func TestGetSegPrefix(t *testing.T) {
 	}
 }
 
-func TestCheckSingleBackupDir(t *testing.T) {
+func TestCheckMasterBackupDir(t *testing.T) {
 	tempDir := os.TempDir()
 
 	tests := []struct {
-		name       string
-		testDir    string
-		backupDir  string
-		wantDir    string
-		wantPrefix string
-		wantErr    bool
+		name                string
+		testDir             string
+		backupDir           string
+		wantDir             string
+		wantPrefix          string
+		wantSingleBackupDir bool
+		wantErr             bool
 	}{
 		{
-			name:       "Valid single backup dir",
-			testDir:    filepath.Join(tempDir, "noSegPrefix", "backups"),
-			backupDir:  filepath.Join(tempDir, "noSegPrefix"),
-			wantDir:    filepath.Join(tempDir, "noSegPrefix"),
-			wantPrefix: "",
-			wantErr:    false,
+			name:                "Valid single backup dir",
+			testDir:             filepath.Join(tempDir, "noSegPrefix", "backups"),
+			backupDir:           filepath.Join(tempDir, "noSegPrefix"),
+			wantDir:             filepath.Join(tempDir, "noSegPrefix"),
+			wantPrefix:          "",
+			wantSingleBackupDir: true,
+			wantErr:             false,
 		},
 		{
-			name:       "Valid single backup dir with segment prefix",
-			testDir:    filepath.Join(tempDir, "segPrefix", "segment-1", "backups"),
-			backupDir:  filepath.Join(tempDir, "segPrefix"),
-			wantDir:    filepath.Join(tempDir, "segPrefix", "segment-1"),
-			wantPrefix: "segment",
-			wantErr:    false,
+			name:                "Valid single backup dir with segment prefix",
+			testDir:             filepath.Join(tempDir, "segPrefix", "segment-1", "backups"),
+			backupDir:           filepath.Join(tempDir, "segPrefix"),
+			wantDir:             filepath.Join(tempDir, "segPrefix", "segment-1"),
+			wantPrefix:          "segment",
+			wantSingleBackupDir: false,
+			wantErr:             false,
 		},
 		{
-			name:       "Invalid backup dir",
-			testDir:    filepath.Join(tempDir, "invalid"),
-			backupDir:  filepath.Join(tempDir, "invalid"),
-			wantDir:    "",
-			wantPrefix: "",
-			wantErr:    true,
+			name:                "Invalid backup dir",
+			testDir:             filepath.Join(tempDir, "invalid"),
+			backupDir:           filepath.Join(tempDir, "invalid"),
+			wantDir:             "",
+			wantPrefix:          "",
+			wantSingleBackupDir: false,
+			wantErr:             true,
 		},
 		{
-			name:       "Multiple backup dirs",
-			testDir:    tempDir,
-			backupDir:  "some/path",
-			wantDir:    "",
-			wantPrefix: "",
-			wantErr:    true,
+			name:                "Multiple backup dirs",
+			testDir:             tempDir,
+			backupDir:           "some/path",
+			wantDir:             "",
+			wantPrefix:          "",
+			wantSingleBackupDir: false,
+			wantErr:             true,
 		},
 	}
 	for _, tt := range tests {
@@ -361,20 +366,25 @@ func TestCheckSingleBackupDir(t *testing.T) {
 				t.Fatalf("Failed to create temp dir: %v", err)
 			}
 			defer os.Remove(tt.testDir)
-			gotDir, gotPrefix, err := CheckSingleBackupDir(tt.backupDir)
+			gotDir, gotPrefix, gotIsSingleBackupDir, err := CheckMasterBackupDir(tt.backupDir)
 			// Check for unexpected error
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CheckSingleBackupDir() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+				t.Errorf("CheckMasterBackupDir() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
 			}
 
 			// Check the returned directory
 			if gotDir != tt.wantDir {
-				t.Errorf("CheckSingleBackupDir() gotDir:\n%v\nwantDir:\n%v", gotDir, tt.wantDir)
+				t.Errorf("CheckMasterBackupDir() gotDir:\n%v\nwantDir:\n%v", gotDir, tt.wantDir)
 			}
 
 			// Check the returned prefix
 			if gotPrefix != tt.wantPrefix {
-				t.Errorf("CheckSingleBackupDir() gotPrefix:\n%v\nwantPrefix:\n%v", gotPrefix, tt.wantPrefix)
+				t.Errorf("CheckMasterBackupDir() gotPrefix:\n%v\nwantPrefix:\n%v", gotPrefix, tt.wantPrefix)
+			}
+
+			// Check if the returned value for single backup directory is correct
+			if gotIsSingleBackupDir != tt.wantSingleBackupDir {
+				t.Errorf("CheckMasterBackupDir() gotIsSingleBackupDir:\n%v\nwantSingleBackupDir:\n%v", gotIsSingleBackupDir, tt.wantSingleBackupDir)
 			}
 		})
 	}

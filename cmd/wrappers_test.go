@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -381,6 +382,161 @@ func TestCheckBackupType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := checkBackupType(tt.inputType); (err != nil) != tt.wantErr {
 				t.Errorf("checkBackupType() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetBackupMasterDir(t *testing.T) {
+	tempDir := os.TempDir()
+	tests := []struct {
+		name                  string
+		testDir               string
+		backupDir             string
+		backupDataBackupDir   string
+		backupDataDBName      string
+		wantBackupMasterDir   string
+		wantSegPrefix         string
+		wantIsSingleBackupDir bool
+		wantErr               bool
+	}{
+		{
+			name:                  "BackupDir is set and valid",
+			testDir:               filepath.Join(tempDir, "segPrefix", "segment-1", "backups"),
+			backupDir:             filepath.Join(tempDir, "segPrefix"),
+			backupDataBackupDir:   "",
+			backupDataDBName:      "",
+			wantBackupMasterDir:   filepath.Join(tempDir, "segPrefix", "segment-1"),
+			wantSegPrefix:         "segment",
+			wantIsSingleBackupDir: false,
+			wantErr:               false,
+		},
+		{
+			name:                  "BackupDataBackupDir is set amd valid",
+			testDir:               filepath.Join(tempDir, "segPrefix", "segment-1", "backups"),
+			backupDir:             "",
+			backupDataBackupDir:   filepath.Join(tempDir, "segPrefix"),
+			backupDataDBName:      "",
+			wantBackupMasterDir:   filepath.Join(tempDir, "segPrefix", "segment-1"),
+			wantSegPrefix:         "segment",
+			wantIsSingleBackupDir: false,
+			wantErr:               false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := os.MkdirAll(tt.testDir, 0755)
+			if err != nil {
+				t.Fatalf("Failed to create temp dir: %v", err)
+			}
+			defer os.Remove(tt.testDir)
+			gotBackupMasterDir, gotSegPrefix, gotIsSingleBackupDir, err := getBackupMasterDir(tt.backupDir, tt.backupDataBackupDir, tt.backupDataDBName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CheckMasterBackupDir() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
+			}
+			if gotBackupMasterDir != tt.wantBackupMasterDir {
+				t.Errorf("getBackupMasterDir() gotMasterDir:\n%v\nwantBackupMasterDir\n%v", gotBackupMasterDir, tt.wantBackupMasterDir)
+			}
+			if gotSegPrefix != tt.wantSegPrefix {
+				t.Errorf("getBackupMasterDir() gotSegPrefix\n%v\nwantSegPrefix\n%v", gotSegPrefix, tt.wantSegPrefix)
+			}
+			if gotIsSingleBackupDir != tt.wantIsSingleBackupDir {
+				t.Errorf("getBackupMasterDir() gotIsSingleBackupDir\n%v\nwantIsSingleBackupDir\ns%v", gotIsSingleBackupDir, tt.wantIsSingleBackupDir)
+			}
+		})
+	}
+}
+
+func TestCheckSingleBackupDir(t *testing.T) {
+	backupDir := "/path/to/backup"
+	segPrefix := "seg"
+	segID := "1"
+
+	tests := []struct {
+		name              string
+		isSingleBackupDir bool
+		want              string
+	}{
+		{
+			name:              "Is single backup dir",
+			isSingleBackupDir: true,
+			want:              backupDir,
+		},
+		{
+			name:              "Is not single backup dir",
+			isSingleBackupDir: false,
+			want:              filepath.Join(backupDir, fmt.Sprintf("%s%s", segPrefix, segID)),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := checkSingleBackupDir(backupDir, segPrefix, segID, tt.isSingleBackupDir); got != tt.want {
+				t.Errorf("checkSingleBackupDir()\n%v\nwant\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetBackupSegmentDir(t *testing.T) {
+	segPrefix := "seg"
+	segID := "1"
+
+	tests := []struct {
+		name                string
+		backupDir           string
+		backupDataBackupDir string
+		backupDataDir       string
+		isSingleBackupDir   bool
+		want                string
+		wantErr             bool
+	}{
+		{
+			name:                "Test when backupDir is not empty",
+			backupDir:           "/path/to/backupDir",
+			backupDataBackupDir: "",
+			backupDataDir:       "",
+			isSingleBackupDir:   true,
+			want:                "/path/to/backupDir",
+			wantErr:             false,
+		},
+		{
+			name:                "Test when backupDataBackupDir is not empty",
+			backupDir:           "",
+			backupDataBackupDir: "/path/to/backupDataBackupDir",
+			backupDataDir:       "",
+			isSingleBackupDir:   true,
+			want:                "/path/to/backupDataBackupDir",
+			wantErr:             false,
+		},
+		{
+			name:                "Test when backupDataDir is not empty",
+			backupDir:           "",
+			backupDataBackupDir: "",
+			backupDataDir:       "/path/to/backupDataDir",
+			isSingleBackupDir:   true,
+			want:                "/path/to/backupDataDir",
+			wantErr:             false,
+		},
+		{
+			name:                "Test error when all backup directories are empty",
+			backupDir:           "",
+			backupDataBackupDir: "",
+			backupDataDir:       "",
+			isSingleBackupDir:   true,
+			want:                "",
+			wantErr:             true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getBackupSegmentDir(tt.backupDir, tt.backupDataBackupDir, tt.backupDataDir, segPrefix, segID, tt.isSingleBackupDir)
+			if got != tt.want {
+				t.Errorf("getBackupSegmentDir() got:\n%v\nwant:\n%v", got, tt.want)
+			}
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getBackupSegmentDir() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
 			}
 		})
 	}

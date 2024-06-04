@@ -80,6 +80,12 @@ func ErrorTextUnableReadPluginConfigFile(err error) string {
 	return fmt.Sprintf("Unable to read plugin config file. Error: %v", err)
 }
 
+// Error that occur when working with a local backup.
+
+func ErrorTextCommandExecutionFailed(err error, values ...string) string {
+	return fmt.Sprintf("Command failed: %s. Error: %v", strings.Join(values, " "), err)
+}
+
 // Errors that occur during flags validation.
 
 func ErrorTextUnableValidateFlag(value, flag string, err error) string {

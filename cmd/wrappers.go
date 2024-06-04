@@ -205,21 +205,41 @@ func checkLocalBackupStatus(skipLocalBackup, isLocalBackup bool) error {
 	return nil
 }
 
-func getBackupMasterDir(backupDir, backupDataBackupDir, backupDataDBName string) (string, string, error) {
+func getBackupMasterDir(backupDir, backupDataBackupDir, backupDataDBName string) (string, string, bool, error) {
 	if backupDir != "" {
-		return gpbckpconfig.CheckSingleBackupDir(backupDir)
+		return gpbckpconfig.CheckMasterBackupDir(backupDir)
 	}
 	if backupDataBackupDir != "" {
-		return gpbckpconfig.CheckSingleBackupDir(backupDataBackupDir)
+		return gpbckpconfig.CheckMasterBackupDir(backupDataBackupDir)
 	}
 	// Try to get the backup directory from the cluster configuration.
 	// If the script executed not on the master host, the backup directory will not be found.
 	// And we return "value not set" error.
 	backupDirClusterInfo := getBackupMasterDirClusterInfo(backupDataDBName)
 	if backupDirClusterInfo != "" {
-		return backupDirClusterInfo, gpbckpconfig.GetSegPrefix(filepath.Join(backupDirClusterInfo, "backups")), nil
+		return backupDirClusterInfo, gpbckpconfig.GetSegPrefix(filepath.Join(backupDirClusterInfo, "backups")), false, nil
 	}
-	return "", "", textmsg.ErrorValidationValue()
+	return "", "", false, textmsg.ErrorValidationValue()
+}
+
+func getBackupSegmentDir(backupDir, backupDataBackupDir, backupDataDir, segPrefix, segID string, isSingleBackupDir bool) (string, error) {
+	if backupDir != "" {
+		return checkSingleBackupDir(backupDir, segPrefix, segID, isSingleBackupDir), nil
+	}
+	if backupDataBackupDir != "" {
+		return checkSingleBackupDir(backupDataBackupDir, segPrefix, segID, isSingleBackupDir), nil
+	}
+	if backupDataDir != "" {
+		return backupDataDir, nil
+	}
+	return "", textmsg.ErrorValidationValue()
+}
+
+func checkSingleBackupDir(backupDir, segPrefix, segID string, isSingleBackupDir bool) string {
+	if isSingleBackupDir {
+		return backupDir
+	}
+	return filepath.Join(backupDir, fmt.Sprintf("%s%s", segPrefix, segID))
 }
 
 func getBackupMasterDirClusterInfo(dbName string) string {
@@ -230,11 +250,28 @@ func getBackupMasterDirClusterInfo(dbName string) string {
 	}
 	defer db.Close()
 	sqlQuery := "SELECT datadir FROM gp_segment_configuration WHERE content = -1 AND role = 'p';"
-	backupDir, err := gpbckpconfig.ExecuteQueryLocalClusterConn(db, sqlQuery)
+	queryResult, err := gpbckpconfig.ExecuteQueryLocalClusterConn[string](db, sqlQuery)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
 		return ""
 	}
-	gplog.Debug("Master data directory: %s", backupDir)
-	return backupDir
+	gplog.Debug("Master data directory: %s", queryResult)
+	return queryResult
+}
+
+func getSegmentConfigurationClusterInfo(dbName string) ([]gpbckpconfig.SegmentConfig, error) {
+	queryResult := make([]gpbckpconfig.SegmentConfig, 0)
+	db, err := gpbckpconfig.NewClusterLocalClusterConn(dbName)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableConnectLocalCluster(err))
+		return queryResult, err
+	}
+	defer db.Close()
+	sqlQuery := "SELECT content as contentid, hostname, datadir FROM gp_segment_configuration WHERE role = 'p' and content != -1 ORDER BY content;"
+	queryResult, err = gpbckpconfig.ExecuteQueryLocalClusterConn[[]gpbckpconfig.SegmentConfig](db, sqlQuery)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
+		return queryResult, err
+	}
+	return queryResult, nil
 }
