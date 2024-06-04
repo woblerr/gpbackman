@@ -28,7 +28,7 @@ ${WORK_DIR}
 # The yaml history file format is used.
 # History file yaml format is used, there are a real s3 call and a real backup deletion.
 
-# At secod call, there are a real s3 call and no real backup deletion.
+# At second call, there are a real s3 call and no real backup deletion.
 # The sqlite history file format is used.
 # Because this backup was deleted in first call, there are no files in the s3.
 # But the info about deletion attempt is written to log file and DATE DELETED is updated in history file.
@@ -110,6 +110,43 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 logs_errors=$(grep -r ERROR ${HOME_DIR}/gpAdminLogs/)
 if [ $? == 0 ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_logs:\n${logs_errors}"
+    exit 1
+fi
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
+
+################################################################
+# Test 4.
+# Test ignore errors option.
+
+TEST_ID="4"
+
+# After previous tests, in history there should be 6 backup with dete deleted info.
+# In this test we use plugin config with invalid aws_access_key_id for s3.
+# The error occurs:
+#   InvalidAccessKeyId: The Access Key Id you provided does not exist in our records.
+#
+# With --force and --ignore-errors, the error that occurs is ignored and the backup is marked as deleted.
+TEST_CNT=7
+
+TIMESTAMP="20230721090000"
+
+set -x
+# Execute backup-delete commnad.
+gpbackman ${GPBACKMAN_TEST_COMMAND} \
+--history-db ${WORK_DIR}/gpbackup_history.db \
+--timestamp ${TIMESTAMP} \
+--plugin-config ${HOME_DIR}/gpbackup_s3_plugin_invalid.yaml \
+--force \
+--ignore-errors
+
+GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
+--history-db ${WORK_DIR}/gpbackup_history.db \
+--deleted)
+
+echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
+result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
+if [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then
+    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
     exit 1
 fi
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."

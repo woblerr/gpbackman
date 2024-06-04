@@ -72,6 +72,7 @@ services:
       - "./src_data:/home/gpbackman/src_data"
       - "./scripts/run_backup-delete.sh:/home/gpbackman/run_backup-delete.sh"
       - "./conf/gpbackup_s3_plugin.yaml:/home/gpbackman/gpbackup_s3_plugin.yaml"
+      - "./conf/gpbackup_s3_plugin_invalid.yaml:/home/gpbackman/gpbackup_s3_plugin_invalid.yaml"
     command: /home/gpbackman/run_backup-delete.sh
     networks:
       - e2e
