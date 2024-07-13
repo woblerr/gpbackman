@@ -53,6 +53,16 @@ func TestGetBackupType(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Test metadata-only when no data in regular incremental backup",
+			config: BackupConfig{
+				Incremental:  true,
+				DataOnly:     false,
+				MetadataOnly: true,
+			},
+			want:    BackupTypeMetadataOnly,
+			wantErr: false,
+		},
+		{
 			name: "Test full backup",
 			config: BackupConfig{
 				Incremental:  false,
