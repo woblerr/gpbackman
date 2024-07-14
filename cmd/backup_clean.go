@@ -258,14 +258,12 @@ func backupCleanFileLocal(deleteCascade bool, cutOffTimestamp string, parseHData
 
 func getBackupNamesBeforeTimestampFile(timestamp string, skipLocalBackup bool, parseHData *gpbckpconfig.History) []string {
 	backupNames := make([]string, 0)
-	for idx, backupConfig := range parseHData.BackupConfigs {
+	for _, backupConfig := range parseHData.BackupConfigs {
 		// In history file we have sorted timestamps by descending order.
 		if backupConfig.Timestamp < timestamp {
-			for i := idx; i < len(parseHData.BackupConfigs); i++ {
-				backupCanBeDeleted, _ := checkBackupCanBeUsed(false, skipLocalBackup, parseHData.BackupConfigs[i])
-				if backupCanBeDeleted {
-					backupNames = append(backupNames, parseHData.BackupConfigs[i].Timestamp)
-				}
+			backupCanBeDeleted, _ := checkBackupCanBeUsed(false, skipLocalBackup, backupConfig)
+			if backupCanBeDeleted {
+				backupNames = append(backupNames, backupConfig.Timestamp)
 			}
 		}
 	}
