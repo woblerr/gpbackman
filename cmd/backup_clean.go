@@ -144,7 +144,7 @@ func cleanBackup() error {
 				return err
 			}
 		} else {
-			err := backupCleanDBLocal()
+			err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, hDB)
 			if err != nil {
 				return err
 			}
@@ -177,7 +177,7 @@ func cleanBackup() error {
 						return err
 					}
 				} else {
-					err := backupCleanFileLocal()
+					err := backupCleanFileLocal(backupCleanCascade, beforeTimestamp, &parseHData)
 					if err != nil {
 						return err
 					}
@@ -214,6 +214,24 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath s
 	return nil
 }
 
+func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp string, hDB *sql.DB) error {
+	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(cutOffTimestamp, hDB)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
+		return err
+	}
+	if len(backupList) > 0 {
+		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+		err = backupDeleteDBLocal(backupList, "", deleteCascade, false, false, 1, hDB)
+		if err != nil {
+			return err
+		}
+	} else {
+		gplog.Info(textmsg.InfoTextNothingToDo())
+	}
+	return nil
+}
+
 func backupCleanFilePlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData *gpbckpconfig.History) error {
 	backupList := getBackupNamesBeforeTimestampFile(cutOffTimestamp, true, parseHData)
 	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
@@ -227,15 +245,14 @@ func backupCleanFilePlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath
 	return nil
 }
 
-// TODO
-func backupCleanDBLocal() error {
-	gplog.Warn("The functionality is still in development")
-	return nil
-}
+func backupCleanFileLocal(deleteCascade bool, cutOffTimestamp string, parseHData *gpbckpconfig.History) error {
+	backupList := getBackupNamesBeforeTimestampFile(cutOffTimestamp, false, parseHData)
+	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+	err := backupDeleteFileLocal(backupList, "", deleteCascade, false, false, 1, parseHData)
 
-// TODO
-func backupCleanFileLocal() error {
-	gplog.Warn("The functionality is still in development")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
