@@ -132,6 +132,37 @@ func TestIsBackupActive(t *testing.T) {
 	}
 }
 
+func TestIsPositiveValue(t *testing.T) {
+	tests := []struct {
+		name  string
+		value int
+		want  bool
+	}{
+		{
+			name:  "Test positive value",
+			value: 10,
+			want:  true,
+		},
+		{
+			name:  "Test zero value",
+			value: 0,
+			want:  false,
+		},
+		{
+			name:  "Test negative value",
+			value: -5,
+			want:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsPositiveValue(tt.value); got != tt.want {
+				t.Errorf("\nIsPositiveValue() got:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestBackupS3PluginReportPath(t *testing.T) {
 	tests := []struct {
 		name          string

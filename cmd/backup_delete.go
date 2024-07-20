@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 
@@ -113,7 +114,7 @@ func init() {
 		&backupDeleteBackupDir,
 		backupDirFlagName,
 		"",
-		"the full path to backup directory",
+		"the full path to backup directory for local backups",
 	)
 	backupDeleteCmd.PersistentFlags().IntVar(
 		&backupDeleteParallelProcesses,
@@ -147,6 +148,11 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 	err = checkCompatibleFlags(flags, backupDirFlagName, pluginConfigFileFlagName)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, backupDirFlagName, pluginConfigFileFlagName))
+		execOSExit(exitErrorCode)
+	}
+	// If parallel-processes flag is specified and have correct values.
+	if flags.Changed(parallelProcessesFlagName) && !gpbckpconfig.IsPositiveValue(backupDeleteParallelProcesses) {
+		gplog.Error(textmsg.ErrorTextUnableValidateFlag(strconv.Itoa(backupDeleteParallelProcesses), parallelProcessesFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 	// plugin-config and parallel-precesses flags cannot be used together.

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"database/sql"
+	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpbackup/utils"
@@ -13,10 +14,12 @@ import (
 
 // Flags for the gpbackman backup-clean command (backupCleanCmd)
 var (
-	backupCleanBeforeTimestamp  string
-	backupCleanPluginConfigFile string
-	backupCleanOlderThenDays    uint
-	backupCleanCascade          bool
+	backupCleanBeforeTimestamp   string
+	backupCleanPluginConfigFile  string
+	backupCleanBackupDir         string
+	backupCleanOlderThenDays     uint
+	backupCleanParallelProcesses int
+	backupCleanCascade           bool
 )
 
 var backupCleanCmd = &cobra.Command{
@@ -31,10 +34,24 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 By default, the existence of dependent backups is checked and deletion process is not performed,
 unless the --cascade option is passed in.
 
-By default, the deletion will be performed for local backup (in development).
+By default, the deletion will be performed for local backup.
+
+The full path to the backup directory can be set using the --backup-dir option.
+
+For local backups the following logic are applied:
+  * If the --backup-dir option is specified, the deletion will be performed in provided path.
+  * If the --backup-dir option is not specified, but the backup was made with --backup-dir flag for gpbackup, the deletion will be performed in the backup manifest path.
+  * If the --backup-dir option is not specified and backup directory is not specified in backup manifest, the deletion will be performed in backup folder in the master and segments data directories.
+  * If backup is not local, the error will be returned.
+
+For control over the number of parallel processes and ssh connections to delete local backups, the --parallel-processes option can be used.
 
 The storage plugin config file location can be set using the --plugin-config option.
 The full path to the file is required. In this case, the deletion will be performed using the storage plugin.
+
+For non local backups the following logic are applied:
+  * If the --plugin-config option is specified, the deletion will be performed using the storage plugin.
+  * If backup is local, the error will be returned.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -80,6 +97,18 @@ func init() {
 		"",
 		"delete backup sets older than the given timestamp",
 	)
+	backupCleanCmd.PersistentFlags().StringVar(
+		&backupCleanBackupDir,
+		backupDirFlagName,
+		"",
+		"the full path to backup directory for local backups",
+	)
+	backupCleanCmd.PersistentFlags().IntVar(
+		&backupCleanParallelProcesses,
+		parallelProcessesFlagName,
+		1,
+		"the number of parallel processes to delete local backups",
+	)
 	backupCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThenDaysFlagName)
 }
 
@@ -97,6 +126,31 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	}
 	if flags.Changed(olderThenDaysFlagName) {
 		beforeTimestamp = gpbckpconfig.GetTimestampOlderThen(backupCleanOlderThenDays)
+	}
+	// backup-dir anf plugin-config flags cannot be used together.
+	err = checkCompatibleFlags(flags, backupDirFlagName, pluginConfigFileFlagName)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, backupDirFlagName, pluginConfigFileFlagName))
+		execOSExit(exitErrorCode)
+	}
+	// If parallel-processes flag is specified and have correct values.
+	if flags.Changed(parallelProcessesFlagName) && !gpbckpconfig.IsPositiveValue(backupCleanParallelProcesses) {
+		gplog.Error(textmsg.ErrorTextUnableValidateFlag(strconv.Itoa(backupCleanParallelProcesses), parallelProcessesFlagName, err))
+		execOSExit(exitErrorCode)
+	}
+	// plugin-config and parallel-precesses flags cannot be used together.
+	err = checkCompatibleFlags(flags, parallelProcessesFlagName, pluginConfigFileFlagName)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, parallelProcessesFlagName, pluginConfigFileFlagName))
+		execOSExit(exitErrorCode)
+	}
+	// If backup-dir flag is specified and it exists and the full path is specified.
+	if flags.Changed(backupDirFlagName) {
+		err = gpbckpconfig.CheckFullPath(backupCleanBackupDir, checkFileExistsConst)
+		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupCleanBackupDir, backupDirFlagName, err))
+			execOSExit(exitErrorCode)
+		}
 	}
 	// If plugin-config flag is specified and it exists and the full path is specified.
 	if flags.Changed(pluginConfigFileFlagName) {
@@ -144,7 +198,7 @@ func cleanBackup() error {
 				return err
 			}
 		} else {
-			err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, hDB)
+			err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, hDB)
 			if err != nil {
 				return err
 			}
@@ -177,7 +231,7 @@ func cleanBackup() error {
 						return err
 					}
 				} else {
-					err := backupCleanFileLocal(backupCleanCascade, beforeTimestamp, &parseHData)
+					err := backupCleanFileLocal(backupCleanCascade, beforeTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, &parseHData)
 					if err != nil {
 						errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
 						if errUpdateHFile != nil {
@@ -218,7 +272,7 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath s
 	return nil
 }
 
-func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp string, hDB *sql.DB) error {
+func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, backupDir string, maxParallelProcesses int, hDB *sql.DB) error {
 	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(cutOffTimestamp, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
@@ -226,7 +280,7 @@ func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp string, hDB *sql.DB)
 	}
 	if len(backupList) > 0 {
 		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
-		err = backupDeleteDBLocal(backupList, "", deleteCascade, false, false, 1, hDB)
+		err = backupDeleteDBLocal(backupList, backupDir, deleteCascade, false, false, maxParallelProcesses, hDB)
 		if err != nil {
 			return err
 		}
@@ -238,23 +292,31 @@ func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp string, hDB *sql.DB)
 
 func backupCleanFilePlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData *gpbckpconfig.History) error {
 	backupList := getBackupNamesBeforeTimestampFile(cutOffTimestamp, true, parseHData)
-	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
-	// Execute deletion for each backup.
-	// Use backupDeleteFilePlugin function from backup-delete command.
-	// Don't use force deletes and ignore errors for mass deletion.
-	err := backupDeleteFilePlugin(backupList, deleteCascade, false, false, pluginConfigPath, pluginConfig, parseHData)
-	if err != nil {
-		return err
+	if len(backupList) > 0 {
+		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+		// Execute deletion for each backup.
+		// Use backupDeleteFilePlugin function from backup-delete command.
+		// Don't use force deletes and ignore errors for mass deletion.
+		err := backupDeleteFilePlugin(backupList, deleteCascade, false, false, pluginConfigPath, pluginConfig, parseHData)
+		if err != nil {
+			return err
+		}
+	} else {
+		gplog.Info(textmsg.InfoTextNothingToDo())
 	}
 	return nil
 }
 
-func backupCleanFileLocal(deleteCascade bool, cutOffTimestamp string, parseHData *gpbckpconfig.History) error {
+func backupCleanFileLocal(deleteCascade bool, cutOffTimestamp, backupDir string, maxParallelProcesses int, parseHData *gpbckpconfig.History) error {
 	backupList := getBackupNamesBeforeTimestampFile(cutOffTimestamp, false, parseHData)
-	gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
-	err := backupDeleteFileLocal(backupList, "", deleteCascade, false, false, 1, parseHData)
-	if err != nil {
-		return err
+	if len(backupList) > 0 {
+		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+		err := backupDeleteFileLocal(backupList, backupDir, deleteCascade, false, false, maxParallelProcesses, parseHData)
+		if err != nil {
+			return err
+		}
+	} else {
+		gplog.Info(textmsg.InfoTextNothingToDo())
 	}
 	return nil
 }
