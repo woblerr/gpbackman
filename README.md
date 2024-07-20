@@ -4,7 +4,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/woblerr/gpbackman/badge.svg?branch=master)](https://coveralls.io/github/woblerr/gpbackman?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/woblerr/gpbackman)](https://goreportcard.com/report/github.com/woblerr/gpbackman)
 
-
 **gpBackMan** is designed to manage backups created by [gpbackup](https://github.com/greenplum-db/gpbackup) on [Greenplum clusters](https://greenplum.org/).
 
 The utility works with both history database formats: `gpbackup_history.yaml` file format (before gpbackup `1.29.0`) and  `gpbackup_history.db` SQLite format (starting from gpbackup `1.29.0`).
