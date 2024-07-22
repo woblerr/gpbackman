@@ -59,6 +59,11 @@ func IsBackupActive(dateDeleted string) bool {
 		dateDeleted == DateDeletedLocalFailed)
 }
 
+// IsPositiveValue Returns true if the value is positive.
+func IsPositiveValue(value int) bool {
+	return value > 0
+}
+
 // backupPluginCustomReportPath Returns custom report path:
 //
 //	<folder>/gpbackup_<YYYYMMDDHHMMSS>_report
