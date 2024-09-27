@@ -25,13 +25,7 @@ func TestInfoTextFunctionAndArg(t *testing.T) {
 			name:     "Test InfoTextBackupAlreadyDeleted",
 			value:    "TestBackup",
 			function: InfoTextBackupAlreadyDeleted,
-			want:     "Backup TestBackup has already been deleted.",
-		},
-		{
-			name:     "Test InfoTextBackupUnableDeleteFailed",
-			value:    "TestBackup",
-			function: InfoTextBackupFailedStatus,
-			want:     "Backup TestBackup has failed status.",
+			want:     "Backup TestBackup has already been deleted",
 		},
 		{
 			name:     "Test InfoTextBackupDirPath",
@@ -49,6 +43,31 @@ func TestInfoTextFunctionAndArg(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.function(tt.value); got != tt.want {
+				t.Errorf("\nVariables do not match:\n%s\nwant:\n%s", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInfoTextFunctionAndTwoArgs(t *testing.T) {
+	tests := []struct {
+		name     string
+		value1   string
+		value2   string
+		function func(string, string) string
+		want     string
+	}{
+		{
+			name:     "Test InfoTextBackupUnableDeleteFailed",
+			value1:   "TestBackup",
+			value2:   "In Progress",
+			function: InfoTextBackupStatus,
+			want:     "Backup TestBackup has status: In Progress",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.function(tt.value1, tt.value2); got != tt.want {
 				t.Errorf("\nVariables do not match:\n%s\nwant:\n%s", got, tt.want)
 			}
 		})

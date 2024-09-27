@@ -10,11 +10,11 @@ func InfoTextBackupDeleteStart(backupName string) string {
 }
 
 func InfoTextBackupAlreadyDeleted(backupName string) string {
-	return fmt.Sprintf("Backup %s has already been deleted.", backupName)
+	return fmt.Sprintf("Backup %s has already been deleted", backupName)
 }
 
-func InfoTextBackupFailedStatus(backupName string) string {
-	return fmt.Sprintf("Backup %s has failed status.", backupName)
+func InfoTextBackupStatus(backupName, backupStatus string) string {
+	return fmt.Sprintf("Backup %s has status: %s", backupName, backupStatus)
 }
 
 func InfoTextBackupDeleteSuccess(backupName string) string {
