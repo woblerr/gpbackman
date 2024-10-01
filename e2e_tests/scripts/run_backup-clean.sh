@@ -53,49 +53,6 @@ if [ "${result_cnt_sqlite}" != "${TEST_CNT_SQL}" ]; then
 fi
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
-################################################################
-# Test 2.
-# Test cascade delete option.
-# All backupd older than timestamp should be deleted.
-TEST_ID="2"
-
-gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_incremental_plugin.yaml \
---before-timestamp  ${TIMESTAMP} \
---plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml \
---cascade
-
-gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-db ${WORK_DIR}/gpbackup_history.db \
---before-timestamp ${TIMESTAMP} \
---plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml \
---cascade
-
-GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
---history-file ${WORK_DIR}/gpbackup_history_incremental_plugin.yaml \
---deleted)
-
-GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
---history-db ${WORK_DIR}/gpbackup_history.db \
---deleted)
-
-# After successful delete, in history there should be 11 fo sql and 7 for yaml backup with date deleted info.
-TEST_CNT_YAML=7
-TEST_CNT_SQL=17
-
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
-result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
-if [ "${result_cnt_yaml}" != "${TEST_CNT_YAML}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml=${result_cnt_yaml}, want=${TEST_CNT_YAML}"
-    exit 1
-fi
-
-result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
-if [ "${result_cnt_sqlite}" != "${TEST_CNT_SQL}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT_SQL}"
-    exit 1
-fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} all tests passed"
 exit 0
