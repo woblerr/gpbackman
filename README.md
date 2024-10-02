@@ -13,7 +13,7 @@ The utility works with both history database formats: `gpbackup_history.yaml` fi
 * display the backup report for existing backups;
 * delete existing backups from local storage or using storage plugins (for example, [S3 Storage Plugin](https://github.com/greenplum-db/gpbackup-s3-plugin));
 * delete all existing backups from local storage or using storage plugins older than the specified time condition;
-* clean failed and deleted backups from the history database;
+* clean deleted backups from the history database;
 * migrate history database from `gpbackup_history.yaml` format to `gpbackup_history.db` SQLite format.
 
 ## Commands
@@ -34,7 +34,7 @@ Available Commands:
   backup-info     Display information about backups
   completion      Generate the autocompletion script for the specified shell
   help            Help about any command
-  history-clean   Clean failed and deleted backups from the history database
+  history-clean   Clean deleted backups from the history database
   history-migrate Migrate history database
   report-info     Display the report for a specific backup
 
@@ -56,7 +56,7 @@ Description of each command:
 * [Delete all existing backups older than the specified time condition (`backup-clean`)](./COMMANDS.md#delete-all-existing-backups-older-than-the-specified-time-condition-backup-clean)
 * [Delete a specific existing backup (`backup-delete`)](./COMMANDS.md#delete-a-specific-existing-backup-backup-delete)
 * [Display information about backups (`backup-info`)](./COMMANDS.md#display-information-about-backups-backup-info)
-* [Clean failed and deleted backups from the history database (`history-clean`)](./COMMANDS.md#clean-failed-and-deleted-backups-from-the-history-database-history-clean)
+* [Clean deleted backups from the history database (`history-clean`)](./COMMANDS.md#clean-deleted-backups-from-the-history-database-history-clean)
 * [Migrate history database (`history-migrate`)](./COMMANDS.md#migrate-history-database-history-migrate)
 * [Display the report for a specific backup (`report-info`)](./COMMANDS.md#display-the-report-for-a-specific-backup-report-info)
 
