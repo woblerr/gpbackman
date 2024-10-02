@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   ################################################################
   # Prepare infra for some tests.
