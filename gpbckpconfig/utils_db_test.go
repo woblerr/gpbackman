@@ -69,7 +69,7 @@ ORDER BY timestamp DESC;
 SELECT timestamp 
 FROM backups 
 WHERE timestamp < '20240101120000' 
-	AND status != 'Failure' 
+	AND status != 'In Progress' 
 	AND date_deleted IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed') 
 ORDER BY timestamp DESC;
 `},
@@ -91,22 +91,20 @@ func TestGetBackupNameForCleanBeforeTimestampQuery(t *testing.T) {
 		want  string
 	}{
 		{
-			name:  "Show deleted and failed backups",
+			name:  "Show backups",
 			value: "20240101120000",
 			showD: true,
-			want:  `SELECT timestamp FROM backups WHERE timestamp < '20240101120000' AND (status = 'Failure' OR date_deleted NOT IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed', 'In progress')) ORDER BY timestamp DESC;`,
-		},
-		{
-			name:  "Show only failed backups",
-			value: "20240101120000",
-			showD: false,
-			want:  `SELECT timestamp FROM backups WHERE timestamp < '20240101120000' AND status = 'Failure' ORDER BY timestamp DESC;`,
-		},
+			want: `
+SELECT timestamp 
+FROM backups 
+WHERE timestamp < '20240101120000' 
+	AND date_deleted NOT IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed', 'In progress') 
+ORDER BY timestamp DESC;
+`},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getBackupNameForCleanBeforeTimestampQuery(tt.value, tt.showD); got != tt.want {
+			if got := getBackupNameForCleanBeforeTimestampQuery(tt.value); got != tt.want {
 				t.Errorf("getBackupNameForCleanBeforeTimestampQuery(%v, %v):\n%v\nwant:\n%v", tt.value, tt.showD, got, tt.want)
 			}
 		})

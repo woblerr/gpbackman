@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -127,30 +128,23 @@ func formatBackupDuration(value float64) string {
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
 
-// The backup can be used in one of the cases:
-// - backup has success status and backup is active
-// - backup has success status, not active, but the --force flag is set.
+// The backup can be used in one of the cases for local and plugin backups:
+// - backup is active
+// - backup is not active, but the --force flag is set.
 // Returns:
 // - true, if backup can be used;
 // - false, if backup can't be used.
 // Errors and warnings will also returned and logged.
 func checkBackupCanBeUsed(deleteForce, skipLocalBackup bool, backupData gpbckpconfig.BackupConfig) (bool, error) {
 	result := false
-	backupSuccessStatus, err := backupData.IsSuccess()
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("status", backupData.Timestamp, err))
-		// There is no point in performing further checks.
-		return result, err
-	}
-	if !backupSuccessStatus {
-		gplog.Warn(textmsg.InfoTextBackupFailedStatus(backupData.Timestamp))
-		return result, nil
-	}
-	err = checkLocalBackupStatus(skipLocalBackup, backupData.IsLocal())
+	err := checkLocalBackupStatus(skipLocalBackup, backupData.IsLocal())
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableWorkBackup(backupData.Timestamp, err))
 		return result, err
-
+	}
+	if backupData.IsInProgress() && !deleteForce {
+		gplog.Error(textmsg.InfoTextBackupStatus(backupData.Timestamp, backupData.Status))
+		return result, nil
 	}
 	backupDateDeleted, errDateDeleted := backupData.GetBackupDateDeleted()
 	if errDateDeleted != nil {
@@ -272,4 +266,20 @@ func getSegmentConfigurationClusterInfo(dbName string) ([]gpbckpconfig.SegmentCo
 		return queryResult, err
 	}
 	return queryResult, nil
+}
+
+func handleErrorDB(backupName, errorMessage, backupStatus string, hDB *sql.DB) {
+	gplog.Error(errorMessage)
+	err := gpbckpconfig.UpdateDeleteStatus(backupName, backupStatus, hDB)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(backupStatus, backupName, err))
+	}
+}
+
+func handleErrorFile(backupName, errorMessage, backupStatus string, parseHData *gpbckpconfig.History) {
+	gplog.Error(errorMessage)
+	err := parseHData.UpdateBackupConfigDateDeleted(backupName, backupStatus)
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(backupStatus, backupName, err))
+	}
 }

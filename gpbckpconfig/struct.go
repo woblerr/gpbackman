@@ -59,8 +59,9 @@ const (
 	BackupTypeDataOnly     = "data-only"
 	BackupTypeMetadataOnly = "metadata-only"
 	// Backup statuses.
-	BackupStatusSuccess = "Success"
-	BackupStatusFailure = "Failure"
+	BackupStatusSuccess    = "Success"
+	BackupStatusFailure    = "Failure"
+	BackupStatusInProgress = "In Progress"
 	// Object filtering types.
 	objectFilteringIncludeSchema = "include-schema"
 	objectFilteringExcludeSchema = "exclude-schema"
@@ -200,14 +201,14 @@ func (backupConfig BackupConfig) GetBackupDateDeleted() (string, error) {
 // IsSuccess Check backup status.
 // Returns:
 //   - true  - if backup is successful,
-//   - false - false if backup is not successful.
+//   - false - false if backup is not successful or in progress.
 //
 // In all other cases, an error is returned.
 func (backupConfig BackupConfig) IsSuccess() (bool, error) {
 	switch backupConfig.Status {
 	case BackupStatusSuccess:
 		return true, nil
-	case BackupStatusFailure:
+	case BackupStatusFailure, BackupStatusInProgress:
 		return false, nil
 	default:
 		return false, errors.New("backup status does not match any of the available values")
@@ -220,6 +221,10 @@ func (backupConfig BackupConfig) IsSuccess() (bool, error) {
 //   - false - if the backup in plugin storage (plugin field is not empty).
 func (backupConfig BackupConfig) IsLocal() bool {
 	return backupConfig.Plugin == ""
+}
+
+func (backupConfig BackupConfig) IsInProgress() bool {
+	return backupConfig.Status == BackupStatusInProgress
 }
 
 // GetReportFilePathPlugin Return path to report file name for specific plugin.

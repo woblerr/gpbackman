@@ -211,7 +211,7 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 				Plugin:      gpbckpconfig.BackupS3Plugin,
 				DateDeleted: "",
 			},
-			want:    false,
+			want:    true,
 			wantErr: false,
 		},
 		{
@@ -223,7 +223,7 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 				Plugin:      gpbckpconfig.BackupS3Plugin,
 				DateDeleted: "",
 			},
-			want:    false,
+			want:    true,
 			wantErr: false,
 		},
 		{
@@ -283,8 +283,8 @@ func TestCheckBackupCanBeUsed(t *testing.T) {
 				Plugin:      gpbckpconfig.BackupS3Plugin,
 				DateDeleted: "",
 			},
-			want:    false,
-			wantErr: true,
+			want:    true,
+			wantErr: false,
 		},
 		{
 			name:            "Successful backup with plugin with deletion in progress and force",

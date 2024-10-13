@@ -111,10 +111,10 @@ define e2e_command
 endef
 
 define run_docker_compose
-	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker-compose -f e2e_tests/docker-compose.yml build --force-rm --parallel ${1}
-	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker-compose -f e2e_tests/docker-compose.yml run --rm --name ${1} ${1}
+	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker compose -f e2e_tests/docker-compose.yml build --force-rm --parallel ${1}
+	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker compose -f e2e_tests/docker-compose.yml run --rm --name ${1} ${1}
 endef
 
 define down_docker_compose
-	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker-compose -f e2e_tests/docker-compose.yml down -v
+	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker compose -f e2e_tests/docker-compose.yml down -v
 endef

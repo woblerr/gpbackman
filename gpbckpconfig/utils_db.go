@@ -39,8 +39,8 @@ func GetBackupNamesBeforeTimestamp(timestamp string, historyDB *sql.DB) ([]strin
 	return execQueryFunc(getBackupNameBeforeTimestampQuery(timestamp), historyDB)
 }
 
-func GetBackupNamesForCleanBeforeTimestamp(timestamp string, cleanD bool, historyDB *sql.DB) ([]string, error) {
-	return execQueryFunc(getBackupNameForCleanBeforeTimestampQuery(timestamp, cleanD), historyDB)
+func GetBackupNamesForCleanBeforeTimestamp(timestamp string, historyDB *sql.DB) ([]string, error) {
+	return execQueryFunc(getBackupNameForCleanBeforeTimestampQuery(timestamp), historyDB)
 }
 
 func getBackupNameQuery(showD, showF bool) string {
@@ -73,7 +73,7 @@ ORDER BY timestamp DESC;
 `, backupName, backupName)
 }
 
-// Only active backups,  "In progress", deleted and failed  statuses - hidden.
+// Only active backups, "In progress", deleted and failed  statuses - hidden.
 func getBackupNameBeforeTimestampQuery(timestamp string) string {
 	return fmt.Sprintf(`
 SELECT timestamp 
@@ -82,21 +82,19 @@ WHERE timestamp < '%s'
 	AND status != '%s' 
 	AND date_deleted IN ('', '%s', '%s') 
 ORDER BY timestamp DESC;
-`, timestamp, BackupStatusFailure, DateDeletedPluginFailed, DateDeletedLocalFailed)
+`, timestamp, BackupStatusInProgress, DateDeletedPluginFailed, DateDeletedLocalFailed)
 }
 
-func getBackupNameForCleanBeforeTimestampQuery(timestamp string, cleanD bool) string {
-	orderBy := "ORDER BY timestamp DESC;"
-	getBackupsQuery := fmt.Sprintf("SELECT timestamp FROM backups WHERE timestamp < '%s'", timestamp)
-	switch {
-	case cleanD:
-		// Return  deleted, failed backup.
-		getBackupsQuery = fmt.Sprintf("%s AND (status = '%s' OR date_deleted NOT IN ('', '%s', '%s', '%s')) %s", getBackupsQuery, BackupStatusFailure, DateDeletedPluginFailed, DateDeletedLocalFailed, DateDeletedInProgress, orderBy)
-	default:
-		// Return failed backups.
-		getBackupsQuery = fmt.Sprintf("%s AND status = '%s' %s", getBackupsQuery, BackupStatusFailure, orderBy)
-	}
-	return getBackupsQuery
+// Only deleted backups.
+func getBackupNameForCleanBeforeTimestampQuery(timestamp string) string {
+	return fmt.Sprintf(`
+SELECT timestamp 
+FROM backups 
+WHERE timestamp < '%s' 
+	AND date_deleted NOT IN ('', '%s', '%s', '%s') 
+ORDER BY timestamp DESC;
+`, timestamp, DateDeletedPluginFailed, DateDeletedLocalFailed, DateDeletedInProgress)
+
 }
 
 // UpdateDeleteStatus Updates the date_deleted column in the history database.
@@ -109,7 +107,7 @@ func UpdateDeleteStatus(backupName, dateDeleted string, historyDB *sql.DB) error
 }
 
 // CleanBackupsDB cleans the backup history database by deleting backups based on the given list of backup names.
-func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB) error {
+func CleanBackupsDB(list []string, batchSize int, historyDB *sql.DB) error {
 	for i := 0; i < len(list); i += batchSize {
 		end := i + batchSize
 		if end > len(list) {
@@ -121,31 +119,29 @@ func CleanBackupsDB(list []string, batchSize int, cleanD bool, historyDB *sql.DB
 		if err != nil {
 			return err
 		}
-		if cleanD {
-			err = execStatementFunc(deleteBackupsFormTableQuery("restore_plans", idStr), historyDB)
-			if err != nil {
-				return err
-			}
-			err = execStatementFunc(deleteBackupsFormTableQuery("restore_plan_tables", idStr), historyDB)
-			if err != nil {
-				return err
-			}
-			err = execStatementFunc(deleteBackupsFormTableQuery("exclude_relations", idStr), historyDB)
-			if err != nil {
-				return err
-			}
-			err = execStatementFunc(deleteBackupsFormTableQuery("exclude_schemas", idStr), historyDB)
-			if err != nil {
-				return err
-			}
-			err = execStatementFunc(deleteBackupsFormTableQuery("include_relations", idStr), historyDB)
-			if err != nil {
-				return err
-			}
-			err = execStatementFunc(deleteBackupsFormTableQuery("include_schemas", idStr), historyDB)
-			if err != nil {
-				return err
-			}
+		err = execStatementFunc(deleteBackupsFormTableQuery("restore_plans", idStr), historyDB)
+		if err != nil {
+			return err
+		}
+		err = execStatementFunc(deleteBackupsFormTableQuery("restore_plan_tables", idStr), historyDB)
+		if err != nil {
+			return err
+		}
+		err = execStatementFunc(deleteBackupsFormTableQuery("exclude_relations", idStr), historyDB)
+		if err != nil {
+			return err
+		}
+		err = execStatementFunc(deleteBackupsFormTableQuery("exclude_schemas", idStr), historyDB)
+		if err != nil {
+			return err
+		}
+		err = execStatementFunc(deleteBackupsFormTableQuery("include_relations", idStr), historyDB)
+		if err != nil {
+			return err
+		}
+		err = execStatementFunc(deleteBackupsFormTableQuery("include_schemas", idStr), historyDB)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

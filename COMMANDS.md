@@ -12,10 +12,10 @@
 - [Display information about backups (`backup-info`)](#display-information-about-backups-backup-info)
   - [Examples](#examples-2)
   - [Using container](#using-container-2)
-- [Clean failed and deleted backups from the history database (`history-clean`)](#clean-failed-and-deleted-backups-from-the-history-database-history-clean)
+- [Clean deleted backups from the history database (`history-clean`)](#clean-deleted-backups-from-the-history-database-history-clean)
   - [Examples](#examples-3)
-    - [Delete information about failed and deleted backups from history database older than n days](#delete-information-about-failed-and-deleted-backups-from-history-database-older-than-n-days)
-    - [Delete all backups using storage plugin older than timestamp](#delete-all-backups-using-storage-plugin-older-than-timestamp-1)
+    - [Delete information about deleted backups from history database older than n days](#delete-information-about-deleted-backups-from-history-database-older-than-n-days)
+    - [Delete information about deleted backups from history database older than timestamp](#delete-information-about-deleted-backups-from-history-database-older-than-timestamp)
   - [Using container](#using-container-3)
 - [Migrate history database (`history-migrate`)](#migrate-history-database-history-migrate)
   - [Examples](#examples-4)
@@ -442,19 +442,17 @@ docker run \
   --history-db /data/master/gpseg-1/gpbackup_history.db
 ```
 
-# Clean failed and deleted backups from the history database (`history-clean`)
+# Clean deleted backups from the history database (`history-clean`)
 
 Available options for `history-clean` command and their description:
 
 ```bash
 ./gpbackman history-clean -h
 
-Clean failed and deleted backups from the history database.
+Clean deleted backups from the history database.
 Only the database is being cleaned up.
 
-By default, information is deleted only about failed backups from gpbackup_history.db.
-
-To delete information about deleted backups, use the --deleted option.
+Information is deleted only about deleted backups from gpbackup_history.db. Each backup must be deleted first.
 
 To delete information about backups older than the given timestamp, use the --before-timestamp option. 
 To delete information about backups older than the given number of days, use the --older-than-day option. 
@@ -475,7 +473,6 @@ Usage:
 
 Flags:
       --before-timestamp string   delete information about backups older than the given timestamp
-      --deleted                   delete information about deleted backups
   -h, --help                      help for history-clean
       --older-than-days uint      delete information about backups older than the given number of days
 
@@ -488,20 +485,18 @@ Global Flags:
 ```
 
 ## Examples
-### Delete information about failed and deleted backups from history database older than n days
-Delete information about failed and deleted backups from history database older than 7 days:
+### Delete information about deleted backups from history database older than n days
+Delete information about deleted backups from history database older than 7 days:
 ```bash
 ./gpbackman history-clean \
   --older-than-days 7 \
-  --deleted
 ```
 
-### Delete all backups using storage plugin older than timestamp
-Delete information about failed and deleted backups from history database older than timestamp `20240101100000`:
+### Delete information about deleted backups from history database older than timestamp
+Delete information about deleted backups from history database older than timestamp `20240101100000`:
 ```bash
 ./gpbackman history-clean \
   --before-timestamp 20240101100000 \
-  --deleted
 ```
 
 ## Using container
@@ -517,7 +512,6 @@ docker run \
   gpbackman history-clean \
   --older-than-days 7 \
   --history-db /data/master/gpseg-1/gpbackup_history.db \
-  --deleted
 ```
 
 # Migrate history database (`history-migrate`)

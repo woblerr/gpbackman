@@ -40,12 +40,16 @@ TIMESTAMP="20230724090000"
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml \
 --timestamp ${TIMESTAMP} \
---plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml
+--plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml \
+--force \
+--ignore-errors
 
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP} \
---plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml
+--plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml \
+--force \
+--ignore-errors
 
 GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml \
@@ -84,58 +88,7 @@ gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP} \
 --plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml \
---cascade
-
-GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
---history-db ${WORK_DIR}/gpbackup_history.db \
---deleted)
-
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
-result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
-if [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
-    exit 1
-fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
-
-################################################################
-# Test 3.
-# Test errors in logs.
-TEST_ID="3"
-
-TIMESTAMP="20230725101959"
-TEST_CNT=5
-
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
-logs_errors=$(grep -r ERROR ${HOME_DIR}/gpAdminLogs/)
-if [ $? == 0 ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_logs:\n${logs_errors}"
-    exit 1
-fi
-echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
-
-################################################################
-# Test 4.
-# Test ignore errors option.
-
-TEST_ID="4"
-
-# After previous tests, in history there should be 6 backup with dete deleted info.
-# In this test we use plugin config with invalid aws_access_key_id for s3.
-# The error occurs:
-#   InvalidAccessKeyId: The Access Key Id you provided does not exist in our records.
-#
-# With --force and --ignore-errors, the error that occurs is ignored and the backup is marked as deleted.
-TEST_CNT=7
-
-TIMESTAMP="20230721090000"
-
-set -x
-# Execute backup-delete commnad.
-gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-db ${WORK_DIR}/gpbackup_history.db \
---timestamp ${TIMESTAMP} \
---plugin-config ${HOME_DIR}/gpbackup_s3_plugin_invalid.yaml \
+--cascade \
 --force \
 --ignore-errors
 

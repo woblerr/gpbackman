@@ -14,5 +14,5 @@ RUN apk add --no-cache --update build-base bash perl \
     && cd /tmp/gpbackup-s3-plugin \
     && make build
 
-FROM gpbackman as gpbackman-plugins
+FROM gpbackman AS gpbackman-plugins
 COPY --from=s3_plugin-builder /go/bin/gpbackup_s3_plugin /home/gpbackman/gpbackup_s3_plugin

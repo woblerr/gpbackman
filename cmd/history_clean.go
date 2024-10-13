@@ -14,18 +14,15 @@ import (
 var (
 	historyCleanBeforeTimestamp string
 	historyCleanOlderThenDays   uint
-	historyCleanDeleted         bool
 )
 
 var historyCleanCmd = &cobra.Command{
 	Use:   "history-clean",
-	Short: "Clean failed and deleted backups from the history database",
-	Long: `Clean failed and deleted backups from the history database.
+	Short: "Clean deleted backups from the history database",
+	Long: `Clean deleted backups from the history database.
 Only the database is being cleaned up.
 
-By default, information is deleted only about failed backups from gpbackup_history.db.
-
-To delete information about deleted backups, use the --deleted option.
+Information is deleted only about deleted backups from gpbackup_history.db. Each backup must be deleted first.
 
 To delete information about backups older than the given timestamp, use the --before-timestamp option. 
 To delete information about backups older than the given number of days, use the --older-than-day option. 
@@ -62,12 +59,6 @@ func init() {
 		beforeTimestampFlagName,
 		"",
 		"delete information about backups older than the given timestamp",
-	)
-	historyCleanCmd.Flags().BoolVar(
-		&historyCleanDeleted,
-		deletedFlagName,
-		false,
-		"delete information about deleted backups",
 	)
 	historyCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThenDaysFlagName)
 }
@@ -114,7 +105,7 @@ func cleanHistory() error {
 				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 			}
 		}()
-		err = historyCleanDB(beforeTimestamp, historyCleanDeleted, hDB)
+		err = historyCleanDB(beforeTimestamp, hDB)
 		if err != nil {
 			return err
 		}
@@ -126,7 +117,7 @@ func cleanHistory() error {
 				return err
 			}
 			if len(parseHData.BackupConfigs) != 0 {
-				err = historyCleanFile(beforeTimestamp, historyCleanDeleted, &parseHData)
+				err = historyCleanFile(beforeTimestamp, &parseHData)
 				if err != nil {
 					return err
 				}
@@ -141,15 +132,15 @@ func cleanHistory() error {
 	return nil
 }
 
-func historyCleanDB(cutOffTimestamp string, cleanDeleted bool, hDB *sql.DB) error {
-	backupList, err := gpbckpconfig.GetBackupNamesForCleanBeforeTimestamp(cutOffTimestamp, cleanDeleted, hDB)
+func historyCleanDB(cutOffTimestamp string, hDB *sql.DB) error {
+	backupList, err := gpbckpconfig.GetBackupNamesForCleanBeforeTimestamp(cutOffTimestamp, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
 	}
 	if len(backupList) > 0 {
 		gplog.Debug(textmsg.InfoTextBackupDeleteListFromHistory(backupList))
-		err := gpbckpconfig.CleanBackupsDB(backupList, sqliteDeleteBatchSize, cleanDeleted, hDB)
+		err := gpbckpconfig.CleanBackupsDB(backupList, sqliteDeleteBatchSize, hDB)
 		if err != nil {
 			return err
 		}
@@ -159,30 +150,20 @@ func historyCleanDB(cutOffTimestamp string, cleanDeleted bool, hDB *sql.DB) erro
 	return nil
 }
 
-func historyCleanFile(cutOffTimestamp string, cleanDeleted bool, parseHData *gpbckpconfig.History) error {
+func historyCleanFile(cutOffTimestamp string, parseHData *gpbckpconfig.History) error {
 	backupIdxs := make([]int, 0)
 	backupList := make([]string, 0)
 	for idx, backupConfig := range parseHData.BackupConfigs {
 		// In history file we have sorted timestamps by descending order.
 		if backupConfig.Timestamp < cutOffTimestamp {
-			backupSuccessStatus, err := backupConfig.IsSuccess()
+			backupDateDeleted, err := backupConfig.GetBackupDateDeleted()
 			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableGetBackupValue("status", backupConfig.Timestamp, err))
+				gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupConfig.Timestamp, err))
 				return err
 			}
-			if !backupSuccessStatus {
+			if !gpbckpconfig.IsBackupActive(backupDateDeleted) && (backupDateDeleted != gpbckpconfig.DateDeletedInProgress) {
 				backupIdxs = append(backupIdxs, idx)
 				backupList = append(backupList, backupConfig.Timestamp)
-			} else if cleanDeleted {
-				backupDateDeleted, errDateDeleted := backupConfig.GetBackupDateDeleted()
-				if errDateDeleted != nil {
-					gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupConfig.Timestamp, errDateDeleted))
-					return err
-				}
-				if !gpbckpconfig.IsBackupActive(backupDateDeleted) && (backupDateDeleted != gpbckpconfig.DateDeletedInProgress) {
-					backupIdxs = append(backupIdxs, idx)
-					backupList = append(backupList, backupConfig.Timestamp)
-				}
 			}
 		}
 	}

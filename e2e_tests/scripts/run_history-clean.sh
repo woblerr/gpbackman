@@ -34,12 +34,10 @@ gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-file ${WORK_DIR}/gpbackup_history_failure_plugin.yaml \
 --history-file ${WORK_DIR}/gpbackup_history_incremental_plugin.yaml \
 --before-timestamp  ${TIMESTAMP} \
---deleted
 
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --before-timestamp ${TIMESTAMP} \
---deleted
 
 GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
 --history-file ${WORK_DIR}/gpbackup_history_failure_plugin.yaml \
