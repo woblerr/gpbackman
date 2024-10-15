@@ -30,7 +30,7 @@ If the --history-db option is not specified, the history database will be search
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		// No need to check historyDB existence.
-		doRootFlagValidation(cmd.Flags())
+		doRootFlagValidation(cmd.Flags(), false)
 		doHistoryMigrateFlagValidation(cmd.Flags())
 		doMigrateHistory()
 	},

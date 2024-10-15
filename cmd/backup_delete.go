@@ -69,7 +69,7 @@ Can be specified only once. The full path to the file is required.
 If the --history-db option is not specified, the history database will be searched in the current directory.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		doRootFlagValidation(cmd.Flags())
+		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
 		doDeleteBackupFlagValidation(cmd.Flags())
 		doDeleteBackup()
 	},
