@@ -20,13 +20,13 @@ The data from the gpbackup_history.yaml file will be uploaded to gpbackup_histor
 If the gpbackup_history.db file does not exist, it will be created.
 The gpbackup_history.yaml file will be renamed to gpbackup_history.yaml.migrated.
 
-The gpbackup_history.db file location can be set using the  --history-db option.
+The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 
-The gpbackup_history.yaml file location can be set using the  --history-file option.
+The gpbackup_history.yaml file location can be set using the --history-file option.
 Can be specified multiple times. The full path to the file is required.
 
-If no --history-file and/or --history-db options are specified, the files will be searched in the current directory.`,
+If the --history-db option is not specified, the history database will be searched in the current directory.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		// No need to check historyDB existence.

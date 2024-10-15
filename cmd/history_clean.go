@@ -30,13 +30,7 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.`,
+If the --history-db option is not specified, the history database will be searched in the current directory.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags())
