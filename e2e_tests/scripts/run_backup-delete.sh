@@ -38,22 +38,11 @@ TIMESTAMP="20230724090000"
 
 # Execute backup-delete commnad.
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml \
---timestamp ${TIMESTAMP} \
---plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml \
---force \
---ignore-errors
-
-gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP} \
 --plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml \
 --force \
 --ignore-errors
-
-GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
---history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml \
---deleted | grep -w ${TIMESTAMP})
 
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
@@ -61,11 +50,6 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
-bckp_date_deleted=$(echo "${GPBACKMAN_RESULT_YAML}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX})
-if [ $? != 0 ]; then
-    echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml:\n${bckp_date_deleted}"
-    exit 1
-fi
 bckp_date_deleted=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX})
 if [ $? != 0 ]; then
     echo -e "[ERROR] r${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_sqlite:\n${bckp_date_deleted}"

@@ -27,11 +27,6 @@ TEST_ID="1"
 TIMESTAMP="20230724090000"
 
 # Execute report-info commnad.
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml \
---timestamp ${TIMESTAMP} \
---plugin-config ${HOME_DIR}/gpbackup_s3_plugin.yaml | grep -v 'Reading Plugin Config')
-
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP} \
@@ -40,7 +35,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 bckp_report=$(cat ${SRC_DIR}/gpbackup_${TIMESTAMP}_report)
-if [ "${bckp_report}" != "${GPBACKMAN_RESULT_YAML}" ] ||  [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
+if [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nbckp_report:\n${bckp_report}\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
@@ -61,11 +56,6 @@ mkdir -p ${REPORT_DIR}
 cp ${SRC_DIR}/gpbackup_${TIMESTAMP}_report ${REPORT_DIR}
 
 # Execute report-info commnad.
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_full_local.yaml \
---timestamp ${TIMESTAMP} \
---backup-dir ${BACKUP_DIR})
-
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP} \
@@ -74,7 +64,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 bckp_report=$(cat ${SRC_DIR}/gpbackup_${TIMESTAMP}_report)
-if [ "${bckp_report}" != "${GPBACKMAN_RESULT_YAML}" ] ||  [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
+if [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nbckp_report:\n${bckp_report}\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
@@ -96,10 +86,6 @@ mkdir -p ${REPORT_DIR}
 cp ${SRC_DIR}/gpbackup_${TIMESTAMP}_report ${REPORT_DIR}
 
 # Execute report-info commnad.
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_full_local.yaml \
---timestamp ${TIMESTAMP})
-
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP})
@@ -107,7 +93,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 bckp_report=$(cat ${SRC_DIR}/gpbackup_${TIMESTAMP}_report)
-if [ "${bckp_report}" != "${GPBACKMAN_RESULT_YAML}" ] ||  [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
+if [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nbckp_report:\n${bckp_report}\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
@@ -129,11 +115,6 @@ mkdir -p ${REPORT_DIR}
 cp ${SRC_DIR}/gpbackup_${TIMESTAMP}_report ${REPORT_DIR}
 
 # Execute report-info commnad.
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_full_local.yaml \
---timestamp ${TIMESTAMP} \
---backup-dir ${BACKUP_DIR})
-
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP} \
@@ -142,7 +123,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 bckp_report=$(cat ${SRC_DIR}/gpbackup_${TIMESTAMP}_report)
-if [ "${bckp_report}" != "${GPBACKMAN_RESULT_YAML}" ] ||  [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
+if [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nbckp_report:\n${bckp_report}\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
@@ -164,10 +145,6 @@ mkdir -p ${REPORT_DIR}
 cp ${SRC_DIR}/gpbackup_${TIMESTAMP}_report ${REPORT_DIR}
 
 # Execute report-info commnad.
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_full_local.yaml \
---timestamp ${TIMESTAMP})
-
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --timestamp ${TIMESTAMP})
@@ -175,7 +152,7 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
 bckp_report=$(cat ${SRC_DIR}/gpbackup_${TIMESTAMP}_report)
-if [ "${bckp_report}" != "${GPBACKMAN_RESULT_YAML}" ] ||  [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
+if [ "${bckp_report}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nbckp_report:\n${bckp_report}\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi
