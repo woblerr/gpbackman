@@ -12,7 +12,6 @@ import (
 
 // Flags for the gpbackman command (rootCmd)
 var (
-	rootHistoryFiles    []string
 	rootHistoryDB       string
 	rootLogFile         string
 	rootLogLevelConsole string
@@ -31,12 +30,6 @@ func init() {
 		historyDBFlagName,
 		"",
 		"full path to the gpbackup_history.db file",
-	)
-	rootCmd.PersistentFlags().StringArrayVar(
-		&rootHistoryFiles,
-		historyFilesFlagName,
-		[]string{""},
-		"full path to the gpbackup_history.yaml file, could be specified multiple times",
 	)
 	rootCmd.PersistentFlags().StringVar(
 		&rootLogFile,
@@ -73,27 +66,16 @@ func getVersion() string {
 }
 
 // These flag checks are applied for all commands:
-func doRootFlagValidation(flags *pflag.FlagSet, checkFileExists bool) {
+func doRootFlagValidation(flags *pflag.FlagSet) {
 	var err error
 	// If history-db flag is specified and full path.
 	// The existence of the file is checked by condition from each specific command.
 	// Not all commands (see history-migrate command, report-info command flags) require a history db file to exist.
 	if flags.Changed(historyDBFlagName) {
-		err = gpbckpconfig.CheckFullPath(rootHistoryDB, checkFileExists)
+		err = gpbckpconfig.CheckFullPath(rootHistoryDB, checkFileExistsConst)
 		if err != nil {
 			gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootHistoryDB, historyDBFlagName, err))
 			execOSExit(exitErrorCode)
-		}
-	}
-	// If the plugin-config flag is specified and it exists and the full path is specified.
-	if flags.Changed(historyFilesFlagName) {
-		for _, hFile := range rootHistoryFiles {
-			// Always check the existence of the file.
-			err = gpbckpconfig.CheckFullPath(hFile, checkFileExistsConst)
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableValidateFlag(hFile, historyFilesFlagName, err))
-				execOSExit(exitErrorCode)
-			}
 		}
 	}
 	// Check, that the log level is correct.
@@ -106,26 +88,6 @@ func doRootFlagValidation(flags *pflag.FlagSet, checkFileExists bool) {
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelFile, logLevelFileFlagName, err))
 		execOSExit(exitErrorCode)
-	}
-}
-
-// These flag checks are applied only to commands:
-// - backup-clean
-// - backup-delete
-// - backup-info
-// - history-clean
-// - report-info
-func doRootBackupFlagValidation(flags *pflag.FlagSet) {
-	// history-file flag and history-db flags cannot be used together.
-	err := checkCompatibleFlags(flags, historyDBFlagName, historyFilesFlagName)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, historyDBFlagName, historyFilesFlagName))
-		execOSExit(exitErrorCode)
-	}
-	// If history-files flag is specified, set historyDB = false.
-	// It's file format for history database.
-	if flags.Changed(historyFilesFlagName) && !flags.Changed(historyDBFlagName) {
-		historyDB = false
 	}
 }
 

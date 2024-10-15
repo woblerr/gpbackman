@@ -66,8 +66,7 @@ If no --history-file or --history-db options are specified, the history database
 Only --history-file or --history-db option can be specified, not both.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
-		doRootBackupFlagValidation(cmd.Flags())
+		doRootFlagValidation(cmd.Flags())
 		doReportInfoFlagValidation(cmd.Flags())
 		doReportInfo()
 	},
@@ -160,64 +159,31 @@ func doReportInfo() {
 }
 
 func reportInfo() error {
-	if historyDB {
-		hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		return err
+	}
+	defer func() {
+		closeErr := hDB.Close()
+		if closeErr != nil {
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+		}
+	}()
+	if reportInfoPluginConfigFile != "" {
+		pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+			gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
 			return err
 		}
-		defer func() {
-			closeErr := hDB.Close()
-			if closeErr != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
-			}
-		}()
-		if reportInfoPluginConfigFile != "" {
-			pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
-				return err
-			}
-			err = reportInfoDBPlugin(reportInfoTimestamp, reportInfoPluginConfigFile, pluginConfig, hDB)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := reportInfoDBLocal(reportInfoTimestamp, reportInfoBackupDir, hDB)
-			if err != nil {
-				return err
-			}
+		err = reportInfoDBPlugin(reportInfoTimestamp, reportInfoPluginConfigFile, pluginConfig, hDB)
+		if err != nil {
+			return err
 		}
 	} else {
-		for _, historyFile := range rootHistoryFiles {
-			hFile := getHistoryFilePath(historyFile)
-			historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
-				return err
-			}
-			parseHData, err := gpbckpconfig.ParseResult(historyData)
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
-				return err
-			}
-			if len(parseHData.BackupConfigs) != 0 {
-				if reportInfoPluginConfigFile != "" {
-					pluginConfig, err := utils.ReadPluginConfig(reportInfoPluginConfigFile)
-					if err != nil {
-						return err
-					}
-					err = reportInfoFilePlugin(reportInfoTimestamp, reportInfoPluginConfigFile, pluginConfig, parseHData)
-					if err != nil {
-						return err
-					}
-				} else {
-					err := reportInfoFileLocal(reportInfoTimestamp, reportInfoBackupDir, parseHData)
-					if err != nil {
-						return err
-					}
-				}
-			}
+		err := reportInfoDBLocal(reportInfoTimestamp, reportInfoBackupDir, hDB)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -225,19 +191,6 @@ func reportInfo() error {
 
 func reportInfoDBPlugin(backupName, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
 	backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
-		return err
-	}
-	err = reportInfoPluginFunc(backupData, pluginConfigPath, pluginConfig)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func reportInfoFilePlugin(backupName, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData gpbckpconfig.History) error {
-	_, backupData, err := parseHData.FindBackupConfig(backupName)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 		return err
@@ -278,19 +231,6 @@ func reportInfoPluginFunc(backupData gpbckpconfig.BackupConfig, pluginConfigPath
 
 func reportInfoDBLocal(backupName, backupDir string, hDB *sql.DB) error {
 	backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
-		return err
-	}
-	err = reportInfoFileLocalFunc(backupData, backupDir)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func reportInfoFileLocal(backupName, backupDir string, parseHData gpbckpconfig.History) error {
-	_, backupData, err := parseHData.FindBackupConfig(backupName)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 		return err

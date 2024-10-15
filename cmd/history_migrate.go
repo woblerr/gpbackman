@@ -4,9 +4,12 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpbackup/history"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
 	"github.com/woblerr/gpbackman/textmsg"
 )
+
+var historyMigrateHistoryFiles []string
 
 var historyMigrateCmd = &cobra.Command{
 	Use:   "history-migrate",
@@ -27,16 +30,42 @@ If no --history-file and/or --history-db options are specified, the files will b
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		// No need to check historyDB existence.
-		doRootFlagValidation(cmd.Flags(), false)
+		doRootFlagValidation(cmd.Flags())
+		doHistoryMigrateFlagValidation(cmd.Flags())
 		doMigrateHistory()
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(historyMigrateCmd)
+	historyMigrateCmd.PersistentFlags().StringArrayVar(
+		&historyMigrateHistoryFiles,
+		historyFilesFlagName,
+		[]string{""},
+		"full path to the gpbackup_history.yaml file, could be specified multiple times",
+	)
+	_ = historyMigrateCmd.MarkPersistentFlagRequired(historyFilesFlagName)
+
+}
+
+// These flag checks are applied only for history-migrate commands.
+func doHistoryMigrateFlagValidation(flags *pflag.FlagSet) {
+	var err error
+	// If the plugin-config flag is specified and it exists and the full path is specified.
+	if flags.Changed(historyFilesFlagName) {
+		for _, hFile := range historyMigrateHistoryFiles {
+			// Always check the existence of the file.
+			err = gpbckpconfig.CheckFullPath(hFile, checkFileExistsConst)
+			if err != nil {
+				gplog.Error(textmsg.ErrorTextUnableValidateFlag(hFile, historyFilesFlagName, err))
+				execOSExit(exitErrorCode)
+			}
+		}
+	}
 }
 
 func doMigrateHistory() {
+	logHeadersDebug()
 	err := migrateHistory()
 	if err != nil {
 		execOSExit(exitErrorCode)
@@ -55,7 +84,8 @@ func migrateHistory() error {
 			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
-	for _, historyFile := range rootHistoryFiles {
+	for _, historyFile := range historyMigrateHistoryFiles {
+		gplog.Info(textmsg.InfoTextMigrateHistoryFile("Start", historyFile))
 		hFile := getHistoryFilePath(historyFile)
 		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 		if err != nil {
@@ -80,6 +110,7 @@ func migrateHistory() error {
 			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("rename", err))
 			return err
 		}
+		gplog.Info(textmsg.InfoTextMigrateHistoryFile("Finish", historyFile))
 	}
 	return nil
 }

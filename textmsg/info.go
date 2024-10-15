@@ -52,3 +52,7 @@ func InfoTextSegmentPrefix(segPrefix string) string {
 func InfoTextNothingToDo() string {
 	return "Nothing to do"
 }
+
+func InfoTextMigrateHistoryFile(action, file string) string {
+	return fmt.Sprintf("%s file migration to history database: %s", action, file)
+}

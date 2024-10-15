@@ -64,6 +64,13 @@ func TestInfoTextFunctionAndTwoArgs(t *testing.T) {
 			function: InfoTextBackupStatus,
 			want:     "Backup TestBackup has status: In Progress",
 		},
+		{
+			name:     "Test InfoTextMigrateHistoryFile",
+			value1:   "Start",
+			value2:   "/test/path",
+			function: InfoTextMigrateHistoryFile,
+			want:     "Start file migration to history database: /test/path",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

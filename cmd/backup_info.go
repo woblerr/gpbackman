@@ -58,8 +58,7 @@ If no --history-file or --history-db options are specified, the history database
 Only --history-file or --history-db option can be specified, not both.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
-		doRootBackupFlagValidation(cmd.Flags())
+		doRootFlagValidation(cmd.Flags())
 		doBackupInfoFlagValidation(cmd.Flags())
 		doBackupInfo()
 	},
@@ -148,52 +147,28 @@ func doBackupInfo() {
 func backupInfo() error {
 	t := table.NewWriter()
 	initTable(t)
-	if historyDB {
-		hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
-			return err
+	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		return err
+	}
+	defer func() {
+		closeErr := hDB.Close()
+		if closeErr != nil {
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
-		defer func() {
-			closeErr := hDB.Close()
-			if closeErr != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
-			}
-		}()
-		err = backupInfoDB(
-			backupInfoShowDeleted,
-			backupInfoShowFailed,
-			backupInfoExcludeFilter,
-			backupInfoBackupTypeFilter,
-			backupInfoTableNameFilter,
-			backupInfoSchemaNameFilter,
-			hDB,
-			t)
-		if err != nil {
-			return err
-		}
-	} else {
-		for _, historyFile := range rootHistoryFiles {
-			hFile := getHistoryFilePath(historyFile)
-			parseHData, err := getDataFromHistoryFile(hFile)
-			if err != nil {
-				return err
-			}
-			if len(parseHData.BackupConfigs) != 0 {
-				err = backupInfoFile(
-					backupInfoShowDeleted,
-					backupInfoShowFailed,
-					backupInfoExcludeFilter,
-					backupInfoBackupTypeFilter,
-					backupInfoTableNameFilter,
-					backupInfoSchemaNameFilter,
-					parseHData,
-					t)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	}()
+	err = backupInfoDB(
+		backupInfoShowDeleted,
+		backupInfoShowFailed,
+		backupInfoExcludeFilter,
+		backupInfoBackupTypeFilter,
+		backupInfoTableNameFilter,
+		backupInfoSchemaNameFilter,
+		hDB,
+		t)
+	if err != nil {
+		return err
 	}
 	t.Render()
 	return nil
@@ -212,20 +187,6 @@ func backupInfoDB(showDeleted, showFailed, backupExcludeFilter bool, backupTypeF
 			return err
 		}
 		addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter, backupExcludeFilter, backupData, t)
-	}
-	return nil
-}
-
-func backupInfoFile(showDeleted, showFailed, backupExcludeFilter bool, backupTypeFilter, backupTableFilter, backupSchemaFilter string, parseHData gpbckpconfig.History, t table.Writer) error {
-	for _, backupData := range parseHData.BackupConfigs {
-		backupDateDeleted, err := backupData.GetBackupDateDeleted()
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
-		}
-		validBackup := gpbckpconfig.CheckBackupCanBeDisplayed(showDeleted, showFailed, backupData.Status, backupDateDeleted)
-		if validBackup {
-			addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter, backupExcludeFilter, backupData, t)
-		}
 	}
 	return nil
 }

@@ -77,21 +77,6 @@ func getHistoryFilePath(historyFilePath string) string {
 	return historyFileName
 }
 
-func getDataFromHistoryFile(historyFile string) (gpbckpconfig.History, error) {
-	var hData gpbckpconfig.History
-	historyData, err := gpbckpconfig.ReadHistoryFile(historyFile)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
-		return hData, err
-	}
-	hData, err = gpbckpconfig.ParseResult(historyData)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
-		return hData, err
-	}
-	return hData, nil
-}
-
 func renameHistoryFile(filename string) error {
 	fileDir := filepath.Dir(filename)
 	fileName := filepath.Base(filename)
@@ -271,14 +256,6 @@ func getSegmentConfigurationClusterInfo(dbName string) ([]gpbckpconfig.SegmentCo
 func handleErrorDB(backupName, errorMessage, backupStatus string, hDB *sql.DB) {
 	gplog.Error(errorMessage)
 	err := gpbckpconfig.UpdateDeleteStatus(backupName, backupStatus, hDB)
-	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(backupStatus, backupName, err))
-	}
-}
-
-func handleErrorFile(backupName, errorMessage, backupStatus string, parseHData *gpbckpconfig.History) {
-	gplog.Error(errorMessage)
-	err := parseHData.UpdateBackupConfigDateDeleted(backupName, backupStatus)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(backupStatus, backupName, err))
 	}
