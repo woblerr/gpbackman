@@ -6,7 +6,9 @@
 
 **gpBackMan** is designed to manage backups created by [gpbackup](https://github.com/greenplum-db/gpbackup) on [Greenplum clusters](https://greenplum.org/).
 
-The utility works with both history database formats: `gpbackup_history.yaml` file format (before gpbackup `1.29.0`) and  `gpbackup_history.db` SQLite format (starting from gpbackup `1.29.0`).
+The utility works with `gpbackup_history.db` SQLite history database format. 
+
+The utility provides functionality for migrating data from the old `gpbackup_history.yaml` YAML format to the new one. If you are using an old `gpbackup` version that supports only YAML format, then use `gpBackMan <= v0.6.0`.
 
 **gpBackMan** provides the following features:
 * display information about backups;
@@ -41,7 +43,6 @@ Available Commands:
 Flags:
   -h, --help                       help for gpbackman
       --history-db string          full path to the gpbackup_history.db file
-      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
