@@ -55,17 +55,10 @@ For non local backups the following logic are applied:
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.`,
+If the --history-db option is not specified, the history database will be searched in the current directory.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
-		doRootBackupFlagValidation(cmd.Flags())
 		doCleanBackupFlagValidation(cmd.Flags())
 		doCleanBackup()
 	},
@@ -175,77 +168,31 @@ func doCleanBackup() {
 }
 
 func cleanBackup() error {
-	if historyDB {
-		hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		return err
+	}
+	defer func() {
+		closeErr := hDB.Close()
+		if closeErr != nil {
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+		}
+	}()
+	if backupCleanPluginConfigFile != "" {
+		pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+			gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
 			return err
 		}
-		defer func() {
-			closeErr := hDB.Close()
-			if closeErr != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
-			}
-		}()
-		if backupCleanPluginConfigFile != "" {
-			pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
-				return err
-			}
-			err = backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, hDB)
-			if err != nil {
-				return err
-			}
+		err = backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
+		if err != nil {
+			return err
 		}
 	} else {
-		for _, historyFile := range rootHistoryFiles {
-			hFile := getHistoryFilePath(historyFile)
-			parseHData, err := getDataFromHistoryFile(hFile)
-			if err != nil {
-				return err
-			}
-			if len(parseHData.BackupConfigs) != 0 {
-				if backupCleanPluginConfigFile != "" {
-					pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
-					if err != nil {
-						gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
-						return err
-					}
-					err = backupCleanFilePlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig, &parseHData)
-					if err != nil {
-						// In current implementation, there are cases where some backups were deleted, and some were not.
-						// For example, the clean command was executed without --cascade option.
-						// In this case - metadata backup was deleted, but full + incremental - weren't.
-						// We should update the history file even it error occurred.
-						errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
-						if errUpdateHFile != nil {
-							gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("update", errUpdateHFile))
-						}
-						// It is enough to return only one error.
-						return err
-					}
-				} else {
-					err := backupCleanFileLocal(backupCleanCascade, beforeTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, &parseHData)
-					if err != nil {
-						errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
-						if errUpdateHFile != nil {
-							gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("update", errUpdateHFile))
-						}
-						return err
-					}
-				}
-			}
-			errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
-			if errUpdateHFile != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("update", errUpdateHFile))
-				return errUpdateHFile
-			}
+		err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, hDB)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -288,49 +235,4 @@ func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, backupDir string, m
 		gplog.Info(textmsg.InfoTextNothingToDo())
 	}
 	return nil
-}
-
-func backupCleanFilePlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, parseHData *gpbckpconfig.History) error {
-	backupList := getBackupNamesBeforeTimestampFile(cutOffTimestamp, true, parseHData)
-	if len(backupList) > 0 {
-		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
-		// Execute deletion for each backup.
-		// Use backupDeleteFilePlugin function from backup-delete command.
-		// Don't use force deletes and ignore errors for mass deletion.
-		err := backupDeleteFilePlugin(backupList, deleteCascade, false, false, pluginConfigPath, pluginConfig, parseHData)
-		if err != nil {
-			return err
-		}
-	} else {
-		gplog.Info(textmsg.InfoTextNothingToDo())
-	}
-	return nil
-}
-
-func backupCleanFileLocal(deleteCascade bool, cutOffTimestamp, backupDir string, maxParallelProcesses int, parseHData *gpbckpconfig.History) error {
-	backupList := getBackupNamesBeforeTimestampFile(cutOffTimestamp, false, parseHData)
-	if len(backupList) > 0 {
-		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
-		err := backupDeleteFileLocal(backupList, backupDir, deleteCascade, false, false, maxParallelProcesses, parseHData)
-		if err != nil {
-			return err
-		}
-	} else {
-		gplog.Info(textmsg.InfoTextNothingToDo())
-	}
-	return nil
-}
-
-func getBackupNamesBeforeTimestampFile(timestamp string, skipLocalBackup bool, parseHData *gpbckpconfig.History) []string {
-	backupNames := make([]string, 0)
-	for _, backupConfig := range parseHData.BackupConfigs {
-		// In history file we have sorted timestamps by descending order.
-		if backupConfig.Timestamp < timestamp {
-			backupCanBeDeleted, _ := checkBackupCanBeUsed(false, skipLocalBackup, backupConfig)
-			if backupCanBeDeleted {
-				backupNames = append(backupNames, backupConfig.Timestamp)
-			}
-		}
-	}
-	return backupNames
 }

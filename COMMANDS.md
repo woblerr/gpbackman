@@ -61,13 +61,7 @@ For non local backups the following logic are applied:
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.
+If the --history-db option is not specified, the history database will be searched in the current directory.
 
 Usage:
   gpbackman backup-clean [flags]
@@ -83,7 +77,6 @@ Flags:
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
-      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
@@ -180,13 +173,7 @@ For non local backups the following logic are applied:
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.
+If the --history-db option is not specified, the history database will be searched in the current directory.
 
 Usage:
   gpbackman backup-delete [flags]
@@ -203,7 +190,6 @@ Flags:
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
-      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
@@ -289,13 +275,7 @@ The formatting rules for <schema>match those of the --exclude-schema option in g
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.
+If the --history-db option is not specified, the history database will be searched in the current directory.
 
 Usage:
   gpbackman backup-info [flags]
@@ -311,7 +291,6 @@ Flags:
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
-      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
@@ -399,12 +378,12 @@ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE        | O
  20230523101115 | Tue May 23 2023 10:11:15 | Success | demo     | full        | include-schema   | gpbackup_s3_plugin | 01:01:00 |                          
  ```
 
-Display info for all backups, including deleted and failed ones, from `gpbackup_history.yaml`:
+Display info for all backups, including deleted and failed ones, from `gpbackup_history.db`:
 ```bash
 ./gpbackman backup-info \
   --deleted \
   --failed \
-  --history-file /data/master/gpseg-1/gpbackup_history.yaml
+  --history-db /data/master/gpseg-1/gpbackup_history.db
 
 TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED                
 ----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+-----------------------------
@@ -460,13 +439,7 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.
+If the --history-db option is not specified, the history database will be searched in the current directory.
 
 Usage:
   gpbackman history-clean [flags]
@@ -478,7 +451,6 @@ Flags:
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
-      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
@@ -526,23 +498,23 @@ The data from the gpbackup_history.yaml file will be uploaded to gpbackup_histor
 If the gpbackup_history.db file does not exist, it will be created.
 The gpbackup_history.yaml file will be renamed to gpbackup_history.yaml.migrated.
 
-The gpbackup_history.db file location can be set using the  --history-db option.
+The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 
-The gpbackup_history.yaml file location can be set using the  --history-file option.
+The gpbackup_history.yaml file location can be set using the --history-file option.
 Can be specified multiple times. The full path to the file is required.
 
-If no --history-file and/or --history-db options are specified, the files will be searched in the current directory.
+If the --history-db option is not specified, the history database will be searched in the current directory.
 
 Usage:
   gpbackman history-migrate [flags]
 
 Flags:
-  -h, --help   help for history-migrate
+  -h, --help                       help for history-migrate
+      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
-      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
@@ -550,7 +522,7 @@ Global Flags:
 
 ## Examples
 
-Migrate data from several gpbackup_history.yaml files to gpbackup_history.db SQLite history database:
+Migrate data from several `gpbackup_history.yaml` files to `gpbackup_history.db` SQLite history database:
 ```bash
 ./gpbackman history-migrate \
   --history-file /data/master/gpseg-1/gpbackup_history.yaml \
@@ -609,13 +581,7 @@ It is not necessary to use the --plugin-report-file-path flag for the following 
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.
+If the --history-db option is not specified, the history database will be searched in the current directory.
 
 Usage:
   gpbackman report-info [flags]
@@ -629,7 +595,6 @@ Flags:
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
-      --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
       --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")

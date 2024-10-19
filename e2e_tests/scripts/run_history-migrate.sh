@@ -50,11 +50,7 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 # Compare results of backup-info command before and after migration.
 TEST_ID="2"
 
-GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
---history-file ${WORK_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml.migrated \
---history-file ${WORK_DIR}/gpbackup_history_metadata_plugin.yaml.migrated \
---deleted \
---failed)
+TEST_CNT_SQL=2
 
 # backup-info commnad for sqlite backup history format.
 # This result from migrated data.
@@ -63,9 +59,12 @@ GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --deleted \
 --failed)
 
+DATE_REGEX="Success"
+
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
-if [ "${GPBACKMAN_RESULT_YAML}" != "${GPBACKMAN_RESULT_SQLITE}" ]; then
+result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f3 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
+if [ "${result_cnt_sqlite}" != "${TEST_CNT_SQL}" ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml:\n${GPBACKMAN_RESULT_YAML}\nget_sqlite:\n${GPBACKMAN_RESULT_SQLITE}"
     exit 1
 fi

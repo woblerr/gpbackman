@@ -51,9 +51,6 @@ const (
 )
 
 var (
-	// Variable for determining history db format: file or sqlite db.
-	// By default, true - sqlite db.
-	historyDB = true
 	// Timestamp to delete all backups before.
 	beforeTimestamp string
 )

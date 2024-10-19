@@ -9,20 +9,6 @@ GPBACKMAN_TEST_COMMAND="backup-info"
 
 SRC_DIR="/home/gpbackman/src_data"
 
-# backup-info commnad for yaml backup history format.
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${SRC_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_dataonly_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_failure_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_full_local.yaml \
---history-file ${SRC_DIR}/gpbackup_history_full_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_incremental_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_metadata_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_incremental_include_schemas_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_incremental_include_tables_plugin.yaml \
---deleted \
---failed)
-
 # backup-info commnad for sqlite backup history format.
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${SRC_DIR}/gpbackup_history.db \
@@ -52,9 +38,8 @@ do
     bckp_type=$(echo "${i}" | cut -f2 -d'|')
     bckp_plugin=$(echo "${i}" | cut -f3 -d'|')
     cnt=$(echo "${i}" | cut -f4 -d'|')
-    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | grep -w "${bckp_plugin}" | wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | grep -w "${bckp_plugin}" | wc -l | tr -d ' ')
-    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
+    if [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
         echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
@@ -94,15 +79,6 @@ do
     bckp_plugin=$(echo "${i}" | cut -f6 -d'|')
     bckp_duration=$(echo "${i}" | cut -f7 -d'|')
     cnt=$(echo "${i}" | cut -f8 -d'|')
-    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | \
-        grep -w "${bckp_timestamp}" | \
-        grep -w "${bckp_date}" | \
-        grep -w "${bckp_status}" | \
-        grep -w "${bckp_database}" | \
-        grep -w "${bckp_type}" | \
-        grep -w "${bckp_plugin}" | \
-        grep -w "${bckp_duration}" | \
-        wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | \
         grep -w "${bckp_timestamp}" | \
         grep -w "${bckp_date}" | \
@@ -112,7 +88,7 @@ do
         grep -w "${bckp_plugin}" | \
         grep -w "${bckp_duration}" | \
         wc -l | tr -d ' ')
-    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
+    if [ "${result_cnt_sqlite}" != "${cnt}" ]; then
         echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
@@ -143,16 +119,6 @@ do
     bckp_duration=$(echo "${i}" | cut -f7 -d'|')
     bckp_date_deleted=$(echo "${i}" | cut -f8 -d'|')
     cnt=$(echo "${i}" | cut -f9 -d'|')
-    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | \
-        grep -w "${bckp_timestamp}" | \
-        grep -w "${bckp_date}" | \
-        grep -w "${bckp_status}" | \
-        grep -w "${bckp_database}" | \
-        grep -w "${bckp_type}" | \
-        grep -w "${bckp_plugin}" | \
-        grep -w "${bckp_duration}" | \
-        grep -w "${bckp_date_deleted}" | \
-        wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | \
         grep -w "${bckp_timestamp}" | \
         grep -w "${bckp_date}" | \
@@ -163,7 +129,7 @@ do
         grep -w "${bckp_duration}" | \
         grep -w "${bckp_date_deleted}" | \
         wc -l | tr -d ' ')
-    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
+    if [ "${result_cnt_sqlite}" != "${cnt}" ]; then
         echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
@@ -194,14 +160,6 @@ do
     bckp_type=$(echo "${i}" | cut -f5 -d'|')
     bckp_duration=$(echo "${i}" | cut -f6 -d'|')
     cnt=$(echo "${i}" | cut -f7 -d'|')
-    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | \
-        grep -w "${bckp_timestamp}" | \
-        grep -w "${bckp_date}" | \
-        grep -w "${bckp_status}" | \
-        grep -w "${bckp_database}" | \
-        grep -w "${bckp_type}" | \
-        grep -w "${bckp_duration}" | \
-        wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | \
         grep -w "${bckp_timestamp}" | \
         grep -w "${bckp_date}" | \
@@ -210,7 +168,7 @@ do
         grep -w "${bckp_type}" | \
         grep -w "${bckp_duration}" | \
         wc -l | tr -d ' ')
-    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then
+    if [ "${result_cnt_sqlite}" != "${cnt}" ]; then
         echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
@@ -234,9 +192,8 @@ do
     bckp_status=$(echo "${i}" | cut -f1 -d'|')
     bckp_type=$(echo "${i}" | cut -f2 -d'|')
     cnt=$(echo "${i}" | cut -f3 -d'|')
-    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | wc -l | tr -d ' ')
-    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
+    if [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
         echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
@@ -251,18 +208,6 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 # Testing on incremental backup type.
 TEST_ID="6"
 
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${SRC_DIR}/gpbackup_history_dataonly_nodata_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_dataonly_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_failure_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_full_local.yaml \
---history-file ${SRC_DIR}/gpbackup_history_full_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_incremental_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_metadata_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_incremental_include_schemas_plugin.yaml \
---history-file ${SRC_DIR}/gpbackup_history_incremental_include_tables_plugin.yaml \
---type incremental)
-
 # backup-info commnad for sqlite backup history format.
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${SRC_DIR}/gpbackup_history.db \
@@ -276,9 +221,8 @@ do
     bckp_status=$(echo "${i}" | cut -f1 -d'|')
     bckp_type=$(echo "${i}" | cut -f2 -d'|')
     cnt=$(echo "${i}" | cut -f3 -d'|')
-    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | grep -w "${bckp_status}" | grep -w "${bckp_type}" | wc -l | tr -d ' ')
-    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
+    if [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
         echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi
@@ -294,11 +238,6 @@ echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} passed."
 # Testing on include test1 schema.
 TEST_ID="7"
 
-GPBACKMAN_RESULT_YAML=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${SRC_DIR}/gpbackup_history_incremental_include_schemas_plugin.yaml \
---deleted \
---schema test1)
-
 GPBACKMAN_RESULT_SQLITE=$(gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${SRC_DIR}/gpbackup_history.db \
 --deleted \
@@ -311,9 +250,8 @@ for i in ${REGEX_LIST}
 do
     bckp_status=$(echo "${i}" | cut -f1 -d'|')
     cnt=$(echo "${i}" | cut -f2 -d'|')
-    result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | grep -w "${bckp_status}" | wc -l | tr -d ' ')
     result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | grep -w "${bckp_status}" | wc -l | tr -d ' ')
-    if [ "${result_cnt_yaml}" != "${cnt}" ] || [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
+    if [ "${result_cnt_sqlite}" != "${cnt}" ]; then\
         echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\n'${i}': get_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${cnt}"
         exit 1
     fi

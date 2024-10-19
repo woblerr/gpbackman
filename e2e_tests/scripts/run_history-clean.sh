@@ -31,18 +31,8 @@ TIMESTAMP="20231212101500"
 # Execute history-clean commnad.
 
 gpbackman ${GPBACKMAN_TEST_COMMAND} \
---history-file ${WORK_DIR}/gpbackup_history_failure_plugin.yaml \
---history-file ${WORK_DIR}/gpbackup_history_incremental_plugin.yaml \
---before-timestamp  ${TIMESTAMP} \
-
-gpbackman ${GPBACKMAN_TEST_COMMAND} \
 --history-db ${WORK_DIR}/gpbackup_history.db \
 --before-timestamp ${TIMESTAMP} \
-
-GPBACKMAN_RESULT_YAML=$(gpbackman backup-info \
---history-file ${WORK_DIR}/gpbackup_history_failure_plugin.yaml \
---history-file ${WORK_DIR}/gpbackup_history_incremental_plugin.yaml \
---deleted --failed)
 
 GPBACKMAN_RESULT_SQLITE=$(gpbackman backup-info \
 --history-db ${WORK_DIR}/gpbackup_history.db \
@@ -52,9 +42,8 @@ TEST_CNT=0
 
 # Check results.
 echo "[INFO] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID}."
-result_cnt_yaml=$(echo "${GPBACKMAN_RESULT_YAML}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
 result_cnt_sqlite=$(echo "${GPBACKMAN_RESULT_SQLITE}" | cut -f9 -d'|' | awk '{$1=$1};1' | grep -E ${DATE_REGEX} | wc -l)
-if [ "${result_cnt_yaml}" != "${TEST_CNT}" ] || [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then
+if [ "${result_cnt_sqlite}" != "${TEST_CNT}" ]; then
     echo -e "[ERROR] ${GPBACKMAN_TEST_COMMAND} test ${TEST_ID} failed.\nget_yaml=${result_cnt_yaml}, get_sqlite=${result_cnt_sqlite}, want=${TEST_CNT}"
     exit 1
 fi

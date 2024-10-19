@@ -30,17 +30,10 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-
-The gpbackup_history.yaml file location can be set using the --history-file option.
-Can be specified multiple times. The full path to the file is required.
-
-If no --history-file or --history-db options are specified, the history database will be searched in the current directory.
-
-Only --history-file or --history-db option can be specified, not both.`,
+If the --history-db option is not specified, the history database will be searched in the current directory.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
-		doRootBackupFlagValidation(cmd.Flags())
 		doCleanHistoryFlagValidation(cmd.Flags())
 		doCleanHistory()
 	},
@@ -93,41 +86,20 @@ func doCleanHistory() {
 }
 
 func cleanHistory() error {
-	if historyDB {
-		hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
-		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
-			return err
+	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+	if err != nil {
+		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		return err
+	}
+	defer func() {
+		closeErr := hDB.Close()
+		if closeErr != nil {
+			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
-		defer func() {
-			closeErr := hDB.Close()
-			if closeErr != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
-			}
-		}()
-		err = historyCleanDB(beforeTimestamp, hDB)
-		if err != nil {
-			return err
-		}
-	} else {
-		for _, historyFile := range rootHistoryFiles {
-			hFile := getHistoryFilePath(historyFile)
-			parseHData, err := getDataFromHistoryFile(hFile)
-			if err != nil {
-				return err
-			}
-			if len(parseHData.BackupConfigs) != 0 {
-				err = historyCleanFile(beforeTimestamp, &parseHData)
-				if err != nil {
-					return err
-				}
-			}
-			errUpdateHFile := parseHData.UpdateHistoryFile(hFile)
-			if errUpdateHFile != nil {
-				gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("update", errUpdateHFile))
-				return errUpdateHFile
-			}
-		}
+	}()
+	err = historyCleanDB(beforeTimestamp, hDB)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -144,32 +116,6 @@ func historyCleanDB(cutOffTimestamp string, hDB *sql.DB) error {
 		if err != nil {
 			return err
 		}
-	} else {
-		gplog.Info(textmsg.InfoTextNothingToDo())
-	}
-	return nil
-}
-
-func historyCleanFile(cutOffTimestamp string, parseHData *gpbckpconfig.History) error {
-	backupIdxs := make([]int, 0)
-	backupList := make([]string, 0)
-	for idx, backupConfig := range parseHData.BackupConfigs {
-		// In history file we have sorted timestamps by descending order.
-		if backupConfig.Timestamp < cutOffTimestamp {
-			backupDateDeleted, err := backupConfig.GetBackupDateDeleted()
-			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupConfig.Timestamp, err))
-				return err
-			}
-			if !gpbckpconfig.IsBackupActive(backupDateDeleted) && (backupDateDeleted != gpbckpconfig.DateDeletedInProgress) {
-				backupIdxs = append(backupIdxs, idx)
-				backupList = append(backupList, backupConfig.Timestamp)
-			}
-		}
-	}
-	if len(backupList) > 0 {
-		gplog.Debug(textmsg.InfoTextBackupDeleteListFromHistory(backupList))
-		parseHData.RemoveMultipleFromHistoryFile(backupIdxs)
 	} else {
 		gplog.Info(textmsg.InfoTextNothingToDo())
 	}
