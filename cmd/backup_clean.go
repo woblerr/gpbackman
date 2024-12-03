@@ -15,6 +15,7 @@ import (
 // Flags for the gpbackman backup-clean command (backupCleanCmd)
 var (
 	backupCleanBeforeTimestamp   string
+	backupCleanAfterTimestamp    string
 	backupCleanPluginConfigFile  string
 	backupCleanBackupDir         string
 	backupCleanOlderThenDays     uint
@@ -28,8 +29,9 @@ var backupCleanCmd = &cobra.Command{
 	Long: `Delete all existing backups older than the specified time condition.
 
 To delete backup sets older than the given timestamp, use the --before-timestamp option. 
-To delete backup sets older than the given number of days, use the --older-than-day option. 
-Only --older-than-days or --before-timestamp option must be specified, not both.
+To delete backup sets older than the given number of days, use the --older-than-day option.
+To delete backup sets newer than the given timestamp, use the --after-timestamp option.
+Only --older-than-days, --before-timestamp or --after-timestamp option must be specified.
 
 By default, the existence of dependent backups is checked and deletion process is not performed,
 unless the --cascade option is passed in.
@@ -91,6 +93,12 @@ func init() {
 		"delete backup sets older than the given timestamp",
 	)
 	backupCleanCmd.PersistentFlags().StringVar(
+		&backupCleanAfterTimestamp,
+		afterTimestampFlagName,
+		"",
+		"delete backup sets newer than the given timestamp",
+	)
+	backupCleanCmd.PersistentFlags().StringVar(
 		&backupCleanBackupDir,
 		backupDirFlagName,
 		"",
@@ -102,7 +110,7 @@ func init() {
 		1,
 		"the number of parallel processes to delete local backups",
 	)
-	backupCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThenDaysFlagName)
+	backupCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThenDaysFlagName, afterTimestampFlagName)
 }
 
 // These flag checks are applied only for backup-clean command.
@@ -119,6 +127,15 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	}
 	if flags.Changed(olderThenDaysFlagName) {
 		beforeTimestamp = gpbckpconfig.GetTimestampOlderThen(backupCleanOlderThenDays)
+	}
+	// If after-timestamp flag is specified and have correct values.
+	if flags.Changed(afterTimestampFlagName) {
+		err = gpbckpconfig.CheckTimestamp(backupCleanAfterTimestamp)
+		if err != nil {
+			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupCleanAfterTimestamp, afterTimestampFlagName, err))
+			execOSExit(exitErrorCode)
+		}
+		afterTimestamp = backupCleanAfterTimestamp
 	}
 	// backup-dir anf plugin-config flags cannot be used together.
 	err = checkCompatibleFlags(flags, backupDirFlagName, pluginConfigFileFlagName)
@@ -153,8 +170,8 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 			execOSExit(exitErrorCode)
 		}
 	}
-	if beforeTimestamp == "" {
-		gplog.Error(textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName))
+	if beforeTimestamp == "" && afterTimestamp == "" {
+		gplog.Error(textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName, afterTimestampFlagName))
 		execOSExit(exitErrorCode)
 	}
 }
@@ -185,12 +202,12 @@ func cleanBackup() error {
 			gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
 			return err
 		}
-		err = backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
+		err = backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, afterTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, hDB)
+		err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, afterTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, hDB)
 		if err != nil {
 			return err
 		}
@@ -198,8 +215,8 @@ func cleanBackup() error {
 	return nil
 }
 
-func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
-	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(cutOffTimestamp, hDB)
+func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
+	backupList, err := fetchBackupNamesForDeletion(cutOffTimestamp, cutOffAfterTimestamp, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
@@ -219,8 +236,8 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, pluginConfigPath s
 	return nil
 }
 
-func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, backupDir string, maxParallelProcesses int, hDB *sql.DB) error {
-	backupList, err := gpbckpconfig.GetBackupNamesBeforeTimestamp(cutOffTimestamp, hDB)
+func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, backupDir string, maxParallelProcesses int, hDB *sql.DB) error {
+	backupList, err := fetchBackupNamesForDeletion(cutOffTimestamp, cutOffAfterTimestamp, hDB)
 	if err != nil {
 		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
@@ -235,4 +252,23 @@ func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, backupDir string, m
 		gplog.Info(textmsg.InfoTextNothingToDo())
 	}
 	return nil
+}
+
+// Get the list of backup names for deletion.
+func fetchBackupNamesForDeletion(cutOffTimestamp, cutOffAfterTimestamp string, hDB *sql.DB) ([]string, error) {
+	var backupList []string
+	var err error
+	if cutOffTimestamp != "" {
+		backupList, err = gpbckpconfig.GetBackupNamesBeforeTimestamp(cutOffTimestamp, hDB)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if cutOffAfterTimestamp != "" {
+		backupList, err = gpbckpconfig.GetBackupNamesAfterTimestamp(cutOffAfterTimestamp, hDB)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return backupList, nil
 }

@@ -39,6 +39,10 @@ func GetBackupNamesBeforeTimestamp(timestamp string, historyDB *sql.DB) ([]strin
 	return execQueryFunc(getBackupNameBeforeTimestampQuery(timestamp), historyDB)
 }
 
+func GetBackupNamesAfterTimestamp(timestamp string, historyDB *sql.DB) ([]string, error) {
+	return execQueryFunc(getBackupNameAfterTimestampQuery(timestamp), historyDB)
+}
+
 func GetBackupNamesForCleanBeforeTimestamp(timestamp string, historyDB *sql.DB) ([]string, error) {
 	return execQueryFunc(getBackupNameForCleanBeforeTimestampQuery(timestamp), historyDB)
 }
@@ -73,12 +77,24 @@ ORDER BY timestamp DESC;
 `, backupName, backupName)
 }
 
-// Only active backups, "In progress", deleted and failed  statuses - hidden.
+// Only active backups, "In progress", deleted and failed statuses - hidden.
 func getBackupNameBeforeTimestampQuery(timestamp string) string {
 	return fmt.Sprintf(`
 SELECT timestamp 
 FROM backups 
 WHERE timestamp < '%s' 
+	AND status != '%s' 
+	AND date_deleted IN ('', '%s', '%s') 
+ORDER BY timestamp DESC;
+`, timestamp, BackupStatusInProgress, DateDeletedPluginFailed, DateDeletedLocalFailed)
+}
+
+// Only active backups, "In progress", deleted and failed statuses - hidden.
+func getBackupNameAfterTimestampQuery(timestamp string) string {
+	return fmt.Sprintf(`
+SELECT timestamp 
+FROM backups 
+WHERE timestamp > '%s' 
 	AND status != '%s' 
 	AND date_deleted IN ('', '%s', '%s') 
 ORDER BY timestamp DESC;
