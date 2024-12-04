@@ -73,6 +73,18 @@ WHERE timestamp < '20240101120000'
 	AND date_deleted IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed') 
 ORDER BY timestamp DESC;
 `},
+		{
+			name:     "Test getBackupNameAfterTimestampQuery",
+			value:    "20240101120000",
+			function: getBackupNameAfterTimestampQuery,
+			want: `
+SELECT timestamp 
+FROM backups 
+WHERE timestamp > '20240101120000' 
+	AND status != 'In Progress' 
+	AND date_deleted IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed') 
+ORDER BY timestamp DESC;
+`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -32,6 +32,7 @@ const (
 	forceFlagName                = "force"
 	olderThenDaysFlagName        = "older-than-days"
 	beforeTimestampFlagName      = "before-timestamp"
+	afterTimestampFlagName       = "after-timestamp"
 	typeFlagName                 = "type"
 	tableFlagName                = "table"
 	schemaFlagName               = "schema"
@@ -53,4 +54,6 @@ const (
 var (
 	// Timestamp to delete all backups before.
 	beforeTimestamp string
+	// Timestamp to delete all backups after.
+	afterTimestamp string
 )

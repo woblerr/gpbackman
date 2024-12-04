@@ -3,6 +3,7 @@
     - [Delete all backups from local storage older than the specified time condition](#delete-all-backups-from-local-storage-older-than-the-specified-time-condition)
     - [Delete all backups using storage plugin older than n days](#delete-all-backups-using-storage-plugin-older-than-n-days)
     - [Delete all backups using storage plugin older than timestamp](#delete-all-backups-using-storage-plugin-older-than-timestamp)
+    - [Delete all backups using storage plugin newer than timestamp](#delete-all-backups-using-storage-plugin-newer-than-timestamp)
   - [Using container](#using-container)
 - [Delete a specific existing backup (`backup-delete`)](#delete-a-specific-existing-backup-backup-delete)
   - [Examples](#examples-1)
@@ -34,8 +35,9 @@ Available options for `backup-clean` command and their description:
 Delete all existing backups older than the specified time condition.
 
 To delete backup sets older than the given timestamp, use the --before-timestamp option. 
-To delete backup sets older than the given number of days, use the --older-than-day option. 
-Only --older-than-days or --before-timestamp option must be specified, not both.
+To delete backup sets older than the given number of days, use the --older-than-day option.
+To delete backup sets newer than the given timestamp, use the --after-timestamp option.
+Only --older-than-days, --before-timestamp or --after-timestamp option must be specified.
 
 By default, the existence of dependent backups is checked and deletion process is not performed,
 unless the --cascade option is passed in.
@@ -67,6 +69,7 @@ Usage:
   gpbackman backup-clean [flags]
 
 Flags:
+      --after-timestamp string    delete backup sets newer than the given timestamp
       --backup-dir string         the full path to backup directory for local backups
       --before-timestamp string   delete backup sets older than the given timestamp
       --cascade                   delete all dependent backups
@@ -116,6 +119,18 @@ Delete all backups older than timestamp `20240101100000` and all dependent backu
   --plugin-config /tmp/gpbackup_plugin_config.yaml \
   --cascade
 ```
+
+### Delete all backups using storage plugin newer than timestamp
+
+Delete all backups newer than timestamp `20240101100000` and all dependent backups:
+```bash
+./gpbackman backup-clean \
+  --after-timestamp 20240101100000 \
+  --plugin-config /tmp/gpbackup_plugin_config.yaml \
+  --cascade
+```
+
+Be careful, using the flag may lead to the deletion of actual backups.  Backups newer than the specified timestamp are deleted. For the example above, `20240101220000`, `20240102100000`, etc. will be deleted.
 
 ## Using container
 
