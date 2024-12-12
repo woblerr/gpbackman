@@ -11,7 +11,7 @@ require (
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/crypto v0.21.0
+	golang.org/x/crypto v0.31.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -42,8 +42,8 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
