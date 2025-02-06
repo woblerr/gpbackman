@@ -1,7 +1,7 @@
-FROM --platform=linux/amd64 goreleaser/goreleaser:v1.24.0 as builder
+FROM --platform=linux/amd64 goreleaser/goreleaser:v2.5.0 as builder
 WORKDIR /build
 COPY . /build
-RUN goreleaser release --snapshot --skip-publish --clean
+RUN goreleaser release --snapshot --skip=publish --clean
 
 FROM alpine:3.20
 COPY --from=builder /build/dist/ /dist/
