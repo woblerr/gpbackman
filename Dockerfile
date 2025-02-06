@@ -1,6 +1,6 @@
 ARG REPO_BUILD_TAG="unknown"
 
-FROM golang:1.23-alpine3.19 AS builder
+FROM golang:1.23-alpine3.20 AS builder
 ARG REPO_BUILD_TAG
 COPY . /build
 WORKDIR /build
@@ -10,7 +10,7 @@ RUN apk add --no-cache --update build-base \
         -ldflags "-X main.version=${REPO_BUILD_TAG}" \
         -o gpbackman gpbackman.go
 
-FROM alpine:3.19
+FROM alpine:3.20
 ARG REPO_BUILD_TAG
 ENV TZ="Etc/UTC" \
     GPBACKMAN_USER="gpbackman" \
