@@ -1,4 +1,6 @@
 ---
+version: 2
+
 project_name: gpbackman
 
 builds:
@@ -21,7 +23,6 @@ archives:
     format: tar.gz
     name_template: '{{ .Binary }}-{{ .Version }}-{{ if eq .Os "darwin" }}macos{{ else }}{{ .Os }}{{ end }}-{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}'
     wrap_in_directory: true
-    rlcp: true
 
 nfpms:
   - id: gpbackman
@@ -54,4 +55,4 @@ release:
   draft: true
 
 changelog:
-  skip: true
+  disable: true
