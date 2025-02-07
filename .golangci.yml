@@ -60,6 +60,9 @@ issues:
     - text: "at least one file in a package should have a package comment"
       linters:
         - stylecheck
+    - text: "non-constant format string"
+      linters:
+        - govet
     - path: _test\.go
       linters:
         - gosec
