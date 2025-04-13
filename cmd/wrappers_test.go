@@ -388,7 +388,13 @@ func TestCheckBackupType(t *testing.T) {
 }
 
 func TestGetBackupMasterDir(t *testing.T) {
-	tempDir := os.TempDir()
+	// Create a unique temp directory for this test to avoid conflicts with other tests
+	tempDir, err := os.MkdirTemp("", "gpbackman-test-")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	// Cleanup the entire test directory at the end, not individual subdirectories
+	defer os.RemoveAll(tempDir)
 	tests := []struct {
 		name                  string
 		testDir               string
@@ -412,7 +418,7 @@ func TestGetBackupMasterDir(t *testing.T) {
 			wantErr:               false,
 		},
 		{
-			name:                  "BackupDataBackupDir is set amd valid",
+			name:                  "BackupDataBackupDir is set and valid",
 			testDir:               filepath.Join(tempDir, "segPrefix", "segment-1", "backups"),
 			backupDir:             "",
 			backupDataBackupDir:   filepath.Join(tempDir, "segPrefix"),
@@ -428,9 +434,8 @@ func TestGetBackupMasterDir(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := os.MkdirAll(tt.testDir, 0755)
 			if err != nil {
-				t.Fatalf("Failed to create temp dir: %v", err)
+				t.Fatalf("Failed to create test directory structure: %v", err)
 			}
-			defer os.Remove(tt.testDir)
 			gotBackupMasterDir, gotSegPrefix, gotIsSingleBackupDir, err := getBackupMasterDir(tt.backupDir, tt.backupDataBackupDir, tt.backupDataDBName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckMasterBackupDir() error:\n%v\nwantErr:\n%v", err, tt.wantErr)
@@ -442,7 +447,7 @@ func TestGetBackupMasterDir(t *testing.T) {
 				t.Errorf("getBackupMasterDir() gotSegPrefix\n%v\nwantSegPrefix\n%v", gotSegPrefix, tt.wantSegPrefix)
 			}
 			if gotIsSingleBackupDir != tt.wantIsSingleBackupDir {
-				t.Errorf("getBackupMasterDir() gotIsSingleBackupDir\n%v\nwantIsSingleBackupDir\ns%v", gotIsSingleBackupDir, tt.wantIsSingleBackupDir)
+				t.Errorf("getBackupMasterDir() gotIsSingleBackupDir\n%v\nwantIsSingleBackupDir\n%v", gotIsSingleBackupDir, tt.wantIsSingleBackupDir)
 			}
 		})
 	}
