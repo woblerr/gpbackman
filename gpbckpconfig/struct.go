@@ -3,11 +3,6 @@ package gpbckpconfig
 import (
 	"errors"
 	"time"
-
-	"github.com/greenplum-db/gp-common-go-libs/operating"
-	"github.com/greenplum-db/gpbackup/utils"
-	"github.com/nightlyone/lockfile"
-	"gopkg.in/yaml.v2"
 )
 
 type History struct {
@@ -311,60 +306,4 @@ func (history *History) UpdateBackupConfigDateDeleted(timestamp, dataDeleted str
 		}
 	}
 	return errors.New("backup timestamp doesn't match any existing backups")
-}
-
-func (history *History) UpdateHistoryFile(historyFile string) error {
-	lock, err := lockHistoryFile(historyFile)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = lock.Unlock()
-	}()
-	err = history.WriteToFileAndMakeReadOnly(historyFile)
-	return err
-}
-
-func (history *History) WriteToFileAndMakeReadOnly(filename string) error {
-	_, err := operating.System.Stat(filename)
-	fileExists := err == nil
-	if fileExists {
-		err = operating.System.Chmod(filename, 0644)
-		if err != nil {
-			return err
-		}
-	}
-	historyFileContents, err := yaml.Marshal(history)
-	if err != nil {
-		return err
-	}
-	return utils.WriteToFileAndMakeReadOnly(filename, historyFileContents)
-}
-
-// RemoveMultipleFromHistoryFile Remove multiple backups from history file.
-// Idxs is a list of sorted indexes of backups to be removed.
-// It iterates over the sorted indices and uses the copy function to shift the elements to the left,
-// effectively removing the element at the current index. Finally, it trims the slice to the correct length.
-func (history *History) RemoveMultipleFromHistoryFile(idxs []int) {
-	j := 0
-	for _, i := range idxs {
-		if i == len(history.BackupConfigs)-1 || i != len(history.BackupConfigs)-j-1 {
-			copy(history.BackupConfigs[i-j:], history.BackupConfigs[i-j+1:])
-			j++
-		}
-	}
-	history.BackupConfigs = history.BackupConfigs[:len(history.BackupConfigs)-j]
-}
-
-func lockHistoryFile(historyFile string) (lockfile.Lockfile, error) {
-	lock, err := lockfile.New(historyFile + ".lck")
-	if err != nil {
-		return lock, err
-	}
-	err = lock.TryLock()
-	for err != nil {
-		time.Sleep(60 * time.Millisecond)
-		err = lock.TryLock()
-	}
-	return lock, err
 }
