@@ -2,15 +2,12 @@ module github.com/woblerr/gpbackman
 
 go 1.23.0
 
-toolchain go1.23.5
-
 require (
 	github.com/greenplum-db/gp-common-go-libs v1.0.15
 	github.com/greenplum-db/gpbackup v0.0.0-20240215213028-2782cd0fbd9b
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
-	github.com/nightlyone/lockfile v1.0.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.35.0

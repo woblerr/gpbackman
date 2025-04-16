@@ -11,6 +11,12 @@ services:
       - "MINIO_SITE_REGION"
       - "MINIO_DOMAIN"
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -29,7 +35,7 @@ services:
       - "S3_MINIO_BUCKET"
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - "./scripts/prepare_minio.sh:/prepare_minio.sh"
       - "./src_data:/tmp/src_data"

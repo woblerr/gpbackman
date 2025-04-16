@@ -819,3 +819,46 @@ func TestCheckObjectFilteringExists(t *testing.T) {
 		})
 	}
 }
+
+func TestIsInProgress(t *testing.T) {
+	tests := []struct {
+		name   string
+		config BackupConfig
+		want   bool
+	}{
+		{
+			name:   "Test in progress status",
+			config: BackupConfig{Status: BackupStatusInProgress},
+			want:   true,
+		},
+		{
+			name:   "Test success status",
+			config: BackupConfig{Status: BackupStatusSuccess},
+			want:   false,
+		},
+		{
+			name:   "Test failure status",
+			config: BackupConfig{Status: BackupStatusFailure},
+			want:   false,
+		},
+		{
+			name:   "Test empty status",
+			config: BackupConfig{Status: ""},
+			want:   false,
+		},
+		{
+			name:   "Test unknown status",
+			config: BackupConfig{Status: "unknown"},
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.IsInProgress()
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
