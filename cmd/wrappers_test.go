@@ -546,3 +546,45 @@ func TestGetBackupSegmentDir(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckLocalBackupStatus(t *testing.T) {
+	tests := []struct {
+		name            string
+		skipLocalBackup bool
+		isLocalBackup   bool
+		wantErr         bool
+	}{
+		{
+			name:            "Skip local and local backup",
+			skipLocalBackup: true,
+			isLocalBackup:   true,
+			wantErr:         true,
+		},
+		{
+			name:            "Skip local and plugin backup",
+			skipLocalBackup: true,
+			isLocalBackup:   false,
+			wantErr:         false,
+		},
+		{
+			name:            "Do not skip local and local backup",
+			skipLocalBackup: false,
+			isLocalBackup:   true,
+			wantErr:         false,
+		},
+		{
+			name:            "Do not skip local and plugin backup",
+			skipLocalBackup: false,
+			isLocalBackup:   false,
+			wantErr:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := checkLocalBackupStatus(tt.skipLocalBackup, tt.isLocalBackup)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("checkLocalBackupStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
