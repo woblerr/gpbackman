@@ -420,3 +420,73 @@ func TestCheckMasterBackupDir(t *testing.T) {
 		})
 	}
 }
+
+func TestBackupDirPath(t *testing.T) {
+	tests := []struct {
+		name      string
+		backupDir string
+		timestamp string
+		want      string
+	}{
+		{
+			name:      "Basic path",
+			backupDir: "/data/backup",
+			timestamp: "20230101123456",
+			want:      "/data/backup/backups/20230101/20230101123456",
+		},
+		{
+			name:      "Path with trailing slash",
+			backupDir: "/data/backup/",
+			timestamp: "20230101123456",
+			want:      "/data/backup/backups/20230101/20230101123456",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := BackupDirPath(tt.backupDir, tt.timestamp); got != tt.want {
+				t.Errorf("\nBackupDirPath():\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSearchFilter(t *testing.T) {
+	tests := []struct {
+		name  string
+		list  []string
+		value string
+		want  bool
+	}{
+		{
+			name:  "Value in list",
+			list:  []string{"item1", "item2", "item3"},
+			value: "item2",
+			want:  true,
+		},
+		{
+			name:  "Value not in list",
+			list:  []string{"item1", "item2", "item3"},
+			value: "item4",
+			want:  false,
+		},
+		{
+			name:  "Empty list",
+			list:  []string{},
+			value: "item1",
+			want:  false,
+		},
+		{
+			name:  "Empty value",
+			list:  []string{"item1", "item2", "item3"},
+			value: "",
+			want:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := searchFilter(tt.list, tt.value); got != tt.want {
+				t.Errorf("\nsearchFilter():\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
+}
