@@ -4,7 +4,8 @@ version: 2
 project_name: gpbackman
 
 builds:
-  - env: 
+  - id: gpbackman
+    env:
       - CGO_ENABLED=1
     goos: 
       - linux
@@ -20,14 +21,14 @@ archives:
   - id: gpbackman
     files:
       - LICENSE
-    format: tar.gz
+    formats: [tar.gz]
     name_template: '{{ .Binary }}-{{ .Version }}-{{ if eq .Os "darwin" }}macos{{ else }}{{ .Os }}{{ end }}-{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}'
     wrap_in_directory: true
 
 nfpms:
   - id: gpbackman
     package_name: gpbackman
-    builds:
+    ids:
       - gpbackman
     homepage: https://github.com/woblerr/gpbackman
     maintainer: Anton Kurochkin
