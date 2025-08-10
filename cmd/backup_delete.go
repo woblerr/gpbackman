@@ -132,7 +132,7 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 		for _, timestamp := range backupDeleteTimestamp {
 			err = gpbckpconfig.CheckTimestamp(timestamp)
 			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableValidateFlag(timestamp, timestampFlagName, err))
+				gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(timestamp, timestampFlagName, err))
 				execOSExit(exitErrorCode)
 			}
 		}
@@ -140,25 +140,25 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 	// backup-dir anf plugin-config flags cannot be used together.
 	err = checkCompatibleFlags(flags, backupDirFlagName, pluginConfigFileFlagName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, backupDirFlagName, pluginConfigFileFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, backupDirFlagName, pluginConfigFileFlagName))
 		execOSExit(exitErrorCode)
 	}
 	// If parallel-processes flag is specified and have correct values.
 	if flags.Changed(parallelProcessesFlagName) && !gpbckpconfig.IsPositiveValue(backupDeleteParallelProcesses) {
-		gplog.Error(textmsg.ErrorTextUnableValidateFlag(strconv.Itoa(backupDeleteParallelProcesses), parallelProcessesFlagName, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(strconv.Itoa(backupDeleteParallelProcesses), parallelProcessesFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 	// plugin-config and parallel-precesses flags cannot be used together.
 	err = checkCompatibleFlags(flags, parallelProcessesFlagName, pluginConfigFileFlagName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, parallelProcessesFlagName, pluginConfigFileFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, parallelProcessesFlagName, pluginConfigFileFlagName))
 		execOSExit(exitErrorCode)
 	}
 	// If backup-dir flag is specified and it exists and the full path is specified.
 	if flags.Changed(backupDirFlagName) {
 		err = gpbckpconfig.CheckFullPath(backupDeleteBackupDir, checkFileExistsConst)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupDeleteBackupDir, backupDirFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupDeleteBackupDir, backupDirFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
@@ -166,13 +166,13 @@ func doDeleteBackupFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(pluginConfigFileFlagName) {
 		err = gpbckpconfig.CheckFullPath(backupDeletePluginConfigFile, checkFileExistsConst)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupDeletePluginConfigFile, pluginConfigFileFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupDeletePluginConfigFile, pluginConfigFileFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
 	// If ignore-errors flag is specified, but force flag is not.
 	if flags.Changed(ignoreErrorsFlagName) && !flags.Changed(forceFlagName) {
-		gplog.Error(textmsg.ErrorTextUnableValidateValue(textmsg.ErrorNotIndependentFlagsError(), ignoreErrorsFlagName, forceFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorNotIndependentFlagsError(), ignoreErrorsFlagName, forceFlagName))
 		execOSExit(exitErrorCode)
 	}
 
@@ -189,13 +189,13 @@ func doDeleteBackup() {
 func deleteBackup() error {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
 		return err
 	}
 	defer func() {
 		closeErr := hDB.Close()
 		if closeErr != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
 	if backupDeletePluginConfigFile != "" {
@@ -238,7 +238,7 @@ func backupDeleteDB(backupListForDeletion []string, deleteCascade, deleteForce, 
 	for _, backupName := range backupListForDeletion {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 			return err
 		}
 		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, skipLocalBackup, backupData)
@@ -248,21 +248,21 @@ func backupDeleteDB(backupListForDeletion []string, deleteCascade, deleteForce, 
 		if canBeDeleted {
 			backupDependencies, err := gpbckpconfig.GetBackupDependencies(backupName, hDB)
 			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableGetBackupValue("dependencies", backupName, err))
+				gplog.Error("%s", textmsg.ErrorTextUnableGetBackupValue("dependencies", backupName, err))
 				return err
 			}
 			if len(backupDependencies) > 0 {
-				gplog.Info(textmsg.InfoTextBackupDependenciesList(backupName, backupDependencies))
+				gplog.Info("%s", textmsg.InfoTextBackupDependenciesList(backupName, backupDependencies))
 				if deleteCascade {
-					gplog.Debug(textmsg.InfoTextBackupDeleteList(backupDependencies))
+					gplog.Debug("%s", textmsg.InfoTextBackupDeleteList(backupDependencies))
 					// If the deletion of at least one dependent backup fails, we fail full entire chain.
 					err = backupDeleteDBCascade(backupDependencies, deleteForce, ignoreErrors, skipLocalBackup, deleter, hDB)
 					if err != nil {
-						gplog.Error(textmsg.ErrorTextUnableDeleteBackupCascade(backupName, err))
+						gplog.Error("%s", textmsg.ErrorTextUnableDeleteBackupCascade(backupName, err))
 						return err
 					}
 				} else {
-					gplog.Error(textmsg.ErrorTextUnableDeleteBackupUseCascade(backupName, textmsg.ErrorBackupDeleteCascadeOptionError()))
+					gplog.Error("%s", textmsg.ErrorTextUnableDeleteBackupUseCascade(backupName, textmsg.ErrorBackupDeleteCascadeOptionError()))
 					return textmsg.ErrorBackupDeleteCascadeOptionError()
 				}
 			}
@@ -279,7 +279,7 @@ func backupDeleteDBCascade(backupList []string, deleteForce, ignoreErrors, skipL
 	for _, backup := range backupList {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backup, hDB)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backup, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backup, err))
 			return err
 		}
 		// Skip local backup.
@@ -300,16 +300,16 @@ func backupDeleteDBCascade(backupList []string, deleteForce, ignoreErrors, skipL
 func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB, ignoreErrors bool) error {
 	var err error
 	dateDeleted := getCurrentTimestamp()
-	gplog.Info(textmsg.InfoTextBackupDeleteStart(backupName))
+	gplog.Info("%s", textmsg.InfoTextBackupDeleteStart(backupName))
 	err = gpbckpconfig.UpdateDeleteStatus(backupName, gpbckpconfig.DateDeletedInProgress, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, err))
 		return err
 	}
-	gplog.Debug(textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
+	gplog.Debug("%s", textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName))
 	stdout, stderr, errdel := execDeleteBackupPlugin(pluginConfig.ExecutablePath, deleteBackupPluginCommand, pluginConfigPath, backupName)
 	if stderr != "" {
-		gplog.Error(stderr)
+		gplog.Error("%s", stderr)
 	}
 	if errdel != nil {
 		handleErrorDB(backupName, textmsg.ErrorTextUnableDeleteBackup(backupName, errdel), gpbckpconfig.DateDeletedPluginFailed, hDB)
@@ -317,7 +317,7 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 			return errdel
 		}
 	}
-	gplog.Info(stdout)
+	gplog.Info("%s", stdout)
 	backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 	if err != nil {
 		handleErrorDB(backupName, textmsg.ErrorTextUnableGetBackupInfo(backupName, err), gpbckpconfig.DateDeletedPluginFailed, hDB)
@@ -332,7 +332,7 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 			return err
 		}
 	}
-	gplog.Debug(textmsg.InfoTextCommandExecution("delete directory", gpbckpconfig.BackupDirPath(bckpDir, backupName)))
+	gplog.Debug("%s", textmsg.InfoTextCommandExecution("delete directory", gpbckpconfig.BackupDirPath(bckpDir, backupName)))
 	// Delete local files on master.
 	err = os.RemoveAll(gpbckpconfig.BackupDirPath(bckpDir, backupName))
 	if err != nil {
@@ -343,20 +343,20 @@ func backupDeleteDBPluginFunc(backupName, pluginConfigPath string, pluginConfig 
 	}
 	err = gpbckpconfig.UpdateDeleteStatus(backupName, dateDeleted, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(dateDeleted, backupName, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableSetBackupStatus(dateDeleted, backupName, err))
 		return err
 	}
-	gplog.Info(textmsg.InfoTextBackupDeleteSuccess(backupName))
+	gplog.Info("%s", textmsg.InfoTextBackupDeleteSuccess(backupName))
 	return nil
 }
 
 func backupDeleteDBLocalFunc(backupName, backupDir string, maxParallelProcesses int, hDB *sql.DB, ignoreErrors bool) error {
 	var err, errUpdate error
 	dateDeleted := getCurrentTimestamp()
-	gplog.Info(textmsg.InfoTextBackupDeleteStart(backupName))
+	gplog.Info("%s", textmsg.InfoTextBackupDeleteStart(backupName))
 	errUpdate = gpbckpconfig.UpdateDeleteStatus(backupName, gpbckpconfig.DateDeletedInProgress, hDB)
 	if errUpdate != nil {
-		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, errUpdate))
+		gplog.Error("%s", textmsg.ErrorTextUnableSetBackupStatus(gpbckpconfig.DateDeletedInProgress, backupName, errUpdate))
 		return errUpdate
 	}
 	backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
@@ -369,8 +369,8 @@ func backupDeleteDBLocalFunc(backupName, backupDir string, maxParallelProcesses 
 		handleErrorDB(backupName, textmsg.ErrorTextUnableGetBackupPath("backup directory", backupName, err), gpbckpconfig.DateDeletedLocalFailed, hDB)
 		return err
 	}
-	gplog.Debug(textmsg.InfoTextBackupDirPath(bckpDir))
-	gplog.Debug(textmsg.InfoTextSegmentPrefix(segPrefix))
+	gplog.Debug("%s", textmsg.InfoTextBackupDirPath(bckpDir))
+	gplog.Debug("%s", textmsg.InfoTextSegmentPrefix(segPrefix))
 	backupType, err := backupData.GetBackupType()
 	if err != nil {
 		handleErrorDB(backupName, textmsg.ErrorTextUnableGetBackupValue("type", backupName, err), gpbckpconfig.DateDeletedLocalFailed, hDB)
@@ -397,7 +397,7 @@ func backupDeleteDBLocalFunc(backupName, backupDir string, maxParallelProcesses 
 		}
 	}
 	// Delete files on master.
-	gplog.Debug(textmsg.InfoTextCommandExecution("delete directory", gpbckpconfig.BackupDirPath(bckpDir, backupName)))
+	gplog.Debug("%s", textmsg.InfoTextCommandExecution("delete directory", gpbckpconfig.BackupDirPath(bckpDir, backupName)))
 	err = os.RemoveAll(gpbckpconfig.BackupDirPath(bckpDir, backupName))
 	if err != nil {
 		handleErrorDB(backupName, textmsg.ErrorTextUnableDeleteBackup(backupName, err), gpbckpconfig.DateDeletedLocalFailed, hDB)
@@ -407,10 +407,10 @@ func backupDeleteDBLocalFunc(backupName, backupDir string, maxParallelProcesses 
 	}
 	errUpdate = gpbckpconfig.UpdateDeleteStatus(backupName, dateDeleted, hDB)
 	if errUpdate != nil {
-		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(dateDeleted, backupName, errUpdate))
+		gplog.Error("%s", textmsg.ErrorTextUnableSetBackupStatus(dateDeleted, backupName, errUpdate))
 		return errUpdate
 	}
-	gplog.Info(textmsg.InfoTextBackupDeleteSuccess(backupName))
+	gplog.Info("%s", textmsg.InfoTextBackupDeleteSuccess(backupName))
 	return nil
 }
 
@@ -511,13 +511,13 @@ func checkBackupDirExistsOnSegments(path, host string, sshConf *ssh.ClientConfig
 	}
 	defer session.Close()
 	command := fmt.Sprintf("test -d %s", path)
-	gplog.Debug(textmsg.InfoTextCommandExecution(command, "on host", host))
+	gplog.Debug("%s", textmsg.InfoTextCommandExecution(command, "on host", host))
 	if err := session.Run(command); err != nil {
-		gplog.Error(textmsg.ErrorTextCommandExecutionFailed(err, command, "on host", host))
+		gplog.Error("%s", textmsg.ErrorTextCommandExecutionFailed(err, command, "on host", host))
 		errCh <- textmsg.ErrorNotFoundBackupDirIn(fmt.Sprintf("%s on host %s", path, host))
 		return
 	}
-	gplog.Debug(textmsg.InfoTextCommandExecutionSucceeded(command, "on host", host))
+	gplog.Debug("%s", textmsg.InfoTextCommandExecutionSucceeded(command, "on host", host))
 }
 
 func deleteBackupDirOnSegments(path, host string, sshConf *ssh.ClientConfig, errCh chan error) {
@@ -535,13 +535,13 @@ func deleteBackupDirOnSegments(path, host string, sshConf *ssh.ClientConfig, err
 	}
 	defer session.Close()
 	command := fmt.Sprintf("rm -rf %s", path)
-	gplog.Debug(textmsg.InfoTextCommandExecution(command, "on host", host))
+	gplog.Debug("%s", textmsg.InfoTextCommandExecution(command, "on host", host))
 	if err := session.Run(command); err != nil {
-		gplog.Error(textmsg.ErrorTextCommandExecutionFailed(err, command, "on host", host))
+		gplog.Error("%s", textmsg.ErrorTextCommandExecutionFailed(err, command, "on host", host))
 		errCh <- err
 		return
 	}
-	gplog.Debug(textmsg.InfoTextCommandExecutionSucceeded(command, "on host", host))
+	gplog.Debug("%s", textmsg.InfoTextCommandExecutionSucceeded(command, "on host", host))
 }
 
 func getSSHConfig() (*ssh.ClientConfig, error) {

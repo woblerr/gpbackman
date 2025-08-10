@@ -120,7 +120,7 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(beforeTimestampFlagName) {
 		err = gpbckpconfig.CheckTimestamp(backupCleanBeforeTimestamp)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupCleanBeforeTimestamp, beforeTimestampFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupCleanBeforeTimestamp, beforeTimestampFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 		beforeTimestamp = backupCleanBeforeTimestamp
@@ -132,7 +132,7 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(afterTimestampFlagName) {
 		err = gpbckpconfig.CheckTimestamp(backupCleanAfterTimestamp)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupCleanAfterTimestamp, afterTimestampFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupCleanAfterTimestamp, afterTimestampFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 		afterTimestamp = backupCleanAfterTimestamp
@@ -140,25 +140,25 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	// backup-dir anf plugin-config flags cannot be used together.
 	err = checkCompatibleFlags(flags, backupDirFlagName, pluginConfigFileFlagName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, backupDirFlagName, pluginConfigFileFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, backupDirFlagName, pluginConfigFileFlagName))
 		execOSExit(exitErrorCode)
 	}
 	// If parallel-processes flag is specified and have correct values.
 	if flags.Changed(parallelProcessesFlagName) && !gpbckpconfig.IsPositiveValue(backupCleanParallelProcesses) {
-		gplog.Error(textmsg.ErrorTextUnableValidateFlag(strconv.Itoa(backupCleanParallelProcesses), parallelProcessesFlagName, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(strconv.Itoa(backupCleanParallelProcesses), parallelProcessesFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 	// plugin-config and parallel-precesses flags cannot be used together.
 	err = checkCompatibleFlags(flags, parallelProcessesFlagName, pluginConfigFileFlagName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, parallelProcessesFlagName, pluginConfigFileFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, parallelProcessesFlagName, pluginConfigFileFlagName))
 		execOSExit(exitErrorCode)
 	}
 	// If backup-dir flag is specified and it exists and the full path is specified.
 	if flags.Changed(backupDirFlagName) {
 		err = gpbckpconfig.CheckFullPath(backupCleanBackupDir, checkFileExistsConst)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupCleanBackupDir, backupDirFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupCleanBackupDir, backupDirFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
@@ -166,12 +166,12 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(pluginConfigFileFlagName) {
 		err = gpbckpconfig.CheckFullPath(backupCleanPluginConfigFile, checkFileExistsConst)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupCleanPluginConfigFile, pluginConfigFileFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupCleanPluginConfigFile, pluginConfigFileFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
 	if beforeTimestamp == "" && afterTimestamp == "" {
-		gplog.Error(textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName, afterTimestampFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName, afterTimestampFlagName))
 		execOSExit(exitErrorCode)
 	}
 }
@@ -187,19 +187,19 @@ func doCleanBackup() {
 func cleanBackup() error {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
 		return err
 	}
 	defer func() {
 		closeErr := hDB.Close()
 		if closeErr != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
 	if backupCleanPluginConfigFile != "" {
 		pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableReadPluginConfigFile(err))
+			gplog.Error("%s", textmsg.ErrorTextUnableReadPluginConfigFile(err))
 			return err
 		}
 		err = backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, afterTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
@@ -218,11 +218,11 @@ func cleanBackup() error {
 func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
 	backupList, err := fetchBackupNamesForDeletion(cutOffTimestamp, cutOffAfterTimestamp, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
 	}
 	if len(backupList) > 0 {
-		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+		gplog.Debug("%s", textmsg.InfoTextBackupDeleteList(backupList))
 		// Execute deletion for each backup.
 		// Use backupDeleteDBPlugin function from backup-delete command.
 		// Don't use force deletes and ignore errors for mass deletion.
@@ -231,7 +231,7 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, cutOffAfterTimesta
 			return err
 		}
 	} else {
-		gplog.Info(textmsg.InfoTextNothingToDo())
+		gplog.Info("%s", textmsg.InfoTextNothingToDo())
 	}
 	return nil
 }
@@ -239,17 +239,17 @@ func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, cutOffAfterTimesta
 func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, backupDir string, maxParallelProcesses int, hDB *sql.DB) error {
 	backupList, err := fetchBackupNamesForDeletion(cutOffTimestamp, cutOffAfterTimestamp, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
 	}
 	if len(backupList) > 0 {
-		gplog.Debug(textmsg.InfoTextBackupDeleteList(backupList))
+		gplog.Debug("%s", textmsg.InfoTextBackupDeleteList(backupList))
 		err = backupDeleteDBLocal(backupList, backupDir, deleteCascade, false, false, maxParallelProcesses, hDB)
 		if err != nil {
 			return err
 		}
 	} else {
-		gplog.Info(textmsg.InfoTextNothingToDo())
+		gplog.Info("%s", textmsg.InfoTextNothingToDo())
 	}
 	return nil
 }

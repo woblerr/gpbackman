@@ -169,6 +169,107 @@ func TestGetObjectFilteringInfo(t *testing.T) {
 			want:    "",
 			wantErr: false,
 		},
+		// Invalid combinations (pairwise conflicts)
+		{
+			name: "Invalid IncludeTable and ExcludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: false,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  true,
+				ExcludeTableFiltered:  true,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Invalid IncludeSchema and ExcludeSchema",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: true,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  false,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Invalid IncludeSchema and IncludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  true,
+				ExcludeTableFiltered:  false,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Invalid IncludeSchema and ExcludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  true,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Invalid ExcludeSchema and IncludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: false,
+				ExcludeSchemaFiltered: true,
+				IncludeTableFiltered:  true,
+				ExcludeTableFiltered:  false,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Invalid ExcludeSchema and ExcludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: false,
+				ExcludeSchemaFiltered: true,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  true,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		// Triple conflicts
+		{
+			name: "Invalid IncludeSchema IncludeTable and ExcludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: false,
+				IncludeTableFiltered:  true,
+				ExcludeTableFiltered:  true,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Invalid IncludeSchema ExcludeSchema and IncludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: true,
+				IncludeTableFiltered:  true,
+				ExcludeTableFiltered:  false,
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Invalid IncludeSchema ExcludeSchema and ExcludeTable",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				ExcludeSchemaFiltered: true,
+				IncludeTableFiltered:  false,
+				ExcludeTableFiltered:  true,
+			},
+			want:    "",
+			wantErr: true,
+		},
 		{
 			name: "Test InvalidFiltering",
 			config: BackupConfig{
@@ -194,6 +295,10 @@ func TestGetObjectFilteringInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetObjectFilteringInfoAllCombos(t *testing.T) {
+	// Removed: consolidated into TestGetObjectFilteringInfo
 }
 
 func TestGetBackupDate(t *testing.T) {

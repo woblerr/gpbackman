@@ -105,27 +105,27 @@ func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(typeFlagName) {
 		err = checkBackupType(backupInfoBackupTypeFilter)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupInfoBackupTypeFilter, typeFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupInfoBackupTypeFilter, typeFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
 	// table flag and schema flags cannot be used together.
 	err = checkCompatibleFlags(flags, tableFlagName, schemaFlagName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableCompatibleFlags(err, tableFlagName, schemaFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, tableFlagName, schemaFlagName))
 		execOSExit(exitErrorCode)
 	}
 	// If table is specified and have correct values.
 	if flags.Changed(tableFlagName) {
 		err = gpbckpconfig.CheckTableFQN(backupInfoTableNameFilter)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(backupInfoTableNameFilter, tableFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupInfoTableNameFilter, tableFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
 	// If exclude flag is specified, but table or schema flag is not.
-	if flags.Changed(excludeFlagName) && !(flags.Changed(tableFlagName) || flags.Changed(schemaFlagName)) {
-		gplog.Error(textmsg.ErrorTextUnableValidateValue(textmsg.ErrorNotIndependentFlagsError(), tableFlagName, schemaFlagName))
+	if flags.Changed(excludeFlagName) && !flags.Changed(tableFlagName) && !flags.Changed(schemaFlagName) {
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorNotIndependentFlagsError(), tableFlagName, schemaFlagName))
 		execOSExit(exitErrorCode)
 	}
 }
@@ -143,13 +143,13 @@ func backupInfo() error {
 	initTable(t)
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
 		return err
 	}
 	defer func() {
 		closeErr := hDB.Close()
 		if closeErr != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
 	err = backupInfoDB(
@@ -171,13 +171,13 @@ func backupInfo() error {
 func backupInfoDB(showDeleted, showFailed, backupExcludeFilter bool, backupTypeFilter, backupTableFilter, backupSchemaFilter string, hDB *sql.DB, t table.Writer) error {
 	backupList, err := gpbckpconfig.GetBackupNamesDB(showDeleted, showFailed, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
 	}
 	for _, backupName := range backupList {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 			return err
 		}
 		addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter, backupExcludeFilter, backupData, t)
@@ -212,23 +212,23 @@ func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter st
 	var matchToObjectFilter bool
 	backupDate, err := backupData.GetBackupDate()
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date", backupData.Timestamp, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupValue("date", backupData.Timestamp, err))
 	}
 	backupType, err := backupData.GetBackupType()
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("type", backupData.Timestamp, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupValue("type", backupData.Timestamp, err))
 	}
 	backupFilter, err := backupData.GetObjectFilteringInfo()
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("object filtering", backupData.Timestamp, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupValue("object filtering", backupData.Timestamp, err))
 	}
 	backupDuration, err := backupData.GetBackupDuration()
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("duration", backupData.Timestamp, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupValue("duration", backupData.Timestamp, err))
 	}
 	backupDateDeleted, err := backupData.GetBackupDateDeleted()
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, err))
 	}
 	matchToObjectFilter = backupData.CheckObjectFilteringExists(backupTableFilter, backupSchemaFilter, backupFilter, backupExcludeFilter)
 	if (backupTypeFilter == "" || backupTypeFilter == backupType) && matchToObjectFilter {

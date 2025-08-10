@@ -118,26 +118,30 @@ func (backupConfig BackupConfig) GetBackupType() (string, error) {
 // In all other cases, an error is returned.
 func (backupConfig BackupConfig) GetObjectFilteringInfo() (string, error) {
 	switch {
-	case backupConfig.IncludeSchemaFiltered && !(backupConfig.ExcludeSchemaFiltered ||
-		backupConfig.IncludeTableFiltered ||
-		backupConfig.ExcludeTableFiltered):
+	case backupConfig.IncludeSchemaFiltered &&
+		!backupConfig.ExcludeSchemaFiltered &&
+		!backupConfig.IncludeTableFiltered &&
+		!backupConfig.ExcludeTableFiltered:
 		return objectFilteringIncludeSchema, nil
-	case backupConfig.ExcludeSchemaFiltered && !(backupConfig.IncludeSchemaFiltered ||
-		backupConfig.IncludeTableFiltered ||
-		backupConfig.ExcludeTableFiltered):
+	case backupConfig.ExcludeSchemaFiltered &&
+		!backupConfig.IncludeSchemaFiltered &&
+		!backupConfig.IncludeTableFiltered &&
+		!backupConfig.ExcludeTableFiltered:
 		return objectFilteringExcludeSchema, nil
-	case backupConfig.IncludeTableFiltered && !(backupConfig.IncludeSchemaFiltered ||
-		backupConfig.ExcludeSchemaFiltered ||
-		backupConfig.ExcludeTableFiltered):
+	case backupConfig.IncludeTableFiltered &&
+		!backupConfig.IncludeSchemaFiltered &&
+		!backupConfig.ExcludeSchemaFiltered &&
+		!backupConfig.ExcludeTableFiltered:
 		return objectFilteringIncludeTable, nil
-	case backupConfig.ExcludeTableFiltered && !(backupConfig.IncludeSchemaFiltered ||
-		backupConfig.ExcludeSchemaFiltered ||
-		backupConfig.IncludeTableFiltered):
+	case backupConfig.ExcludeTableFiltered &&
+		!backupConfig.IncludeSchemaFiltered &&
+		!backupConfig.ExcludeSchemaFiltered &&
+		!backupConfig.IncludeTableFiltered:
 		return objectFilteringExcludeTable, nil
-	case !(backupConfig.ExcludeTableFiltered ||
-		backupConfig.IncludeSchemaFiltered ||
-		backupConfig.ExcludeSchemaFiltered ||
-		backupConfig.IncludeTableFiltered):
+	case !backupConfig.ExcludeTableFiltered &&
+		!backupConfig.IncludeSchemaFiltered &&
+		!backupConfig.ExcludeSchemaFiltered &&
+		!backupConfig.IncludeTableFiltered:
 		return "", nil
 	default:
 		return "", errors.New("backup filtering type does not match any of the available values")

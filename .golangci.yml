@@ -1,72 +1,68 @@
-run:
-  timeout: 5m
-
-output:
-  formats:
-    - format: colored-line-number
-
-linters-settings:
-  govet:
-    enable:
-      - shadow
-  revive:
-    confidence: 0.1
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
-  lll:
-    line-length: 140
-  gocyclo:
-    min-complexity: 25
-  gocritic:
-    enabled-tags:
-      - performance
-      - style
-      - experimental
-    disabled-checks:
-      - filepathJoin
-      - hugeParam
-      - rangeValCopy
-      - octalLiteral
-      - unnamedResult
-      - todoCommentWithoutDetail
+version: "2"
 
 linters:
+  default: none
   enable:
-    - staticcheck
-    - revive
-    - govet
-    - unconvert
-    - gocyclo
     - dupl
+    - gochecknoinits
+    - gocritic
+    - gocyclo
+    - gosec
+    - govet
+    - ineffassign
     - misspell
+    - nakedret
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
     - unparam
     - unused
-    - typecheck
-    - ineffassign
-    - stylecheck
-    # - gochecknoinits
-    - copyloopvar
-    - gocritic
-    - nakedret
-    - gosimple
-  fast: false
-  disable-all: true
+  settings:
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      enabled-tags:
+        - performance
+        - style
+        - experimental
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+        - unnamedResult
+        - filepathJoin
+    govet:
+      enable:
+        - shadow
+    revive:
+      confidence: 0.1
+    misspell:
+      locale: US
+    lll:
+      line-length: 140
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - gochecknoinits
+        text: don't use `init` function
+      - linters:
+          - staticcheck
+        text: at least one file in a package should have a package comment
+      - linters:
+          - revive
+        text: should have a package comment
+      - linters:
+          - gosec
+        text: integer overflow conversion uint -> int
+      - linters:
+          - gosec
+        path: _test\.go
+    paths:
+      - vendor
 
-issues:
-  exclude-dirs:
-    - vendor
-  exclude-rules:
-    - text: "at least one file in a package should have a package comment"
-      linters:
-        - stylecheck
-    - text: "non-constant format string"
-      linters:
-        - govet
-    - path: _test\.go
-      linters:
-        - gosec
-        - dupl
-  exclude-use-default: false
+run:
+  timeout: 5m
+  modules-download-mode: vendor
+  relative-path-mode: gomod
