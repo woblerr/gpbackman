@@ -124,7 +124,7 @@ func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 		}
 	}
 	// If exclude flag is specified, but table or schema flag is not.
-	if flags.Changed(excludeFlagName) && !(flags.Changed(tableFlagName) || flags.Changed(schemaFlagName)) {
+	if flags.Changed(excludeFlagName) && !flags.Changed(tableFlagName) && !flags.Changed(schemaFlagName) {
 		gplog.Error(textmsg.ErrorTextUnableValidateValue(textmsg.ErrorNotIndependentFlagsError(), tableFlagName, schemaFlagName))
 		execOSExit(exitErrorCode)
 	}

@@ -392,7 +392,7 @@ func TestCheckMasterBackupDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := os.MkdirAll(tt.testDir, 0755)
+			err := os.MkdirAll(tt.testDir, 0o755)
 			if err != nil {
 				t.Fatalf("Failed to create temp dir: %v", err)
 			}
