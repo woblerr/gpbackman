@@ -74,19 +74,19 @@ func doRootFlagValidation(flags *pflag.FlagSet, checkFileExists bool) {
 	if flags.Changed(historyDBFlagName) {
 		err = gpbckpconfig.CheckFullPath(rootHistoryDB, checkFileExists)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootHistoryDB, historyDBFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(rootHistoryDB, historyDBFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 	}
 	// Check, that the log level is correct.
 	err = setLogLevelConsole(rootLogLevelConsole)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelConsole, logLevelConsoleFlagName, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(rootLogLevelConsole, logLevelConsoleFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 	err = setLogLevelFile(rootLogLevelFile)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableValidateFlag(rootLogLevelFile, logLevelFileFlagName, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(rootLogLevelFile, logLevelFileFlagName, err))
 		execOSExit(exitErrorCode)
 	}
 }

@@ -63,7 +63,7 @@ func doCleanHistoryFlagValidation(flags *pflag.FlagSet) {
 	if flags.Changed(beforeTimestampFlagName) {
 		err = gpbckpconfig.CheckTimestamp(historyCleanBeforeTimestamp)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableValidateFlag(historyCleanBeforeTimestamp, beforeTimestampFlagName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(historyCleanBeforeTimestamp, beforeTimestampFlagName, err))
 			execOSExit(exitErrorCode)
 		}
 		beforeTimestamp = historyCleanBeforeTimestamp
@@ -72,7 +72,7 @@ func doCleanHistoryFlagValidation(flags *pflag.FlagSet) {
 		beforeTimestamp = gpbckpconfig.GetTimestampOlderThen(historyCleanOlderThenDays)
 	}
 	if beforeTimestamp == "" {
-		gplog.Error(textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName))
 		execOSExit(exitErrorCode)
 	}
 }
@@ -88,13 +88,13 @@ func doCleanHistory() {
 func cleanHistory() error {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("open", err))
+		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
 		return err
 	}
 	defer func() {
 		closeErr := hDB.Close()
 		if closeErr != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
 	err = historyCleanDB(beforeTimestamp, hDB)
@@ -107,17 +107,17 @@ func cleanHistory() error {
 func historyCleanDB(cutOffTimestamp string, hDB *sql.DB) error {
 	backupList, err := gpbckpconfig.GetBackupNamesForCleanBeforeTimestamp(cutOffTimestamp, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableReadHistoryDB(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
 	}
 	if len(backupList) > 0 {
-		gplog.Debug(textmsg.InfoTextBackupDeleteListFromHistory(backupList))
+		gplog.Debug("%s", textmsg.InfoTextBackupDeleteListFromHistory(backupList))
 		err := gpbckpconfig.CleanBackupsDB(backupList, sqliteDeleteBatchSize, hDB)
 		if err != nil {
 			return err
 		}
 	} else {
-		gplog.Info(textmsg.InfoTextNothingToDo())
+		gplog.Info("%s", textmsg.InfoTextNothingToDo())
 	}
 	return nil
 }

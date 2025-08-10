@@ -57,7 +57,7 @@ func doHistoryMigrateFlagValidation(flags *pflag.FlagSet) {
 			// Always check the existence of the file.
 			err = gpbckpconfig.CheckFullPath(hFile, checkFileExistsConst)
 			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableValidateFlag(hFile, historyFilesFlagName, err))
+				gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(hFile, historyFilesFlagName, err))
 				execOSExit(exitErrorCode)
 			}
 		}
@@ -75,42 +75,42 @@ func doMigrateHistory() {
 func migrateHistory() error {
 	hDB, err := history.InitializeHistoryDatabase(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableInitHistoryDB(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableInitHistoryDB(err))
 		return err
 	}
 	defer func() {
 		closeErr := hDB.Close()
 		if closeErr != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
 	for _, historyFile := range historyMigrateHistoryFiles {
-		gplog.Info(textmsg.InfoTextMigrateHistoryFile("Start", historyFile))
+		gplog.Info("%s", textmsg.InfoTextMigrateHistoryFile("Start", historyFile))
 		hFile := getHistoryFilePath(historyFile)
 		historyData, err := gpbckpconfig.ReadHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("read", err))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryFile("read", err))
 			return err
 		}
 		parseHData, err := gpbckpconfig.ParseResult(historyData)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("parse", err))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryFile("parse", err))
 			return err
 		}
 		for _, backupConfig := range parseHData.BackupConfigs {
 			hBackupConfig := gpbckpconfig.ConvertToHistoryBackupConfig(backupConfig)
 			err = history.StoreBackupHistory(hDB, &hBackupConfig)
 			if err != nil {
-				gplog.Error(textmsg.ErrorTextUnableWriteIntoHistoryDB(err))
+				gplog.Error("%s", textmsg.ErrorTextUnableWriteIntoHistoryDB(err))
 				return err
 			}
 		}
 		err = renameHistoryFile(hFile)
 		if err != nil {
-			gplog.Error(textmsg.ErrorTextUnableActionHistoryFile("rename", err))
+			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryFile("rename", err))
 			return err
 		}
-		gplog.Info(textmsg.InfoTextMigrateHistoryFile("Finish", historyFile))
+		gplog.Info("%s", textmsg.InfoTextMigrateHistoryFile("Finish", historyFile))
 	}
 	return nil
 }

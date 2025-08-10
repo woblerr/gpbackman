@@ -124,16 +124,16 @@ func checkBackupCanBeUsed(deleteForce, skipLocalBackup bool, backupData gpbckpco
 	result := false
 	err := checkLocalBackupStatus(skipLocalBackup, backupData.IsLocal())
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableWorkBackup(backupData.Timestamp, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableWorkBackup(backupData.Timestamp, err))
 		return result, err
 	}
 	if backupData.IsInProgress() && !deleteForce {
-		gplog.Error(textmsg.InfoTextBackupStatus(backupData.Timestamp, backupData.Status))
+		gplog.Error("%s", textmsg.InfoTextBackupStatus(backupData.Timestamp, backupData.Status))
 		return result, nil
 	}
 	backupDateDeleted, errDateDeleted := backupData.GetBackupDateDeleted()
 	if errDateDeleted != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, errDateDeleted))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupValue("date deletion", backupData.Timestamp, errDateDeleted))
 	}
 	// If the backup date deletion has invalid value, try to delete the backup.
 	if gpbckpconfig.IsBackupActive(backupDateDeleted) || errDateDeleted != nil {
@@ -143,9 +143,9 @@ func checkBackupCanBeUsed(deleteForce, skipLocalBackup bool, backupData gpbckpco
 			// We do not return the error here,
 			// because it is necessary to leave the possibility of starting the process
 			// of deleting backups that are stuck in the "In Progress" status using the --force flag.
-			gplog.Error(textmsg.ErrorTextBackupDeleteInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
+			gplog.Error("%s", textmsg.ErrorTextBackupDeleteInProgress(backupData.Timestamp, textmsg.ErrorBackupDeleteInProgressError()))
 		} else {
-			gplog.Debug(textmsg.InfoTextBackupAlreadyDeleted(backupData.Timestamp))
+			gplog.Debug("%s", textmsg.InfoTextBackupAlreadyDeleted(backupData.Timestamp))
 		}
 	}
 	// If flag --force is set.
@@ -222,14 +222,14 @@ func checkSingleBackupDir(backupDir, segPrefix, segID string, isSingleBackupDir 
 func getBackupMasterDirClusterInfo(dbName string) string {
 	db, err := gpbckpconfig.NewClusterLocalClusterConn(dbName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableConnectLocalCluster(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableConnectLocalCluster(err))
 		return ""
 	}
 	defer db.Close()
 	sqlQuery := "SELECT datadir FROM gp_segment_configuration WHERE content = -1 AND role = 'p';"
 	queryResult, err := gpbckpconfig.ExecuteQueryLocalClusterConn[string](db, sqlQuery)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
 		return ""
 	}
 	gplog.Debug("Master data directory: %s", queryResult)
@@ -240,23 +240,23 @@ func getSegmentConfigurationClusterInfo(dbName string) ([]gpbckpconfig.SegmentCo
 	queryResult := make([]gpbckpconfig.SegmentConfig, 0)
 	db, err := gpbckpconfig.NewClusterLocalClusterConn(dbName)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableConnectLocalCluster(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableConnectLocalCluster(err))
 		return queryResult, err
 	}
 	defer db.Close()
 	sqlQuery := "SELECT content as contentid, hostname, datadir FROM gp_segment_configuration WHERE role = 'p' and content != -1 ORDER BY content;"
 	queryResult, err = gpbckpconfig.ExecuteQueryLocalClusterConn[[]gpbckpconfig.SegmentConfig](db, sqlQuery)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
 		return queryResult, err
 	}
 	return queryResult, nil
 }
 
 func handleErrorDB(backupName, errorMessage, backupStatus string, hDB *sql.DB) {
-	gplog.Error(errorMessage)
+	gplog.Error("%s", errorMessage)
 	err := gpbckpconfig.UpdateDeleteStatus(backupName, backupStatus, hDB)
 	if err != nil {
-		gplog.Error(textmsg.ErrorTextUnableSetBackupStatus(backupStatus, backupName, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableSetBackupStatus(backupStatus, backupName, err))
 	}
 }

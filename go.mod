@@ -1,6 +1,6 @@
 module github.com/woblerr/gpbackman
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/greenplum-db/gp-common-go-libs v1.0.15
