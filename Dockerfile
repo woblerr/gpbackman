@@ -27,8 +27,10 @@ RUN apt-get update \
         tzdata \
     && groupadd --gid ${GPBACKMAN_GID} ${GPBACKMAN_GROUP} \
     && useradd --shell /bin/bash -d /home/${GPBACKMAN_USER} --uid ${GPBACKMAN_UID} --gid ${GPBACKMAN_GID} -m ${GPBACKMAN_USER} \
+    && unlink /etc/localtime \
     && cp /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo "${TZ}" > /etc/timezone \
+    && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 COPY --chmod=755 docker_files/entrypoint.sh /entrypoint.sh
