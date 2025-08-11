@@ -110,6 +110,12 @@ docker:
 	@echo "Version $(BRANCH)-$(GIT_REV)"
 	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME) .
 
+.PHONY: docker-alpine
+docker-alpine:
+	@echo "Build $(APP_NAME) alpine docker container"
+	@echo "Version $(BRANCH)-$(GIT_REV)"
+	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile.alpine --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME)-alpine .
+
 define e2e_command
 	@echo "Run end-to-end tests for $(APP_NAME) for ${1} command"
 	docker run --rm -v $(ROOT_DIR)/e2e_tests/:/home/gpbackman/e2e_tests --name="$(APP_NAME)" "$(APP_NAME)" /home/gpbackman/e2e_tests/run_e2e_${1}.sh
