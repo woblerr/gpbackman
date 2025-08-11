@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 uid=$(id -u)
 
@@ -8,16 +8,19 @@ if [ "${uid}" = "0" ]; then
         cp /usr/share/zoneinfo/${TZ} /etc/localtime
         echo "${TZ}" > /etc/timezone
     fi
-
-    # Set custom user UID or GID.
-    if  [ "${GPBACKMAN_UID}" != "1001" ] || [ "${GPBACKMAN_GID}" != "1001" ] ; then
-        sed -i "s/:1001:1001:/:${GPBACKMAN_UID}:${GPBACKMAN_GID}:/g" /etc/passwd
+    # Custom user group.
+    if [ "${GPBACKMAN_GROUP}" != "gpbackman" ] || [ "${GPBACKMAN_GID}" != "1001" ]; then
+        groupmod -g ${GPBACKMAN_GID} -n ${GPBACKMAN_GROUP} gpbackman
     fi
-    chown -R ${GPBACKMAN_USER}:${GPBACKMAN_USER} /home/${GPBACKMAN_USER} 
+    # Custom user.
+    if [ "${GPBACKMAN_USER}" != "gpbackman" ] || [ "${GPBACKMAN_UID}" != "1001" ]; then
+        usermod -g ${GPBACKMAN_GID} -l ${GPBACKMAN_USER} -u ${GPBACKMAN_UID} -m -d /home/${GPBACKMAN_USER} gpbackman
+    fi
+    chown -R ${GPBACKMAN_USER}:${GPBACKMAN_GROUP} /home/${GPBACKMAN_USER} 
 fi
 
 if [ "${uid}" = "0" ]; then
-    exec su-exec ${GPBACKMAN_USER} "$@"
+    exec gosu ${GPBACKMAN_USER} "$@"
 else
     exec "$@"
 fi
