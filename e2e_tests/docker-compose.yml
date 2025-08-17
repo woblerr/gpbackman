@@ -37,123 +37,48 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - "./scripts/prepare_minio.sh:/prepare_minio.sh"
-      - "./src_data:/tmp/src_data"
+      - "./scripts/prepare/prepare_minio.sh:/prepare_minio.sh"
     entrypoint: /prepare_minio.sh
     networks:
       - e2e
 
-################################################################
-  # Test backup-info command.
-  backup-info:
+  ################################################################
+  # Export gpbackman binary to shared volume.
+  gpbackman-export:
     image: ${IMAGE_GPBACKMAN}
-    container_name: backup-info
-    hostname: backup-info
+    container_name: gpbackman-export
+    hostname: gpbackman-export
     volumes:
-      - "./src_data:/home/gpbackman/src_data"
-      - "./scripts/run_backup-info.sh:/home/gpbackman/run_backup-info.sh"
-    command: /home/gpbackman/run_backup-info.sh
+      - gpbackman_bin:/export
+    entrypoint: ["/bin/sh","-c","cp /usr/bin/gpbackman /export/gpbackman && chmod 755 /export/gpbackman && sleep infinity"]
     networks:
       - e2e
 
   ################################################################
-  # Test backup-delete command.
-  backup-delete:
-    build:
-      context: .
-      dockerfile: ./conf/Dockerfile.s3_plugin
-      args:
-        S3_PLUGIN_VERSION: ${S3_PLUGIN_VERSION}
-    image: backup-delete
-    container_name: backup-delete
-    hostname: backup-delete
+  greenplum:
+    image: woblerr/greenplum:${IMAGE_TAG_GREENPLUM}
+    container_name: greenplum
+    hostname: greenplum
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
       prepare_minio:
         condition: service_completed_successfully
-    volumes:
-      - "./src_data:/home/gpbackman/src_data"
-      - "./scripts/run_backup-delete.sh:/home/gpbackman/run_backup-delete.sh"
-      - "./conf/gpbackup_s3_plugin.yaml:/home/gpbackman/gpbackup_s3_plugin.yaml"
-      - "./conf/gpbackup_s3_plugin_invalid.yaml:/home/gpbackman/gpbackup_s3_plugin_invalid.yaml"
-    command: /home/gpbackman/run_backup-delete.sh
-    networks:
-      - e2e
-
-  ################################################################
-  # Test history-clean command.
-  history-clean:
-    image: ${IMAGE_GPBACKMAN}
-    container_name: history-clean
-    hostname: history-clean
-    volumes:
-      - "./src_data:/home/gpbackman/src_data"
-      - "./scripts/run_history-clean.sh:/home/gpbackman/run_history-clean.sh"
-    command: /home/gpbackman/run_history-clean.sh
-    networks:
-      - e2e
-
-  ################################################################
-  # Test history-migrate command.
-  history-migrate:
-    image: ${IMAGE_GPBACKMAN}
-    container_name: history-migrate
-    hostname: history-migrate
-    volumes:
-      - "./src_data:/home/gpbackman/src_data"
-      - "./scripts/run_history-migrate.sh:/home/gpbackman/run_history-migrate.sh"
-    command: /home/gpbackman/run_history-migrate.sh
-    networks:
-      - e2e
-
-  ################################################################
-  # Test report-info command.
-  report-info:
-    build:
-      context: .
-      dockerfile: ./conf/Dockerfile.s3_plugin
-      args:
-        S3_PLUGIN_VERSION: ${S3_PLUGIN_VERSION}
-    image: report-info
-    container_name: report-info
-    hostname: report-info
-    depends_on:
-      minio:
+      gpbackman-export:
         condition: service_started
-      prepare_minio:
-        condition: service_completed_successfully
+    environment:
+      - "GREENPLUM_PASSWORD"
     volumes:
-      - "./src_data:/home/gpbackman/src_data"
-      - "./scripts/run_report-info.sh:/home/gpbackman/run_report-info.sh"
-      - "./conf/gpbackup_s3_plugin.yaml:/home/gpbackman/gpbackup_s3_plugin.yaml"
-    command: /home/gpbackman/run_report-info.sh
-    networks:
-      - e2e
-
-  ################################################################
-  # Test backup-clean command.
-  backup-clean:
-    build:
-      context: .
-      dockerfile: ./conf/Dockerfile.s3_plugin
-      args:
-        S3_PLUGIN_VERSION: ${S3_PLUGIN_VERSION}
-    image: backup-clean
-    container_name: backup-clean
-    hostname: backup-clean
-    depends_on:
-      minio:
-        condition: service_started
-      prepare_minio:
-        condition: service_completed_successfully
-    volumes:
-      - "./src_data:/home/gpbackman/src_data"
-      - "./scripts/run_backup-clean.sh:/home/gpbackman/run_backup-clean.sh"
-      - "./conf/gpbackup_s3_plugin.yaml:/home/gpbackman/gpbackup_s3_plugin.yaml"
-    command: /home/gpbackman/run_backup-clean.sh
+      - ./conf/gpbackup_s3_plugin.yaml:/home/gpadmin/gpbackup_s3_plugin.yaml
+      - ./scripts/prepare/gpdb_init:/docker-entrypoint-initdb.d
+      - gpbackman_bin:/home/gpadmin/gpbackman
+      - ./scripts/prepare/prepare_gpdb_backups.sh:/home/gpadmin/prepare_gpdb_backups.sh
+      - ./scripts/run_tests:/home/gpadmin/run_tests
     networks:
       - e2e
 
 networks:
   e2e:
+
+volumes:
+  gpbackman_bin:

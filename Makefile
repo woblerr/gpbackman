@@ -7,6 +7,8 @@ ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 MUSL_CROSS := $(shell brew list| grep musl-cross)
 UID := $(shell id -u)
 GID := $(shell id -g)
+GPDB_CONTAINER_NAME := greenplum
+GPDB_USER := gpadmin
 
 .PHONY: test
 test:
@@ -17,53 +19,14 @@ test:
 test-e2e:
 	@echo "Run end-to-end tests for $(APP_NAME)"
 	@make docker
-	@make test-e2e_backup-clean
-	@make test-e2e_backup-delete
 	@make test-e2e_backup-info
-	@make test-e2e_history-clean
-	@make test-e2e_history-migrate
-	@make test-e2e_report-info
 
 .PHONY: test-e2e_backup-info
 test-e2e_backup-info:
 	@echo "Run end-to-end tests for $(APP_NAME) for backup-info command"
 	$(call down_docker_compose)
-	$(call run_docker_compose,backup-info)
-	$(call down_docker_compose)
-
-.PHONY: test-e2e_backup-delete
-test-e2e_backup-delete:
-	@echo "Run end-to-end tests for $(APP_NAME) for backup-delete command"
-	$(call down_docker_compose)
-	$(call run_docker_compose,backup-delete)
-	$(call down_docker_compose)
-
-.PHONY: test-e2e_backup-clean
-test-e2e_backup-clean:
-	@echo "Run end-to-end tests for $(APP_NAME) for backup-clean command"
-	$(call down_docker_compose)
-	$(call run_docker_compose,backup-clean)
-	$(call down_docker_compose)
-
-.PHONY: test-e2e_history-clean
-test-e2e_history-clean:
-	@echo "Run end-to-end tests for $(APP_NAME) for history-clean command"
-	$(call down_docker_compose)
-	$(call run_docker_compose,history-clean)
-	$(call down_docker_compose)
-
-.PHONY: test-e2e_history-migrate
-test-e2e_history-migrate:
-	@echo "Run end-to-end tests for $(APP_NAME) for history-migrate command"
-	$(call down_docker_compose)
-	$(call run_docker_compose,history-migrate)
-	$(call down_docker_compose)
-
-.PHONY: test-e2e_report-info
-test-e2e_report-info:
-	@echo "Run end-to-end tests for $(APP_NAME) for report-info command"
-	$(call down_docker_compose)
-	$(call run_docker_compose,report-info)
+	$(call run_docker_compose)
+	$(call run_e2e_tests,backup-info)
 	$(call down_docker_compose)
 
 .PHONY: test-e2e-down
@@ -116,16 +79,15 @@ docker-alpine:
 	@echo "Version $(BRANCH)-$(GIT_REV)"
 	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile.alpine --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME)-alpine .
 
-define e2e_command
-	@echo "Run end-to-end tests for $(APP_NAME) for ${1} command"
-	docker run --rm -v $(ROOT_DIR)/e2e_tests/:/home/gpbackman/e2e_tests --name="$(APP_NAME)" "$(APP_NAME)" /home/gpbackman/e2e_tests/run_e2e_${1}.sh
-endef
 
 define run_docker_compose
-	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker compose -f e2e_tests/docker-compose.yml build --force-rm --parallel ${1}
-	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker compose -f e2e_tests/docker-compose.yml run --rm --name ${1} ${1}
+	docker compose -f e2e_tests/docker-compose.yml up -d
 endef
 
 define down_docker_compose
-	GPBACKMAN_UID=$(UID) GPBACKMAN_GID=$(GID) docker compose -f e2e_tests/docker-compose.yml down -v
+	docker compose -f e2e_tests/docker-compose.yml down -v
+endef
+
+define run_e2e_tests
+	docker exec "$(GPDB_CONTAINER_NAME)" su - ${GPDB_USER} -c "/home/$(GPDB_USER)/run_tests/run_test.sh $(1)"
 endef
