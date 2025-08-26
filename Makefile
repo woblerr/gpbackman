@@ -9,25 +9,27 @@ UID := $(shell id -u)
 GID := $(shell id -g)
 GPDB_CONTAINER_NAME := greenplum
 GPDB_USER := gpadmin
+# List of all e2e test commands
+E2E_COMMANDS := backup-info report-info backup-delete backup-clean history-clean history-migrate
 
 .PHONY: test
 test:
 	@echo "Run tests for $(APP_NAME)"
 	TZ="Etc/UTC" go test -mod=vendor -timeout=60s -count 1  ./...
 
-.PHONY: test-e2e
-test-e2e:
-	@echo "Run end-to-end tests for $(APP_NAME)"
-	@make docker
-	@make test-e2e_backup-info
+# Define function to create e2e test targets
+define define_e2e_test
+.PHONY: test-e2e_$(1)
+test-e2e_$(1):
+	@echo "Run end-to-end tests for $(APP_NAME) for $(1) command"
+	$$(call down_docker_compose)
+	$$(call run_docker_compose)
+	$$(call run_e2e_tests,$(1))
+	$$(call down_docker_compose)
+endef
 
-.PHONY: test-e2e_backup-info
-test-e2e_backup-info:
-	@echo "Run end-to-end tests for $(APP_NAME) for backup-info command"
-	$(call down_docker_compose)
-	$(call run_docker_compose)
-	$(call run_e2e_tests,backup-info)
-	$(call down_docker_compose)
+# Generate e2e test targets for all commands
+$(foreach cmd,$(E2E_COMMANDS),$(eval $(call define_e2e_test,$(cmd))))
 
 .PHONY: test-e2e-down
 test-e2e-down:
