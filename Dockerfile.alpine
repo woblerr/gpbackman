@@ -1,38 +1,34 @@
 ARG REPO_BUILD_TAG="unknown"
 
-FROM golang:1.24-bookworm AS builder
+FROM golang:1.24-alpine3.21 AS builder
 ARG REPO_BUILD_TAG
 COPY . /build
 WORKDIR /build
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential \
+RUN apk add --no-cache --update build-base \
     && CGO_ENABLED=1 go build \
         -mod=vendor -trimpath \
         -ldflags "-X main.version=${REPO_BUILD_TAG}" \
-        -o gpbackman gpbackman.go \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+        -o gpbackman gpbackman.go
 
-FROM ubuntu:24.04
+FROM alpine:3.21
 ARG REPO_BUILD_TAG
 ENV TZ="Etc/UTC" \
     GPBACKMAN_USER="gpbackman" \
     GPBACKMAN_GROUP="gpbackman" \
     GPBACKMAN_UID=1001 \
     GPBACKMAN_GID=1001
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN apk add --no-cache --update \
+        bash \
+        shadow \
         ca-certificates \
-        gosu \
+        su-exec \
         tzdata \
+    && ln -s /sbin/su-exec /usr/local/bin/gosu \
     && groupadd --gid ${GPBACKMAN_GID} ${GPBACKMAN_GROUP} \
     && useradd --shell /bin/bash -d /home/${GPBACKMAN_USER} --uid ${GPBACKMAN_UID} --gid ${GPBACKMAN_GID} -m ${GPBACKMAN_USER} \
-    && unlink /etc/localtime \
     && cp /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo "${TZ}" > /etc/timezone \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/cache/apk/*
 COPY --chmod=755 docker_files/entrypoint.sh /entrypoint.sh
 COPY --from=builder /build/gpbackman /usr/bin/gpbackman
 LABEL \

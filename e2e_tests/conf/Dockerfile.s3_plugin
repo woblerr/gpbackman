@@ -4,15 +4,18 @@ ARG S3_PLUGIN_VERSION="1.10.1"
 # to the archive on GitHub. At the same time, all tags have been deleted from the archives.
 # The fork containing the necessary tags is used for testing.
 
-FROM golang:1.24-alpine3.21 AS s3_plugin-builder
+FROM golang:1.24-bookworm AS s3_plugin-builder
 ARG S3_PLUGIN_VERSION
-RUN apk add --no-cache --update build-base bash perl \
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential bash perl wget ca-certificates \
     # && wget https://github.com/greenplum-db/gpbackup-s3-plugin/archive/refs/tags/${S3_PLUGIN_VERSION}.tar.gz -O /tmp/gpbackup-s3-plugin-${S3_PLUGIN_VERSION}.tar.gz \
     && wget https://github.com/woblerr/gpbackup-s3-plugin/archive/refs/tags/${S3_PLUGIN_VERSION}.tar.gz -O /tmp/gpbackup-s3-plugin-${S3_PLUGIN_VERSION}.tar.gz \
     && mkdir -p /tmp/gpbackup-s3-plugin \
     && tar -xzf  /tmp/gpbackup-s3-plugin-${S3_PLUGIN_VERSION}.tar.gz --strip-components=1 -C /tmp/gpbackup-s3-plugin \
     && cd /tmp/gpbackup-s3-plugin \
-    && make build
+    && make build \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 FROM gpbackman AS gpbackman-plugins
 COPY --from=s3_plugin-builder /go/bin/gpbackup_s3_plugin /home/gpbackman/gpbackup_s3_plugin

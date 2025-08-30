@@ -76,9 +76,9 @@ make build
 Environment variables supported by this image:
 * `TZ` - container's time zone, default `Etc/UTC`;
 * `GPBACKMAN_USER` - non-root user name for execution of the command, default `gpbackman`;
+* `GPBACKMAN_GROUP` - non-root user group name for execution of the command, default `gpbackman`;
 * `GPBACKMAN_UID` - UID of internal `${GPBACKMAN_USER}` user, default `1001`;
 * `GPBACKMAN_GID` - GID of internal `${GPBACKMAN_USER}` user, default `1001`.
-
 
 #### Build container
 
@@ -92,12 +92,23 @@ or manual:
 docker build  -f Dockerfile  -t gpbackman .
 ```
 
+For Alpine image:
+
+```bash
+make docker-alpine
+```
+or manual:
+
+```bash
+docker build  -f Dockerfile.alpine  -t gpbackman-alpine .
+```
+
 #### Run container
 
 ```bash
 docker run \
   --name gpbackman \
-  -v /data/master/gpseg-1/gpbackup_history.db:/data/master/gpseg-1/gpbackup_history.db
+  -v /data/master/gpseg-1/gpbackup_history.db:/data/master/gpseg-1/gpbackup_history.db \
   gpbackman \
   gpbackman backup-info \
   --history-db /data/master/gpseg-1/gpbackup_history.db
