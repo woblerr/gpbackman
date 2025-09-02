@@ -14,7 +14,7 @@ wait_for_service() {
             echo "[INFO] Cluster ready"
             return 0
         fi
-        echo "[INFO] Waiting cluster startup ($i/${max_attempts})"
+        echo "[INFO] Waiting cluster startup (${i}/${max_attempts})"
         sleep 10
     done
     echo "[ERROR] Cluster failed to start within timeout"
