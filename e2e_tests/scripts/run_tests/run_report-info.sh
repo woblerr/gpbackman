@@ -15,7 +15,7 @@ run_command(){
 
 # Test 1: Get report info for full local backup (without backup-dir)
 test_report_full_local_no_dir() {
-    local timestamp=$(get_backup_info "get_full_local" --type full | grep -E '^[[:space:]][0-9]{14} ' | grep -v plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_full_local" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find full local backup timestamp"
@@ -31,7 +31,7 @@ test_report_full_local_no_dir() {
 
 # Test 2: Get report info for full local backup (with backup-dir)
 test_report_full_local_with_dir() {
-    local timestamp=$(get_backup_info "get_full_local_with_dir" --type full | grep -E '^[[:space:]][0-9]{14} ' | grep -v plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_full_local_with_dir" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find full local backup timestamp for backup-dir test"
@@ -48,7 +48,7 @@ test_report_full_local_with_dir() {
 
 # Test 3: Get report info for full S3 backup (without plugin-report-file-path)
 test_report_s3_no_plugin_path() {
-    local timestamp=$(get_backup_info "get_full_s3" --type full | grep -E '^[[:space:]][0-9]{14} ' | grep plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_full_s3" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find full s3 backup timestamp"
@@ -64,7 +64,7 @@ test_report_s3_no_plugin_path() {
 
 # Test 4: Get report info for full S3 backup (with plugin-report-file-path)
 test_report_s3_with_plugin_path() {
-    local timestamp=$(get_backup_info "get_full_s3" --type full | grep -E '^[[:space:]][0-9]{14} ' | grep plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_full_s3" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find full s3 backup timestamp for plugin-report-file-path test"

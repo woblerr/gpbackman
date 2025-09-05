@@ -18,7 +18,7 @@ get_backup_info_for_timestamp(){
 
 # Test 1: Delete local full backup
 test_delete_local_full() {
-    local timestamp=$(get_backup_info "get_local_full" --type full | grep -E '^[[:space:]][0-9]{14} ' | grep -v plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_local_full" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find full local backup timestamp"
@@ -40,7 +40,7 @@ test_delete_local_full() {
 
 # Test 2: Delete S3 incremental backup
 test_delete_s3_incremental() {
-    local timestamp=$(get_backup_info "get_s3_incremental" --type incremental | grep -E '^[[:space:]][0-9]{14} ' | grep plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_s3_incremental" --type incremental | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find S3 incremental backup"
@@ -62,20 +62,17 @@ test_delete_s3_incremental() {
 
 # Test 3: Delete S3 full backup with cascade
 test_delete_s3_full_cascade() {
-    local timestamp=$(get_backup_info "get_s3_full" --type full | grep -E '^[[:space:]][0-9]{14} ' | grep plugin | tail -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_s3_full" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | tail -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find S3 full backup"
         exit 1
     fi
-    
-    run_command "delete_s3_full_cascade" --timestamp "${timestamp}" --plugin-config /home/gpadmin/gpbackup_s3_plugin.yaml --cascade
-    
-    local deleted_count=$(get_backup_info "count_deleted" --deleted | grep -E '^[[:space:]][0-9]{14} ' | awk -F'|' 'NF >= 9 && $NF !~ /^[[:space:]]*$/' | wc -l)
-    
     # Expected: 1 backup from test 1 + 1 from test 2 + 2 backups (incr + full) from this test = 4 total
     local want=4
-    [ "${deleted_count}" -eq "${want}" ] || { echo "[ERROR] Expected ${want} backups to be deleted, but found ${deleted_count}"; exit 1; }
+    run_command "delete_s3_full_cascade" --timestamp "${timestamp}" --plugin-config /home/gpadmin/gpbackup_s3_plugin.yaml --cascade
+    local got=$(count_deleted_backups)
+    assert_equals "${want}" "${got}"
 }
 
 # Test 4: Try to delete non-existent backup (should fail)

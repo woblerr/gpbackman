@@ -29,6 +29,10 @@ get_backup_info() {
     }
 }
 
+count_deleted_backups() {
+    get_backup_info "count_deleted" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' 'NF >= 9 && $NF !~ /^[[:space:]]*$/' | wc -l
+}
+
 assert_equals() {
     local expected="${1}"
     local actual="${2}"

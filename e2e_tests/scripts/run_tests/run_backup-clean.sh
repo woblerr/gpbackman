@@ -29,15 +29,10 @@ run_command() {
     }
 }
 
-count_deleted_backups() {
-    get_backup_info "count_deleted" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' 'NF >= 9 && $NF !~ /^[[:space:]]*$/' | wc -l
-}
-
 get_cutoff_timestamp() {
     local line_no="$1"
     get_backup_info "get_line_${line_no}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | sed -n "${line_no}p" | awk '{print $1}'
 }
-
 
 # Test 1: Clean local backups older than timestamp (--before-timestamp)
 #  Without --cascade, no dependent backups
