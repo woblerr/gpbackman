@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-readonly BIN_DIR="/home/gpadmin/gpbackman"
-readonly DATA_DIR="/data/master/gpseg-1"
+BIN_DIR="/home/gpadmin/gpbackman"
+DATA_DIR="/data/master/gpseg-1"
+
+TIMESTAMP_GREP_PATTERN='^[[:space:]][0-9]{14}'
 
 log_test_start() {
     local command="${1}"
