@@ -2,6 +2,7 @@
 
 BIN_DIR="/home/gpadmin/gpbackman"
 DATA_DIR="/data/master/gpseg-1"
+PLUGIN_CFG="/home/gpadmin/gpbackup_s3_plugin.yaml"
 
 TIMESTAMP_GREP_PATTERN='^[[:space:]][0-9]{14}'
 
@@ -31,6 +32,11 @@ get_backup_info() {
 
 count_deleted_backups() {
     get_backup_info "count_deleted" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' 'NF >= 9 && $NF !~ /^[[:space:]]*$/' | wc -l
+}
+
+get_cutoff_timestamp() {
+    local line_no="$1"
+    get_backup_info "get_line_${line_no}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | sed -n "${line_no}p" | awk '{print $1}'
 }
 
 assert_equals() {
