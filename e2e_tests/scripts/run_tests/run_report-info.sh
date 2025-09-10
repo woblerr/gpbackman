@@ -55,7 +55,7 @@ test_report_s3_no_plugin_path() {
         exit 1
     fi
     
-    local report_output=$(run_command "s3_without_plugin_report_file_path" --timestamp "${timestamp}" --plugin-config ~/gpbackup_s3_plugin.yaml)
+    local report_output=$(run_command "s3_without_plugin_report_file_path" --timestamp "${timestamp}" --plugin-config "${PLUGIN_CFG}")
     
     echo "${report_output}" | grep -q "^Greenplum Database Backup Report" || { echo "[ERROR] Expected report header"; exit 1; }
     echo "${report_output}" | grep -q "timestamp key:.*${timestamp}" || { echo "[ERROR] Expected timestamp key in report"; exit 1; }
@@ -72,8 +72,8 @@ test_report_s3_with_plugin_path() {
     fi
     
     local report_dir="/backup/test/backups/${timestamp:0:8}/${timestamp}"
-    local report_output=$(run_command "s3_with_plugin_report_file_path" --timestamp "${timestamp}" --plugin-config ~/gpbackup_s3_plugin.yaml --plugin-report-file-path ${report_dir})
-    
+    local report_output=$(run_command "s3_with_plugin_report_file_path" --timestamp "${timestamp}" --plugin-config "${PLUGIN_CFG}" --plugin-report-file-path "${report_dir}")
+
     echo "${report_output}" | grep -q "^Greenplum Database Backup Report" || { echo "[ERROR] Expected report header"; exit 1; }
     echo "${report_output}" | grep -q "timestamp key:.*${timestamp}" || { echo "[ERROR] Expected timestamp key in report"; exit 1; }
     echo "${report_output}" | grep -q "plugin executable:.*gpbackup_s3_plugin" || { echo "[ERROR] Expected 'plugin executable: gpbackup_s3_plugin' for s3 backup"; exit 1; }

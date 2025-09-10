@@ -46,9 +46,9 @@ test_delete_s3_incremental() {
         echo "[ERROR] Could not find S3 incremental backup"
         exit 1
     fi
-    
-    run_command "delete_s3_incremental" --timestamp "${timestamp}" --plugin-config /home/gpadmin/gpbackup_s3_plugin.yaml
-    
+
+    run_command "delete_s3_incremental" --timestamp "${timestamp}" --plugin-config "${PLUGIN_CFG}"
+
     local deleted_backup=$(get_backup_info_for_timestamp "${timestamp}")
     local date_deleted=$(echo "${deleted_backup}" | grep "${timestamp}" | awk -F'|' '{print $NF}' | xargs)
     
@@ -70,7 +70,7 @@ test_delete_s3_full_cascade() {
     fi
     # Expected: 1 backup from test 1 + 1 from test 2 + 2 backups (incr + full) from this test = 4 total
     local want=4
-    run_command "delete_s3_full_cascade" --timestamp "${timestamp}" --plugin-config /home/gpadmin/gpbackup_s3_plugin.yaml --cascade
+    run_command "delete_s3_full_cascade" --timestamp "${timestamp}" --plugin-config "${PLUGIN_CFG}" --cascade
     local got=$(count_deleted_backups)
     assert_equals "${want}" "${got}"
 }
