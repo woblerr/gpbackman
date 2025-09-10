@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Tests for history-migrate:
-# 1) Migrate gpbackup_history_full_local.yaml into an empty DB in /tmp and expect 2 backups.
-# 2) Migrate gpbackup_history_full_local.yaml into existing DB prepared by setup and expect base+2.
-# 3) Migrate all files from src_data into a fresh empty DB in /tmp and expect 14 backups.
-# 4) Migrate all files from src_data into existing DB (excluding already migrated full_local) and expect base+12.
+# Tests for history-migrate (current):
+# 1) Migrate gpbackup_history_full_local.yaml into an empty DB in /tmp -> expect 2 backups.
+# 2) Migrate the same file into an existing DB prepared by setup -> expect 12 base + 2 = 14 total.
+# 3) Duplicate migration into the same DB -> must fail with UNIQUE constraint.
+# 4) Migrate all YAML files into a fresh empty DB in /tmp -> expect 14 backups total.
+# 5) Migrate all YAML files into an existing DB (excluding already migrated full_local) -> expect 12 base + 14 = 26 total; duplicates skipped.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
@@ -97,7 +98,7 @@ for f in "${workdir}"/*.yaml; do
     args+=(--history-file "${f}")
 done
 run_command "all_into_existing_db" "${args[@]}" --history-db "${db}"
-local want=24
+local want=26
 local got=$(get_backup_info total_full_backups --history-db "${db}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
 assert_equals "${want}" "${got}"
 }
