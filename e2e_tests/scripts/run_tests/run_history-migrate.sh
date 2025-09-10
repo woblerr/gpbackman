@@ -58,15 +58,11 @@ test_migrate_duplicate_into_existing_db_fail(){
   local workdir=$(prepare_workdir test3)
   cp "${SRC_DIR}/${TEST_FILE_FULL_LOCAL}" "${workdir}/"
   local db="${DATA_DIR}/gpbackup_history.db"
-  set +e
-  set -x
   ${BIN_DIR}/gpbackman history-migrate --history-file "${workdir}/${TEST_FILE_FULL_LOCAL}" --history-db "${db}"
   if [ $? -eq 0 ]; then
     echo "[ERROR] Expected failure, but command succeeded"
     exit 1
   fi
-  set +x
-  set -e
 }
 
 # Test 4: All files into fresh empty DB in /tmp

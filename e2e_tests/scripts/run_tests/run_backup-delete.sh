@@ -13,12 +13,12 @@ run_command(){
 
 get_backup_info_for_timestamp(){
     local timestamp="${1}"
-    ${BIN_DIR}/gpbackman backup-info --history-db ${DATA_DIR}/gpbackup_history.db --deleted --failed | grep "${timestamp}" || echo "No info found for timestamp ${timestamp}"
+    get_backup_info "get_specific_backup" --history-db ${DATA_DIR}/gpbackup_history.db | grep "${timestamp}" || echo "No info found for timestamp ${timestamp}"
 }
 
 # Test 1: Delete local full backup
 test_delete_local_full() {
-    local timestamp=$(get_backup_info "get_local_full" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_local_full" --history-db ${DATA_DIR}/gpbackup_history.db --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find full local backup timestamp"
@@ -40,7 +40,7 @@ test_delete_local_full() {
 
 # Test 2: Delete S3 incremental backup
 test_delete_s3_incremental() {
-    local timestamp=$(get_backup_info "get_s3_incremental" --type incremental | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_s3_incremental" --history-db ${DATA_DIR}/gpbackup_history.db --type incremental | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find S3 incremental backup"
@@ -62,7 +62,7 @@ test_delete_s3_incremental() {
 
 # Test 3: Delete S3 full backup with cascade
 test_delete_s3_full_cascade() {
-    local timestamp=$(get_backup_info "get_s3_full" --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | tail -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_s3_full" --history-db ${DATA_DIR}/gpbackup_history.db --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep plugin | tail -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find S3 full backup"
@@ -80,12 +80,10 @@ test_delete_nonexistent_backup() {
     local fake_timestamp="19990101000000"
     
     echo "[INFO] Attempting to delete non-existent backup: ${fake_timestamp}"
-    
-    if ${BIN_DIR}/gpbackman backup-delete --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${fake_timestamp}" --force 2>/dev/null; then
-        echo "[ERROR] Expected deletion of non-existent backup to fail, but it succeeded"
+    ${BIN_DIR}/gpbackman backup-delete --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${fake_timestamp}" --force
+    if [ $? -eq 0 ]; then
+        echo "[ERROR] Expected failure, but command succeeded"
         exit 1
-    else
-        echo "[INFO] Deletion of non-existent backup correctly failed as expected"
     fi
 }
 
