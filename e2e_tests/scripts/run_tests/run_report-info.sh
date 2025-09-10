@@ -4,8 +4,6 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
 COMMAND="report-info"
-BACKUP_DIR_PREFIX="/tmp/testWithPrefix"
-BACKUP_DIR_SINGLE="/tmp/testNoPrefix"
 
 run_command(){
   local label="${1}"; shift
