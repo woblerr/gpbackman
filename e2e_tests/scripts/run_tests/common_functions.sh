@@ -22,13 +22,18 @@ log_all_tests_passed() {
     local command="${1}"
     echo "[INFO] ${command} all tests passed"
 }
+run_gpbackman() {
+    local subcmd="${1}"; shift
+    local label="${1}"; shift
+    echo "[INFO] Running ${subcmd}: ${label}"
+    ${BIN_DIR}/gpbackman "${subcmd}" "$@" || { 
+        echo "[ERROR] ${subcmd} ${label} failed"; exit 1; 
+    }
+}
 
 get_backup_info() {
     local label="${1}"; shift
-    echo "[INFO] Running backup-info: ${label}"
-    ${BIN_DIR}/gpbackman backup-info --deleted --failed "$@" || { 
-        echo "[ERROR] backup-info ${label} failed"; exit 1; 
-    }
+    run_gpbackman "backup-info" "${label}" --deleted --failed "$@"
 }
 
 count_deleted_backups() {

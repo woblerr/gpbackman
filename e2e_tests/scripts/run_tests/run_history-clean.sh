@@ -18,17 +18,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 COMMAND="history-clean"
 
 run_command(){
-  local label="${1}"; shift
-  echo "[INFO] Running ${COMMAND}: ${label}"
-  ${BIN_DIR}/gpbackman history-clean --history-db ${DATA_DIR}/gpbackup_history.db "$@" || { echo "[ERROR] ${COMMAND} ${label} failed"; exit 1; }
+    local label="${1}"; shift
+    run_gpbackman "${COMMAND}" "${label}" --history-db ${DATA_DIR}/gpbackup_history.db "$@"
 }
 
 run_backup_clean() {
     local label="${1}"; shift
-    echo "[INFO] Running ${COMMAND}: ${label}"
-    ${BIN_DIR}/gpbackman backup-clean --history-db ${DATA_DIR}/gpbackup_history.db "$@" || { 
-        echo "[ERROR] ${COMMAND} ${label} failed"; exit 1; 
-    }
+    run_gpbackman "backup-clean" "${label}" --history-db ${DATA_DIR}/gpbackup_history.db "$@"
 }
 
 # Test 1: Clean from history db local backups older than timestamp (--before-timestamp)

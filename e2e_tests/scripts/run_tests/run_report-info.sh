@@ -6,9 +6,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 COMMAND="report-info"
 
 run_command(){
-  local label="${1}"; shift
-  echo "[INFO] Running ${COMMAND}: ${label}"
-  ${BIN_DIR}/gpbackman report-info --history-db ${DATA_DIR}/gpbackup_history.db "$@" || { echo "[ERROR] ${COMMAND} ${label} failed"; exit 1; }
+    local label="${1}"; shift
+    run_gpbackman "${COMMAND}" "${label}" --history-db ${DATA_DIR}/gpbackup_history.db "$@"
 }
 
 # Test 1: Get report info for full local backup (without backup-dir)

@@ -18,8 +18,7 @@ TEST_FILE_FULL_LOCAL="gpbackup_history_full_local.yaml"
 
 run_command(){
     local label="${1}"; shift
-    echo "[INFO] Running ${COMMAND}: ${label}"
-    ${BIN_DIR}/gpbackman history-migrate "$@" || { echo "[ERROR] ${COMMAND} ${label} failed"; exit 1; }
+    run_gpbackman "${COMMAND}" "${label}" "$@"
 }
 
 prepare_workdir(){

@@ -7,8 +7,7 @@ COMMAND="backup-delete"
 
 run_command(){
     local label="${1}"; shift
-    echo "[INFO] Running ${COMMAND}: ${label}"
-    ${BIN_DIR}/gpbackman backup-delete --history-db ${DATA_DIR}/gpbackup_history.db "$@" || { echo "[ERROR] ${COMMAND} ${label} failed"; exit 1; }
+    run_gpbackman "${COMMAND}" "${label}" --history-db ${DATA_DIR}/gpbackup_history.db "$@"
 }
 
 get_backup_info_for_timestamp(){
