@@ -71,9 +71,10 @@ services:
     volumes:
       - ./conf/gpbackup_s3_plugin.yaml:/home/gpadmin/gpbackup_s3_plugin.yaml
       - ./scripts/prepare/gpdb_init:/docker-entrypoint-initdb.d
-      - gpbackman_bin:/home/gpadmin/gpbackman
       - ./scripts/prepare/prepare_gpdb_backups.sh:/home/gpadmin/prepare_gpdb_backups.sh
       - ./scripts/run_tests:/home/gpadmin/run_tests
+      - ./src_data:/home/gpadmin/src_data
+      - gpbackman_bin:/home/gpadmin/gpbackman
     networks:
       - e2e
 

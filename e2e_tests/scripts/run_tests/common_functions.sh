@@ -25,18 +25,19 @@ log_all_tests_passed() {
 
 get_backup_info() {
     local label="${1}"; shift
-    ${BIN_DIR}/gpbackman backup-info --history-db ${DATA_DIR}/gpbackup_history.db --deleted --failed "$@" || { 
+    echo "[INFO] Running backup-info: ${label}"
+    ${BIN_DIR}/gpbackman backup-info --deleted --failed "$@" || { 
         echo "[ERROR] backup-info ${label} failed"; exit 1; 
     }
 }
 
 count_deleted_backups() {
-    get_backup_info "count_deleted" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' 'NF >= 9 && $NF !~ /^[[:space:]]*$/' | wc -l
+    get_backup_info "count_deleted" --history-db ${DATA_DIR}/gpbackup_history.db | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' 'NF >= 9 && $NF !~ /^[[:space:]]*$/' | wc -l
 }
 
 get_cutoff_timestamp() {
     local line_no="$1"
-    get_backup_info "get_line_${line_no}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | sed -n "${line_no}p" | awk '{print $1}'
+    get_backup_info "get_line_${line_no}" --history-db ${DATA_DIR}/gpbackup_history.db | grep -E "${TIMESTAMP_GREP_PATTERN}" | sed -n "${line_no}p" | awk '{print $1}'
 }
 
 assert_equals() {
