@@ -2,7 +2,6 @@
 set -Eeuo pipefail
 
 # In the test, we consistently perform cleanup for backups created within the script prepare/prepare_gpdb_backups.sh
-# Using the --cascade option.
 # If the backup creation logic changes in the script, this test may start to fail and corrections also need to be made here.
 # 
 # First, we delete all local backups older than the 9th timestamp from backup-info command,

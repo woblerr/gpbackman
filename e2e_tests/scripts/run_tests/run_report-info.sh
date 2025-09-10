@@ -29,7 +29,7 @@ test_report_full_local_no_dir() {
 
 # Test 2: Get report info for full local backup (with backup-dir)
 test_report_full_local_with_dir() {
-    local timestamp=$(get_backup_info "get_full_local_with_dir" --history-db ${DATA_DIR}/gpbackup_history.db --history-db ${DATA_DIR}/gpbackup_history.db --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
+    local timestamp=$(get_backup_info "get_full_local_with_dir" --history-db ${DATA_DIR}/gpbackup_history.db --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
     
     if [ -z "${timestamp}" ]; then
         echo "[ERROR] Could not find full local backup timestamp for backup-dir test"
