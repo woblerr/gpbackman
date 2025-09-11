@@ -17,7 +17,6 @@ test:
 	@echo "Run tests for $(APP_NAME)"
 	TZ="Etc/UTC" go test -mod=vendor -timeout=60s -count 1  ./...
 
-# Define function to create e2e test targets
 define define_e2e_test
 .PHONY: test-e2e_$(1)
 test-e2e_$(1):
@@ -30,6 +29,14 @@ endef
 
 # Generate e2e test targets for all commands
 $(foreach cmd,$(E2E_COMMANDS),$(eval $(call define_e2e_test,$(cmd))))
+
+.PHONY: test-e2e
+test-e2e:
+	@for cmd in $(E2E_COMMANDS); do \
+		echo "Running : $$cmd"; \
+		$(MAKE) test-e2e_$$cmd || { echo "$$cmd failed."; exit 1; }; \
+		echo "$$cmd passed"; \
+	done
 
 .PHONY: test-e2e-down
 test-e2e-down:
