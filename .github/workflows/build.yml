@@ -56,11 +56,8 @@ jobs:
 
       - name: Run end-to-end tests
         if: github.event_name == 'pull_request' && github.base_ref == 'master'
-        env:
-          DOCKERHUB_USER: ${{ secrets.DOCKEHUB_USER }}
-          DOCKERHUB_PKG: ${{ secrets.DOCKEHUB_TOKEN }}
         run: |
-          echo ${DOCKERHUB_PKG} | docker login -u ${DOCKERHUB_USER} --password-stdin
+          make docker
           make test-e2e
 
       - name: Build image and push master tag to ghcr.io and Docker Hub

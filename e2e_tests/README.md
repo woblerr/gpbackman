@@ -8,6 +8,11 @@ The following architecture is used to run the tests:
 
 ## Running tests
 
+Buld gpbackman image:
+```bash
+make docker
+```
+
 Run all tests (sequentially for all commands):
 
 ```bash
