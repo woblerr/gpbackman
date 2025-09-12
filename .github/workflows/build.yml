@@ -55,7 +55,7 @@ jobs:
         run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Run end-to-end tests
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'pull_request' && github.base_ref == 'master'
         run: |
           make test-e2e
 
