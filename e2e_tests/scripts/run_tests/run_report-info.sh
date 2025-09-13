@@ -77,7 +77,7 @@ test_report_s3_with_plugin_path() {
 }
 
 run_test "${COMMAND}" 1 test_report_full_local_no_dir
-run_test "${COMMAND}" 2 test_report_full_local_with_dir  
+run_test "${COMMAND}" 2 test_report_full_local_with_dir
 run_test "${COMMAND}" 3 test_report_s3_no_plugin_path
 run_test "${COMMAND}" 4 test_report_s3_with_plugin_path
 

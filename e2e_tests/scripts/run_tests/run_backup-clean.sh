@@ -66,7 +66,7 @@ test_clean_s3_backups_before_timestamp() {
 }
 
 run_test "${COMMAND}" 1 test_clean_local_backups_before_timestamp
-run_test "${COMMAND}" 2 test_clean_local_backups_after_timestamp  
+run_test "${COMMAND}" 2 test_clean_local_backups_after_timestamp
 run_test "${COMMAND}" 3 test_clean_s3_backups_after_timestamp
 run_test "${COMMAND}" 4 test_clean_s3_backups_before_timestamp
 

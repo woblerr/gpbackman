@@ -85,7 +85,7 @@ test_delete_nonexistent_backup() {
 }
 
 run_test "${COMMAND}" 1 test_delete_local_full
-run_test "${COMMAND}" 2 test_delete_s3_incremental  
+run_test "${COMMAND}" 2 test_delete_s3_incremental
 run_test "${COMMAND}" 3 test_delete_s3_full_cascade
 run_test "${COMMAND}" 4 test_delete_nonexistent_backup
 

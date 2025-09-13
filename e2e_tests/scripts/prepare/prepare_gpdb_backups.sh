@@ -43,10 +43,10 @@ run_backup metadata_only_s3 "${COMMON_PLUGIN_FLAGS[@]}" --metadata-only
 # Full S3 no filters
 run_backup full_s3 "${COMMON_PLUGIN_FLAGS[@]}" --leaf-partition-data
 
-# Full S3 include-table sch1.tbl_c
+# Full S3 include-table sch2.tbl_c
 run_backup full_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --include-table sch2.tbl_c --leaf-partition-data
 
-# Full S3 exclude-table sch1.tbl_d
+# Full S3 exclude-table sch2.tbl_d
 run_backup full_s3_exclude_table "${COMMON_PLUGIN_FLAGS[@]}" --exclude-table sch2.tbl_d --leaf-partition-data
 
 # Insert data
@@ -56,13 +56,13 @@ psql -d demo -c "INSERT INTO sch2.tbl_d SELECT i, i FROM generate_series(1,10000
 # Incremental S3 no filters
 run_backup incr_s3 "${COMMON_PLUGIN_FLAGS[@]}" --incremental --leaf-partition-data
 
-# Incremental S3 include-table sch1.tbl_c
+# Incremental S3 include-table sch2.tbl_c
 run_backup incr_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --incremental --include-table sch2.tbl_c --leaf-partition-data
 
 # Insert data
 psql -d demo -c "INSERT INTO sch2.tbl_c SELECT i, i FROM generate_series(1,100000) i;"
 
-# Incremental S3 exclude-table sch1.tbl_d
+# Incremental S3 exclude-table sch2.tbl_d
 run_backup incr_s3_exclude_table "${COMMON_PLUGIN_FLAGS[@]}" --incremental --exclude-table sch2.tbl_d --leaf-partition-data
 
 # Data-only LOCAL no filters
