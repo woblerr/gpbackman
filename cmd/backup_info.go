@@ -20,6 +20,7 @@ var (
 	backupInfoTableNameFilter  string
 	backupInfoSchemaNameFilter string
 	backupInfoExcludeFilter    bool
+	backupInfoTimestamp        string
 )
 
 var backupInfoCmd = &cobra.Command{
@@ -60,6 +61,12 @@ If the --history-db option is not specified, the history database will be search
 
 func init() {
 	rootCmd.AddCommand(backupInfoCmd)
+	backupInfoCmd.Flags().StringVar(
+		&backupInfoTimestamp,
+		timestampFlagName,
+		"",
+		"show dependent backups for the specified backup timestamp",
+	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDeleted,
 		deletedFlagName,
@@ -101,6 +108,20 @@ func init() {
 // These flag checks are applied only for backup-info commands.
 func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 	var err error
+	if flags.Changed(timestampFlagName) {
+		err = gpbckpconfig.CheckTimestamp(backupInfoTimestamp)
+		if err != nil {
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupInfoTimestamp, timestampFlagName, err))
+			execOSExit(exitErrorCode)
+		}
+		// --timestamp is not compatible with --type, --table, --schema, --exclude, --failed, --deleted
+		err = checkCompatibleFlags(flags, timestampFlagName,
+			typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName)
+		if err != nil {
+			gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, timestampFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName))
+			execOSExit(exitErrorCode)
+		}
+	}
 	// If type is specified and have correct values.
 	if flags.Changed(typeFlagName) {
 		err = checkBackupType(backupInfoBackupTypeFilter)
@@ -159,6 +180,7 @@ func backupInfo() error {
 		backupInfoBackupTypeFilter,
 		backupInfoTableNameFilter,
 		backupInfoSchemaNameFilter,
+		backupInfoTimestamp,
 		hDB,
 		t)
 	if err != nil {
@@ -168,19 +190,44 @@ func backupInfo() error {
 	return nil
 }
 
-func backupInfoDB(showDeleted, showFailed, backupExcludeFilter bool, backupTypeFilter, backupTableFilter, backupSchemaFilter string, hDB *sql.DB, t table.Writer) error {
-	backupList, err := gpbckpconfig.GetBackupNamesDB(showDeleted, showFailed, hDB)
+func backupInfoDB(showDeleted, showFailed, backupExcludeFilter bool, backupTypeFilter, backupTableFilter, backupSchemaFilter, timestamp string, hDB *sql.DB, t table.Writer) error {
+	// List all according to showDeleted/showFailed
+	if timestamp == "" {
+		backupList, err := gpbckpconfig.GetBackupNamesDB(showDeleted, showFailed, hDB)
+		if err != nil {
+			gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
+			return err
+		}
+		for _, backupName := range backupList {
+			backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
+			if err != nil {
+				gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
+				return err
+			}
+			addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter, backupExcludeFilter, backupData, t)
+		}
+		return nil
+	}
+	// Timestamp mode: show base backup and only its dependent backups
+	// Verify base backup exists
+	baseBackupData, err := gpbckpconfig.GetBackupDataDB(timestamp, hDB)
+	if err != nil {
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(timestamp, err))
+		return err
+	}
+	addBackupToTable("", "", "", false, baseBackupData, t)
+	backupDependenciesList, err := gpbckpconfig.GetBackupDependencies(timestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
 	}
-	for _, backupName := range backupList {
-		backupData, err := gpbckpconfig.GetBackupDataDB(backupName, hDB)
+	for _, depTimestamp := range backupDependenciesList {
+		backupData, err := gpbckpconfig.GetBackupDataDB(depTimestamp, hDB)
 		if err != nil {
-			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
+			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(depTimestamp, err))
 			return err
 		}
-		addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter, backupExcludeFilter, backupData, t)
+		addBackupToTable("", "", "", false, backupData, t)
 	}
 	return nil
 }
