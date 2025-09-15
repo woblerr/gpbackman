@@ -297,8 +297,58 @@ func TestGetObjectFilteringInfo(t *testing.T) {
 	}
 }
 
-func TestGetObjectFilteringInfoAllCombos(t *testing.T) {
-	// Removed: consolidated into TestGetObjectFilteringInfo
+func TestGetObjectFilteringDetails(t *testing.T) {
+	tests := []struct {
+		name   string
+		config BackupConfig
+		want   string
+	}{
+		{
+			name: "IncludeTable details",
+			config: BackupConfig{
+				IncludeTableFiltered: true,
+				IncludeRelations:     []string{"public.t1", "s.t2"},
+			},
+			want: "public.t1, s.t2",
+		},
+		{
+			name: "ExcludeTable details",
+			config: BackupConfig{
+				ExcludeTableFiltered: true,
+				ExcludeRelations:     []string{"public.t3"},
+			},
+			want: "public.t3",
+		},
+		{
+			name: "IncludeSchema details",
+			config: BackupConfig{
+				IncludeSchemaFiltered: true,
+				IncludeSchemas:        []string{"public", "sales"},
+			},
+			want: "public, sales",
+		},
+		{
+			name: "ExcludeSchema details",
+			config: BackupConfig{
+				ExcludeSchemaFiltered: true,
+				ExcludeSchemas:        []string{"tmp"},
+			},
+			want: "tmp",
+		},
+		{
+			name:   "No filtering",
+			config: BackupConfig{},
+			want:   "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.GetObjectFilteringDetails()
+			if got != tt.want {
+				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestGetBackupDate(t *testing.T) {

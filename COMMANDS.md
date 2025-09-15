@@ -270,8 +270,9 @@ Display information about backups.
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
-To additional display deleted backups, use the --deleted option.
-To additional display failed backups, use the --failed option.
+
+To display deleted backups, use the --deleted option.
+To display failed backups, use the --failed option.
 To display all backups, use --deleted and --failed options together.
 
 To display backups of a specific type, use the --type option.
@@ -286,7 +287,15 @@ To display backups that exclude the specified table, use the --table and --exclu
 The formatting rules for <schema>.<table> match those of the --exclude-table option in gpbackup.
 
 To display backups that exclude the specified schema, use the --schema and --exclude options. 
-The formatting rules for <schema>match those of the --exclude-schema option in gpbackup.
+The formatting rules for <schema> match those of the --exclude-schema option in gpbackup.
+
+To display a backup chain for a specific backup, use the --timestamp option.
+In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
+When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
+Details about object filtering are presented as follows, depending on the active filtering type:
+  * include-table / exclude-table: a comma-separated list of fully-qualified table names in the format <schema>.<table>;
+  * include-schema / exclude-schema: a comma-separated list of schema names;
+  * if no object filtering was used, the value is empty.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -296,13 +305,14 @@ Usage:
   gpbackman backup-info [flags]
 
 Flags:
-      --deleted         show deleted backups
-      --exclude         show backups that exclude the specific table (format <schema>.<table>) or schema
-      --failed          show failed backups
-  -h, --help            help for backup-info
-      --schema string   show backups that include the specified schema
-      --table string    show backups that include the specified table (format <schema>.<table>)
-      --type string     backup type filter (full, incremental, data-only, metadata-only)
+      --deleted            show deleted backups
+      --exclude            show backups that exclude the specific table (format <schema>.<table>) or schema
+      --failed             show failed backups
+  -h, --help               help for backup-info
+      --schema string      show backups that include the specified schema
+      --table string       show backups that include the specified table (format <schema>.<table>)
+      --timestamp string   show backup info and its dependent backups for the specified timestamp
+      --type string        backup type filter (full, incremental, data-only, metadata-only)
 
 Global Flags:
       --history-db string          full path to the gpbackup_history.db file
@@ -337,6 +347,12 @@ The following information is provided about each backup:
     - `Local Delete Failed` - last delete attempt failed to delete backup from local storage.;
     - `""` - if backup is active;
     - date  in format `Mon Jan 02 2006 15:04:05` - if backup is deleted and deletion timestamp is set.
+
+If the `--timestamp` option is specified, the following additional information is provided:
+* `OBJECT FILTERING DETAILS` - details about object filtering:
+    - if `include-table` or `exclude-table` filtering was used, a comma-separated list of fully-qualified table names in the format `<schema>.<table>`;
+    - if `include-schema` or `exclude-schema` filtering was used, a comma-separated list of schema names;
+    - if no object filtering was used, the value is empty.
 
 If gpbackup is launched without specifying `--metadata-only` flag, but there were no tables that contain data for backup, then gpbackup will only perform a `metadata-only` backup. The logs will contain messages like `No tables in backup set contain data. Performing metadata-only backup instead.` As a result, gpBackMan will display such backups as `metadata-only`.
 
@@ -424,6 +440,21 @@ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          |
  20230524101152 | Wed May 24 2023 10:11:52 | Success | demo     | incremental   | include-schema   | gpbackup_s3_plugin | 00:30:00 |                             
  20230523101115 | Tue May 23 2023 10:11:15 | Success | demo     | full          | include-schema   | gpbackup_s3_plugin | 01:01:00 |                             
  ```
+
+Display info for the backup chain for a specific backup. In this example, the backup with timestamp `20250913210921` is a full backup, and all its dependent incremental backups are displayed as well:
+```bash
+./gpbackman backup-info \
+  --timestamp 20250913210921
+
+ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE        | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED             | OBJECT FILTERING DETAILS 
+----------------+--------------------------+---------+----------+-------------+------------------+--------------------+----------+--------------------------+--------------------------
+ 20250915201446 | Mon Sep 15 2025 20:14:46 | Success | demo     | incremental | include-table    | gpbackup_s3_plugin | 00:00:02 |                          | sch2.tbl_c               
+ 20250915201439 | Mon Sep 15 2025 20:14:39 | Success | demo     | incremental | include-table    | gpbackup_s3_plugin | 00:00:01 |                          | sch2.tbl_c               
+ 20250915201307 | Mon Sep 15 2025 20:13:07 | Success | demo     | incremental | include-table    | gpbackup_s3_plugin | 00:00:02 | Mon Sep 15 2025 20:17:56 | sch2.tbl_c               
+ 20250915200929 | Mon Sep 15 2025 20:09:29 | Success | demo     | incremental | include-table    | gpbackup_s3_plugin | 00:00:01 |                          | sch2.tbl_c               
+ 20250913210957 | Sat Sep 13 2025 21:09:57 | Success | demo     | incremental | include-table    | gpbackup_s3_plugin | 00:00:01 |                          | sch2.tbl_c               
+ 20250913210921 | Sat Sep 13 2025 21:09:21 | Success | demo     | full        | include-table    | gpbackup_s3_plugin | 00:00:02 |                          | sch2.tbl_c               
+```
 
 ## Using container
 

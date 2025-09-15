@@ -41,8 +41,9 @@ var backupInfoCmd = &cobra.Command{
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
-To additional display deleted backups, use the --deleted option.
-To additional display failed backups, use the --failed option.
+
+To display deleted backups, use the --deleted option.
+To display failed backups, use the --failed option.
 To display all backups, use --deleted and --failed options together.
 
 To display backups of a specific type, use the --type option.
@@ -57,7 +58,15 @@ To display backups that exclude the specified table, use the --table and --exclu
 The formatting rules for <schema>.<table> match those of the --exclude-table option in gpbackup.
 
 To display backups that exclude the specified schema, use the --schema and --exclude options. 
-The formatting rules for <schema>match those of the --exclude-schema option in gpbackup.
+The formatting rules for <schema> match those of the --exclude-schema option in gpbackup.
+
+To display a backup chain for a specific backup, use the --timestamp option.
+In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
+When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
+Details about object filtering are presented as follows, depending on the active filtering type:
+  * include-table / exclude-table: a comma-separated list of fully-qualified table names in the format <schema>.<table>;
+  * include-schema / exclude-schema: a comma-separated list of schema names;
+  * if no object filtering was used, the value is empty.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -76,7 +85,7 @@ func init() {
 		&backupInfoTimestamp,
 		timestampFlagName,
 		"",
-		"show dependent backups for the specified backup timestamp",
+		"show backup info and its dependent backups for the specified timestamp",
 	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDeleted,
@@ -172,7 +181,17 @@ func doBackupInfo() {
 
 func backupInfo() error {
 	t := table.NewWriter()
-	initTable(t)
+	opts := BackupInfoOptions{
+		ShowDeleted:      backupInfoShowDeleted,
+		ShowFailed:       backupInfoShowFailed,
+		BackupTypeFilter: backupInfoBackupTypeFilter,
+		TableNameFilter:  backupInfoTableNameFilter,
+		SchemaNameFilter: backupInfoSchemaNameFilter,
+		ExcludeFilter:    backupInfoExcludeFilter,
+		Timestamp:        backupInfoTimestamp,
+	}
+	includeDetails := opts.Timestamp != ""
+	initTable(t, includeDetails)
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
@@ -184,15 +203,6 @@ func backupInfo() error {
 			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
-	opts := BackupInfoOptions{
-		ShowDeleted:      backupInfoShowDeleted,
-		ShowFailed:       backupInfoShowFailed,
-		BackupTypeFilter: backupInfoBackupTypeFilter,
-		TableNameFilter:  backupInfoTableNameFilter,
-		SchemaNameFilter: backupInfoSchemaNameFilter,
-		ExcludeFilter:    backupInfoExcludeFilter,
-		Timestamp:        backupInfoTimestamp,
-	}
 	err = backupInfoDB(opts, hDB, t)
 	if err != nil {
 		return err
@@ -215,7 +225,9 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 				gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 				return err
 			}
-			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.ExcludeFilter, backupData, t)
+			// In legacy mode (no timestamp specified), do not append the extra details column
+			includeObjectFilteringDetails := false
+			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.ExcludeFilter, includeObjectFilteringDetails, backupData, t)
 		}
 		return nil
 	}
@@ -226,7 +238,9 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(opts.Timestamp, err))
 		return err
 	}
-	addBackupToTable("", "", "", false, baseBackupData, t)
+	// In timestamp mode, include the extra details column to match the header
+	includeObjectFilteringDetails := true
+	addBackupToTable("", "", "", false, includeObjectFilteringDetails, baseBackupData, t)
 	backupDependenciesList, err := gpbckpconfig.GetBackupDependencies(opts.Timestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
@@ -238,16 +252,16 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(depTimestamp, err))
 			return err
 		}
-		addBackupToTable("", "", "", false, backupData, t)
+		addBackupToTable("", "", "", false, includeObjectFilteringDetails, backupData, t)
 	}
 	return nil
 }
 
-func initTable(t table.Writer) {
+func initTable(t table.Writer, includeDetails bool) {
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleDefault)
 	t.Style().Options.DrawBorder = false
-	t.AppendHeader(table.Row{
+	header := table.Row{
 		"timestamp",
 		"date",
 		"status",
@@ -257,7 +271,12 @@ func initTable(t table.Writer) {
 		"plugin",
 		"duration",
 		"date deleted",
-	})
+	}
+	// Add details column at the end only in timestamp mode
+	if includeDetails {
+		header = append(header, "object filtering details")
+	}
+	t.AppendHeader(header)
 	t.SortBy([]table.SortBy{{Name: "timestamp", Mode: table.Dsc}})
 }
 
@@ -266,7 +285,7 @@ func initTable(t table.Writer) {
 // If errors occur, they are logged, but they are not returned.
 // The main idea is to show the maximum available information and display all errors that occur.
 // But do not fall when errors occur. So, display anyway.
-func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter string, backupExcludeFilter bool, backupData gpbckpconfig.BackupConfig, t table.Writer) {
+func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter string, backupExcludeFilter bool, includeDetails bool, backupData gpbckpconfig.BackupConfig, t table.Writer) {
 	var matchToObjectFilter bool
 	backupDate, err := backupData.GetBackupDate()
 	if err != nil {
@@ -290,7 +309,7 @@ func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter st
 	}
 	matchToObjectFilter = backupData.CheckObjectFilteringExists(backupTableFilter, backupSchemaFilter, backupFilter, backupExcludeFilter)
 	if (backupTypeFilter == "" || backupTypeFilter == backupType) && matchToObjectFilter {
-		t.AppendRow([]interface{}{
+		row := []interface{}{
 			backupData.Timestamp,
 			backupDate,
 			backupData.Status,
@@ -300,6 +319,10 @@ func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter st
 			backupData.Plugin,
 			formatBackupDuration(backupDuration),
 			backupDateDeleted,
-		})
+		}
+		if includeDetails {
+			row = append(row, backupData.GetObjectFilteringDetails())
+		}
+		t.AppendRow(row)
 	}
 }
