@@ -285,7 +285,7 @@ func initTable(t table.Writer, includeDetails bool) {
 // If errors occur, they are logged, but they are not returned.
 // The main idea is to show the maximum available information and display all errors that occur.
 // But do not fall when errors occur. So, display anyway.
-func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter string, backupExcludeFilter bool, includeDetails bool, backupData gpbckpconfig.BackupConfig, t table.Writer) {
+func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter string, backupExcludeFilter, includeDetails bool, backupData gpbckpconfig.BackupConfig, t table.Writer) {
 	var matchToObjectFilter bool
 	backupDate, err := backupData.GetBackupDate()
 	if err != nil {
