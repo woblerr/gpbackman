@@ -23,6 +23,17 @@ var (
 	backupInfoTimestamp        string
 )
 
+// Options for the backup-info command.
+type BackupInfoOptions struct {
+	ShowDeleted      bool
+	ShowFailed       bool
+	BackupTypeFilter string
+	TableNameFilter  string
+	SchemaNameFilter string
+	ExcludeFilter    bool
+	Timestamp        string
+}
+
 var backupInfoCmd = &cobra.Command{
 	Use:   "backup-info",
 	Short: "Display information about backups",
@@ -173,16 +184,16 @@ func backupInfo() error {
 			gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("close", closeErr))
 		}
 	}()
-	err = backupInfoDB(
-		backupInfoShowDeleted,
-		backupInfoShowFailed,
-		backupInfoExcludeFilter,
-		backupInfoBackupTypeFilter,
-		backupInfoTableNameFilter,
-		backupInfoSchemaNameFilter,
-		backupInfoTimestamp,
-		hDB,
-		t)
+	opts := BackupInfoOptions{
+		ShowDeleted:      backupInfoShowDeleted,
+		ShowFailed:       backupInfoShowFailed,
+		BackupTypeFilter: backupInfoBackupTypeFilter,
+		TableNameFilter:  backupInfoTableNameFilter,
+		SchemaNameFilter: backupInfoSchemaNameFilter,
+		ExcludeFilter:    backupInfoExcludeFilter,
+		Timestamp:        backupInfoTimestamp,
+	}
+	err = backupInfoDB(opts, hDB, t)
 	if err != nil {
 		return err
 	}
@@ -190,10 +201,10 @@ func backupInfo() error {
 	return nil
 }
 
-func backupInfoDB(showDeleted, showFailed, backupExcludeFilter bool, backupTypeFilter, backupTableFilter, backupSchemaFilter, timestamp string, hDB *sql.DB, t table.Writer) error {
+func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 	// List all according to showDeleted/showFailed
-	if timestamp == "" {
-		backupList, err := gpbckpconfig.GetBackupNamesDB(showDeleted, showFailed, hDB)
+	if opts.Timestamp == "" {
+		backupList, err := gpbckpconfig.GetBackupNamesDB(opts.ShowDeleted, opts.ShowFailed, hDB)
 		if err != nil {
 			gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 			return err
@@ -204,19 +215,19 @@ func backupInfoDB(showDeleted, showFailed, backupExcludeFilter bool, backupTypeF
 				gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 				return err
 			}
-			addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter, backupExcludeFilter, backupData, t)
+			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.ExcludeFilter, backupData, t)
 		}
 		return nil
 	}
 	// Timestamp mode: show base backup and only its dependent backups
 	// Verify base backup exists
-	baseBackupData, err := gpbckpconfig.GetBackupDataDB(timestamp, hDB)
+	baseBackupData, err := gpbckpconfig.GetBackupDataDB(opts.Timestamp, hDB)
 	if err != nil {
-		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(timestamp, err))
+		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(opts.Timestamp, err))
 		return err
 	}
 	addBackupToTable("", "", "", false, baseBackupData, t)
-	backupDependenciesList, err := gpbckpconfig.GetBackupDependencies(timestamp, hDB)
+	backupDependenciesList, err := gpbckpconfig.GetBackupDependencies(opts.Timestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
