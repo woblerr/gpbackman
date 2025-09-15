@@ -393,7 +393,7 @@ Display info for active full backups from `gpbackup_history.db`:
 ./gpbackman backup-info \
   --type full
 
-TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED 
+ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED 
 ----------------+--------------------------+---------+----------+------+------------------+--------------------+----------+--------------
  20230809232817 | Wed Aug 09 2023 23:28:17 | Success | demo     | full |                  |                    | 04:00:03 |              
  20230725101115 | Tue Jul 25 2023 10:11:15 | Success | demo     | full |                  | gpbackup_s3_plugin | 00:00:20 |              
@@ -408,7 +408,7 @@ Find all backups, including deleted ones, containing the `test1` schema.
   --deleted \
   --schema test1
 
-TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE        | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED             
+ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE        | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED             
 ----------------+--------------------------+---------+----------+-------------+------------------+--------------------+----------+--------------------------
  20230525101152 | Thu May 25 2023 10:11:52 | Success | demo     | incremental | include-schema   | gpbackup_s3_plugin | 00:30:00 | Sun Jun 25 2023 10:11:52 
  20230524101152 | Wed May 24 2023 10:11:52 | Success | demo     | incremental | include-schema   | gpbackup_s3_plugin | 00:30:00 |                          
@@ -422,7 +422,7 @@ Display info for all backups, including deleted and failed ones, from `gpbackup_
   --failed \
   --history-db /data/master/gpseg-1/gpbackup_history.db
 
-TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED                
+ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED                
 ----------------+--------------------------+---------+----------+---------------+------------------+--------------------+----------+-----------------------------
  20230809232817 | Wed Aug 09 2023 23:28:17 | Success | demo     | full          |                  |                    | 04:00:03 |                             
  20230806230400 | Sun Aug 06 2023 23:04:00 | Failure | demo     | full          |                  | gpbackup_s3_plugin | 00:00:38 |                             
@@ -453,7 +453,7 @@ Display full backup with object filtering details:
   --type full \
   --detail
 
-TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED | OBJECT FILTERING DETAILS 
+ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED | OBJECT FILTERING DETAILS 
 ----------------+--------------------------+---------+----------+------+------------------+--------------------+----------+--------------+--------------------------
  20250915221743 | Mon Sep 15 2025 22:17:43 | Success | demo     | full |                  |                    | 00:00:01 |              |                          
  20250915221643 | Mon Sep 15 2025 22:16:43 | Success | demo     | full | exclude-schema   | gpbackup_s3_plugin | 00:00:01 |              | sch1                     
