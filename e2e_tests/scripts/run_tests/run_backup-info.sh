@@ -5,6 +5,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
 COMMAND="backup-info"
 
+get_backup_info_timestamp() {
+    local label="${1}"; shift
+    run_gpbackman "backup-info" "${label}"  "$@"
+}
+
 # Test 1: Count all backups in history database
 test_count_all_backups() {
     local want=12
@@ -59,6 +64,33 @@ test_count_exclude_table_incremental_backups() {
     assert_equals "${want}" "${got}"
 }
 
+# Test 8: Check backup chain and details for include tables sch2.tbl_c, sch2.tbl_d
+test_backup_chain_include_tables() {
+    local want=2
+    local cutoff_timestamp=$(get_cutoff_timestamp 7)
+    local got=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    assert_equals "${want}" "${got}"
+    local got_details=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
+    if [ ! -n "${got_details}" ]; then
+        echo "[ERROR] Expected details column to be non-empty"
+        exit 1
+    fi
+}
+
+# Test 9: Check backup chain and details for incremental backup that exclude schema sch1
+# For incremental there is no backup chain, so only one backup should be returned
+test_backup_chain_incremental_exclude() {
+    local want=1
+    local cutoff_timestamp=$(get_cutoff_timestamp 3)
+    local got=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    assert_equals "${want}" "${got}"
+    local got_details=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
+    if [ ! -n "${got_details}" ]; then
+        echo "[ERROR] Expected details column to be non-empty"
+        exit 1
+    fi
+}
+
 run_test "${COMMAND}" 1 test_count_all_backups
 run_test "${COMMAND}" 2 test_count_full_backups
 run_test "${COMMAND}" 3 test_count_incremental_backups
@@ -66,5 +98,7 @@ run_test "${COMMAND}" 4 test_count_include_table_backups
 run_test "${COMMAND}" 5 test_count_exclude_table_backups
 run_test "${COMMAND}" 6 test_count_include_table_full_backups
 run_test "${COMMAND}" 7 test_count_exclude_table_incremental_backups
+run_test "${COMMAND}" 8 test_backup_chain_include_tables
+run_test "${COMMAND}" 9 test_backup_chain_incremental_exclude
 
 log_all_tests_passed "${COMMAND}"

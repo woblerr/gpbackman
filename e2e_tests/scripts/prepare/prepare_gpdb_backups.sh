@@ -7,13 +7,13 @@ set -Eeuo pipefail
 # 3.  full_local_exclude_table : Full LOCAL backup excluding sch1.tbl_b
 # 4.  metadata_only_s3         : Metadata-only S3 backup (no data)
 # 5.  full_s3                  : Full S3 backup (all tables, leaf partition data)
-# 6.  full_s3_include_table    : Full S3 backup including only sch2.tbl_c
-# 7.  full_s3_exclude_table    : Full S3 backup excluding sch2.tbl_d
+# 6.  full_s3_include_tables   : Full S3 backup including sch2.tbl_c, sch2.tbl_d
+# 7.  full_s3_exclude_schema   : Full S3 backup excluding schema sch1
 # 8.  (data change)            : Insert into sch2.tbl_c and sch2.tbl_d
 # 9.  incr_s3                  : Incremental S3 backup
-# 10. incr_s3_include_table    : Incremental S3 backup including only sch2.tbl_c
+# 10. incr_s3_include_tables   : Incremental S3 backup including sch2.tbl_c, sch2.tbl_d
 # 11. (data change)            : Insert more rows into sch2.tbl_c
-# 12. incr_s3_exclude_table    : Incremental S3 backup excluding sch2.tbl_d
+# 12. incr_s3_exclude_schema   : Incremental S3 backup excluding schema sch1
 # 13. data_only_local          : Data-only LOCAL backup (no metadata)
 # 14. full_local               : Final full LOCAL backup (all tables)
 
@@ -43,11 +43,11 @@ run_backup metadata_only_s3 "${COMMON_PLUGIN_FLAGS[@]}" --metadata-only
 # Full S3 no filters
 run_backup full_s3 "${COMMON_PLUGIN_FLAGS[@]}" --leaf-partition-data
 
-# Full S3 include-table sch2.tbl_c
-run_backup full_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --include-table sch2.tbl_c --leaf-partition-data
+# Full S3 include-table sch2.tbl_c, sch2.tbl_d
+run_backup full_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --include-table sch2.tbl_c --include-table sch2.tbl_d --leaf-partition-data
 
-# Full S3 exclude-table sch2.tbl_d
-run_backup full_s3_exclude_table "${COMMON_PLUGIN_FLAGS[@]}" --exclude-table sch2.tbl_d --leaf-partition-data
+# Full S3 exclude-schema sch1
+run_backup full_s3_exclude_schema "${COMMON_PLUGIN_FLAGS[@]}" --exclude-schema sch1 --leaf-partition-data
 
 # Insert data
 psql -d demo -c "INSERT INTO sch2.tbl_c SELECT i, i FROM generate_series(1,100000) i;"
@@ -56,14 +56,14 @@ psql -d demo -c "INSERT INTO sch2.tbl_d SELECT i, i FROM generate_series(1,10000
 # Incremental S3 no filters
 run_backup incr_s3 "${COMMON_PLUGIN_FLAGS[@]}" --incremental --leaf-partition-data
 
-# Incremental S3 include-table sch2.tbl_c
-run_backup incr_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --incremental --include-table sch2.tbl_c --leaf-partition-data
+# Incremental S3 include-tables sch2.tbl_c, sch2.tbl_d
+run_backup incr_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --incremental --include-table sch2.tbl_c --include-table sch2.tbl_d --leaf-partition-data
 
 # Insert data
 psql -d demo -c "INSERT INTO sch2.tbl_c SELECT i, i FROM generate_series(1,100000) i;"
 
-# Incremental S3 exclude-table sch2.tbl_d
-run_backup incr_s3_exclude_table "${COMMON_PLUGIN_FLAGS[@]}" --incremental --exclude-table sch2.tbl_d --leaf-partition-data
+# Incremental S3 exclude-schema sch1
+run_backup incr_s3_exclude_schema "${COMMON_PLUGIN_FLAGS[@]}" --incremental --exclude-schema sch1 --leaf-partition-data
 
 # Data-only LOCAL no filters
 run_backup data_only_local --data-only
