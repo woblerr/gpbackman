@@ -270,7 +270,6 @@ Display information about backups.
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
 
-
 To display deleted backups, use the --deleted option.
 To display failed backups, use the --failed option.
 To display all backups, use --deleted and --failed options together.
@@ -289,13 +288,19 @@ The formatting rules for <schema>.<table> match those of the --exclude-table opt
 To display backups that exclude the specified schema, use the --schema and --exclude options. 
 The formatting rules for <schema> match those of the --exclude-schema option in gpbackup.
 
-To display a backup chain for a specific backup, use the --timestamp option.
-In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
-When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
-Details about object filtering are presented as follows, depending on the active filtering type:
+To display details about object filtering, use the --detail option.
+The details are presented as follows, depending on the active filtering type:
   * include-table / exclude-table: a comma-separated list of fully-qualified table names in the format <schema>.<table>;
   * include-schema / exclude-schema: a comma-separated list of schema names;
   * if no object filtering was used, the value is empty.
+
+To display a backup chain for a specific backup, use the --timestamp option.
+In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
+The deleted and failed backups are always included in this mode.
+The information about object filtering details is always included in this mode.
+When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted, --detail.
+
+To display the "object filtering details" column for all backups without using --timestamp, use the --detail option.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -306,6 +311,7 @@ Usage:
 
 Flags:
       --deleted            show deleted backups
+      --detail             show object filtering details
       --exclude            show backups that exclude the specific table (format <schema>.<table>) or schema
       --failed             show failed backups
   -h, --help               help for backup-info
@@ -440,6 +446,24 @@ TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE          |
  20230524101152 | Wed May 24 2023 10:11:52 | Success | demo     | incremental   | include-schema   | gpbackup_s3_plugin | 00:30:00 |                             
  20230523101115 | Tue May 23 2023 10:11:15 | Success | demo     | full          | include-schema   | gpbackup_s3_plugin | 01:01:00 |                             
  ```
+
+Display full backup with object filtering details:
+```bash
+./gpbackman backup-info \
+  --type full \
+  --detail
+
+TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED | OBJECT FILTERING DETAILS 
+----------------+--------------------------+---------+----------+------+------------------+--------------------+----------+--------------+--------------------------
+ 20250915221743 | Mon Sep 15 2025 22:17:43 | Success | demo     | full |                  |                    | 00:00:01 |              |                          
+ 20250915221643 | Mon Sep 15 2025 22:16:43 | Success | demo     | full | exclude-schema   | gpbackup_s3_plugin | 00:00:01 |              | sch1                     
+ 20250915221631 | Mon Sep 15 2025 22:16:31 | Success | demo     | full | include-table    | gpbackup_s3_plugin | 00:00:01 |              | sch2.tbl_c, sch2.tbl_d   
+ 20250915221616 | Mon Sep 15 2025 22:16:16 | Success | demo     | full |                  | gpbackup_s3_plugin | 00:00:05 |              |                          
+ 20250915221553 | Mon Sep 15 2025 22:15:53 | Success | demo     | full | exclude-table    |                    | 00:00:02 |              | sch1.tbl_b               
+ 20250915221542 | Mon Sep 15 2025 22:15:42 | Success | demo     | full | include-table    |                    | 00:00:01 |              | sch1.tbl_a               
+ 20250915221531 | Mon Sep 15 2025 22:15:31 | Success | demo     | full |                  |                    | 00:00:01 |              |                          
+
+```
 
 Display info for the backup chain for a specific backup. In this example, the backup with timestamp `20250913210921` is a full backup, and all its dependent incremental backups are displayed as well:
 ```bash

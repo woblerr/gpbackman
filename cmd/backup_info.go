@@ -21,6 +21,7 @@ var (
 	backupInfoSchemaNameFilter string
 	backupInfoExcludeFilter    bool
 	backupInfoTimestamp        string
+	backupInfoShowDetails      bool
 )
 
 // Options for the backup-info command.
@@ -32,6 +33,7 @@ type BackupInfoOptions struct {
 	SchemaNameFilter string
 	ExcludeFilter    bool
 	Timestamp        string
+	ShowDetails      bool
 }
 
 var backupInfoCmd = &cobra.Command{
@@ -40,7 +42,6 @@ var backupInfoCmd = &cobra.Command{
 	Long: `Display information about backups.
 
 By default, only active backups or backups with deletion status "In progress" from gpbackup_history.db are displayed.
-
 
 To display deleted backups, use the --deleted option.
 To display failed backups, use the --failed option.
@@ -60,13 +61,19 @@ The formatting rules for <schema>.<table> match those of the --exclude-table opt
 To display backups that exclude the specified schema, use the --schema and --exclude options. 
 The formatting rules for <schema> match those of the --exclude-schema option in gpbackup.
 
-To display a backup chain for a specific backup, use the --timestamp option.
-In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
-When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
-Details about object filtering are presented as follows, depending on the active filtering type:
+To display details about object filtering, use the --detail option.
+The details are presented as follows, depending on the active filtering type:
   * include-table / exclude-table: a comma-separated list of fully-qualified table names in the format <schema>.<table>;
   * include-schema / exclude-schema: a comma-separated list of schema names;
   * if no object filtering was used, the value is empty.
+
+To display a backup chain for a specific backup, use the --timestamp option.
+In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
+The deleted and failed backups are always included in this mode.
+The information about object filtering details is always included in this mode.
+When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted, --detail.
+
+To display the "object filtering details" column for all backups without using --timestamp, use the --detail option.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -123,6 +130,12 @@ func init() {
 		false,
 		"show backups that exclude the specific table (format <schema>.<table>) or schema",
 	)
+	backupInfoCmd.Flags().BoolVar(
+		&backupInfoShowDetails,
+		detailFlagName,
+		false,
+		"show object filtering details",
+	)
 }
 
 // These flag checks are applied only for backup-info commands.
@@ -134,11 +147,11 @@ func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupInfoTimestamp, timestampFlagName, err))
 			execOSExit(exitErrorCode)
 		}
-		// --timestamp is not compatible with --type, --table, --schema, --exclude, --failed, --deleted
+		// --timestamp is not compatible with --type, --table, --schema, --exclude, --failed, --deleted, --detail
 		err = checkCompatibleFlags(flags, timestampFlagName,
-			typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName)
+			typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName, detailFlagName)
 		if err != nil {
-			gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, timestampFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName))
+			gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, timestampFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName, detailFlagName))
 			execOSExit(exitErrorCode)
 		}
 	}
@@ -189,8 +202,9 @@ func backupInfo() error {
 		SchemaNameFilter: backupInfoSchemaNameFilter,
 		ExcludeFilter:    backupInfoExcludeFilter,
 		Timestamp:        backupInfoTimestamp,
+		ShowDetails:      backupInfoShowDetails,
 	}
-	includeDetails := opts.Timestamp != ""
+	includeDetails := opts.Timestamp != "" || opts.ShowDetails
 	initTable(t, includeDetails)
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
@@ -225,8 +239,8 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 				gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 				return err
 			}
-			// In legacy mode (no timestamp specified), do not append the extra details column
-			includeObjectFilteringDetails := false
+			// In legacy mode (no timestamp specified), include details if the --detail flag is set
+			includeObjectFilteringDetails := opts.ShowDetails
 			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.ExcludeFilter, includeObjectFilteringDetails, backupData, t)
 		}
 		return nil
@@ -272,7 +286,6 @@ func initTable(t table.Writer, includeDetails bool) {
 		"duration",
 		"date deleted",
 	}
-	// Add details column at the end only in timestamp mode
 	if includeDetails {
 		header = append(header, "object filtering details")
 	}

@@ -40,6 +40,7 @@ const (
 	backupDirFlagName            = "backup-dir"
 	parallelProcessesFlagName    = "parallel-processes"
 	ignoreErrorsFlagName         = "ignore-errors"
+	detailFlagName               = "detail"
 
 	exitErrorCode = 1
 
