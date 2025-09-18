@@ -68,16 +68,16 @@ test_count_exclude_schema_incremental_backups() {
 test_backup_chain_include_tables() {
     local want=2
     local cutoff_timestamp=$(get_cutoff_timestamp 7)
-    local got=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
-    local got_details=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
-    if [ ! -n "${got_details}" ]; then
+    local got_details=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
+    if [[ -z "${got_details//[[:space:]]/}" ]]; then
         echo "[ERROR] Expected details column to be non-empty"
         exit 1
     fi
 }
 
-# Test 9: Check backup chain and details for incremental backup that exclude schema sch1
+# Test 9: Check backup chain for incremental backup that exclude schema sch1
 # For incremental there is no backup chain, so only one backup should be returned
 test_backup_chain_incremental_exclude() {
     local want=1
@@ -85,8 +85,8 @@ test_backup_chain_incremental_exclude() {
     local got=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
     local got_details=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
-    if [ ! -n "${got_details}" ]; then
-        echo "[ERROR] Expected details column to be non-empty"
+    if [[ ! -z "${got_details//[[:space:]]/}" ]]; then
+        echo "[ERROR] Expected details column to be empty"
         exit 1
     fi
 }
@@ -97,7 +97,7 @@ test_full_local_include_table_details() {
     local got=$(get_backup_info full_local_include_table_details --history-db ${DATA_DIR}/gpbackup_history.db --table sch1.tbl_a --type full --detail | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
     local got_details=$(get_backup_info full_local_include_table_details --history-db ${DATA_DIR}/gpbackup_history.db --table sch1.tbl_a --type full --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
-    if [ ! -n "${got_details}" ]; then
+    if [[ -z "${got_details//[[:space:]]/}" ]]; then
         echo "[ERROR] Expected details column to be non-empty"
         exit 1
     fi
