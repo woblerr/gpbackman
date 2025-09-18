@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
