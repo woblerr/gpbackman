@@ -70,8 +70,8 @@ The details are presented as follows, depending on the active filtering type:
 To display a backup chain for a specific backup, use the --timestamp option.
 In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
 The deleted and failed backups are always included in this mode.
-The information about object filtering details is always included in this mode.
-When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted, --detail.
+To display object filtering details in this mode, use the --detail option.
+When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
 
 To display the "object filtering details" column for all backups without using --timestamp, use the --detail option.
 
@@ -147,11 +147,11 @@ func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupInfoTimestamp, timestampFlagName, err))
 			execOSExit(exitErrorCode)
 		}
-		// --timestamp is not compatible with --type, --table, --schema, --exclude, --failed, --deleted, --detail
+		// --timestamp is not compatible with --type, --table, --schema, --exclude, --failed, --deleted
 		err = checkCompatibleFlags(flags, timestampFlagName,
-			typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName, detailFlagName)
+			typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName)
 		if err != nil {
-			gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, timestampFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName, detailFlagName))
+			gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, timestampFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName))
 			execOSExit(exitErrorCode)
 		}
 	}
@@ -204,8 +204,7 @@ func backupInfo() error {
 		Timestamp:        backupInfoTimestamp,
 		ShowDetails:      backupInfoShowDetails,
 	}
-	includeDetails := opts.Timestamp != "" || opts.ShowDetails
-	initTable(t, includeDetails)
+	initTable(t, opts.ShowDetails)
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
@@ -239,9 +238,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 				gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 				return err
 			}
-			// In legacy mode (no timestamp specified), include details if the --detail flag is set
-			includeObjectFilteringDetails := opts.ShowDetails
-			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.ExcludeFilter, includeObjectFilteringDetails, backupData, t)
+			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.ExcludeFilter, opts.ShowDetails, backupData, t)
 		}
 		return nil
 	}
@@ -252,9 +249,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(opts.Timestamp, err))
 		return err
 	}
-	// In timestamp mode, include the extra details column to match the header
-	includeObjectFilteringDetails := true
-	addBackupToTable("", "", "", false, includeObjectFilteringDetails, baseBackupData, t)
+	addBackupToTable("", "", "", false, opts.ShowDetails, baseBackupData, t)
 	backupDependenciesList, err := gpbckpconfig.GetBackupDependencies(opts.Timestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
@@ -266,7 +261,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(depTimestamp, err))
 			return err
 		}
-		addBackupToTable("", "", "", false, includeObjectFilteringDetails, backupData, t)
+		addBackupToTable("", "", "", false, opts.ShowDetails, backupData, t)
 	}
 	return nil
 }
