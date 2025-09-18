@@ -297,8 +297,8 @@ The details are presented as follows, depending on the active filtering type:
 To display a backup chain for a specific backup, use the --timestamp option.
 In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
 The deleted and failed backups are always included in this mode.
-The information about object filtering details is always included in this mode.
-When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted, --detail.
+To display object filtering details in this mode, use the --detail option.
+When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
 
 To display the "object filtering details" column for all backups without using --timestamp, use the --detail option.
 
@@ -354,7 +354,7 @@ The following information is provided about each backup:
     - `""` - if backup is active;
     - date  in format `Mon Jan 02 2006 15:04:05` - if backup is deleted and deletion timestamp is set.
 
-If the `--timestamp` option is specified, the following additional information is provided:
+If the `--detail` option is specified, the following additional information is provided:
 * `OBJECT FILTERING DETAILS` - details about object filtering:
     - if `include-table` or `exclude-table` filtering was used, a comma-separated list of fully-qualified table names in the format `<schema>.<table>`;
     - if `include-schema` or `exclude-schema` filtering was used, a comma-separated list of schema names;
@@ -468,7 +468,8 @@ Display full backup with object filtering details:
 Display info for the backup chain for a specific backup. In this example, the backup with timestamp `20250913210921` is a full backup, and all its dependent incremental backups are displayed as well:
 ```bash
 ./gpbackman backup-info \
-  --timestamp 20250913210921
+  --timestamp 20250913210921 \
+  --detail
 
  TIMESTAMP      | DATE                     | STATUS  | DATABASE | TYPE        | OBJECT FILTERING | PLUGIN             | DURATION | DATE DELETED             | OBJECT FILTERING DETAILS 
 ----------------+--------------------------+---------+----------+-------------+------------------+--------------------+----------+--------------------------+--------------------------
