@@ -481,6 +481,12 @@ Display info for the backup chain for a specific backup. In this example, the ba
  20250913210921 | Sat Sep 13 2025 21:09:21 | Success | demo     | full        | include-table    | gpbackup_s3_plugin | 00:00:02 |                          | sch2.tbl_c               
 ```
 
+When using the option `--detail`, the column `OBJECT FILTERING DETAILS` may contain a large output. For pretty display, you can use `less -XS`:
+```bash
+./gpbackman backup-info --detail | less -XS
+```
+
+
 ## Using container
 
 ```bash
