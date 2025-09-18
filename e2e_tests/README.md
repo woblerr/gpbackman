@@ -2,7 +2,7 @@
 
 The following architecture is used to run the tests:
 
-* Separate containers for MinIO and nginx. Official images [minio/minio](https://hub.docker.com/r/minio/minio), [minio/mc](https://hub.docker.com/r/minio/mc) and [nginx](https://hub.docker.com/_/nginx) are used. It's necessary for S3 compatible storage for WAL archiving and backups.
+* Separate containers for MinIO and nginx. Official images [minio/minio](https://hub.docker.com/r/minio/minio), [minio/mc](https://hub.docker.com/r/minio/mc) and [nginx](https://hub.docker.com/_/nginx) are used. It's necessary for S3 compatible storage for backups.
 - Separate container gpbackman-export: runs the gpbackman image and copies the binary to a shared Docker volume (gpbackman_bin) for use inside the Greenplum container.
 * Separate container for Greenplum. The [docker-greenplum image](https://github.com/woblerr/docker-greenplum) is used to run a single-node Greenplum cluster.
 

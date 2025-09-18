@@ -2,6 +2,7 @@ package gpbckpconfig
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -145,6 +146,24 @@ func (backupConfig BackupConfig) GetObjectFilteringInfo() (string, error) {
 		return "", nil
 	default:
 		return "", errors.New("backup filtering type does not match any of the available values")
+	}
+}
+
+// GetObjectFilteringDetails returns a comma-separated string with object filtering details
+// depending on the active filtering type. If no filtering is active, it returns an empty string.
+func (backupConfig BackupConfig) GetObjectFilteringDetails() string {
+	filter, _ := backupConfig.GetObjectFilteringInfo()
+	switch filter {
+	case objectFilteringIncludeTable:
+		return strings.Join(backupConfig.IncludeRelations, ", ")
+	case objectFilteringExcludeTable:
+		return strings.Join(backupConfig.ExcludeRelations, ", ")
+	case objectFilteringIncludeSchema:
+		return strings.Join(backupConfig.IncludeSchemas, ", ")
+	case objectFilteringExcludeSchema:
+		return strings.Join(backupConfig.ExcludeSchemas, ", ")
+	default:
+		return ""
 	}
 }
 
