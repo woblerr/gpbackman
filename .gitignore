@@ -9,6 +9,7 @@
 *.tar
 *.tar.gz
 *.db
+.DS_Store
 
 # Binary file
 /gpbackman
