@@ -18,7 +18,7 @@ var (
 	backupCleanAfterTimestamp    string
 	backupCleanPluginConfigFile  string
 	backupCleanBackupDir         string
-	backupCleanOlderThenDays     uint
+	backupCleanOlderThanDays     uint
 	backupCleanParallelProcesses int
 	backupCleanCascade           bool
 )
@@ -81,8 +81,8 @@ func init() {
 		"delete all dependent backups",
 	)
 	backupCleanCmd.PersistentFlags().UintVar(
-		&backupCleanOlderThenDays,
-		olderThenDaysFlagName,
+		&backupCleanOlderThanDays,
+		olderThanDaysFlagName,
 		0,
 		"delete backup sets older than the given number of days",
 	)
@@ -110,7 +110,7 @@ func init() {
 		1,
 		"the number of parallel processes to delete local backups",
 	)
-	backupCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThenDaysFlagName, afterTimestampFlagName)
+	backupCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThanDaysFlagName, afterTimestampFlagName)
 }
 
 // These flag checks are applied only for backup-clean command.
@@ -125,8 +125,8 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 		}
 		beforeTimestamp = backupCleanBeforeTimestamp
 	}
-	if flags.Changed(olderThenDaysFlagName) {
-		beforeTimestamp = gpbckpconfig.GetTimestampOlderThen(backupCleanOlderThenDays)
+	if flags.Changed(olderThanDaysFlagName) {
+		beforeTimestamp = gpbckpconfig.GetTimestampOlderThan(backupCleanOlderThanDays)
 	}
 	// If after-timestamp flag is specified and have correct values.
 	if flags.Changed(afterTimestampFlagName) {
@@ -171,7 +171,7 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 		}
 	}
 	if beforeTimestamp == "" && afterTimestamp == "" {
-		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName, afterTimestampFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThanDaysFlagName, beforeTimestampFlagName, afterTimestampFlagName))
 		execOSExit(exitErrorCode)
 	}
 }

@@ -278,10 +278,10 @@ func TestBackupPluginCustomReportPath(t *testing.T) {
 	}
 }
 
-func TestGetTimestampOlderThen(t *testing.T) {
+func TestGetTimestampOlderThan(t *testing.T) {
 	// Call the function with a known input
 	input := uint(1)
-	got := GetTimestampOlderThen(input)
+	got := GetTimestampOlderThan(input)
 
 	// Parse the returned timestamp
 	parsedTime, err := time.Parse(Layout, got)

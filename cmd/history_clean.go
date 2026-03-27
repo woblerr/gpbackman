@@ -13,7 +13,7 @@ import (
 // Flags for the gpbackman history-clean command (historyCleanCmd)
 var (
 	historyCleanBeforeTimestamp string
-	historyCleanOlderThenDays   uint
+	historyCleanOlderThanDays   uint
 )
 
 var historyCleanCmd = &cobra.Command{
@@ -42,8 +42,8 @@ If the --history-db option is not specified, the history database will be search
 func init() {
 	rootCmd.AddCommand(historyCleanCmd)
 	historyCleanCmd.PersistentFlags().UintVar(
-		&historyCleanOlderThenDays,
-		olderThenDaysFlagName,
+		&historyCleanOlderThanDays,
+		olderThanDaysFlagName,
 		0,
 		"delete information about backups older than the given number of days",
 	)
@@ -53,7 +53,7 @@ func init() {
 		"",
 		"delete information about backups older than the given timestamp",
 	)
-	historyCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThenDaysFlagName)
+	historyCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThanDaysFlagName)
 }
 
 // These flag checks are applied only for backup-clean command.
@@ -68,11 +68,11 @@ func doCleanHistoryFlagValidation(flags *pflag.FlagSet) {
 		}
 		beforeTimestamp = historyCleanBeforeTimestamp
 	}
-	if flags.Changed(olderThenDaysFlagName) {
-		beforeTimestamp = gpbckpconfig.GetTimestampOlderThen(historyCleanOlderThenDays)
+	if flags.Changed(olderThanDaysFlagName) {
+		beforeTimestamp = gpbckpconfig.GetTimestampOlderThan(historyCleanOlderThanDays)
 	}
 	if beforeTimestamp == "" {
-		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThenDaysFlagName, beforeTimestampFlagName))
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateValue(textmsg.ErrorValidationValue(), olderThanDaysFlagName, beforeTimestampFlagName))
 		execOSExit(exitErrorCode)
 	}
 }
