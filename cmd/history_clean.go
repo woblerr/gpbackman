@@ -56,7 +56,7 @@ func init() {
 	historyCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThanDaysFlagName)
 }
 
-// These flag checks are applied only for backup-clean command.
+// These flag checks are applied only for history-clean command.
 func doCleanHistoryFlagValidation(flags *pflag.FlagSet) {
 	var err error
 	// If before-timestamp are specified and have correct values.
