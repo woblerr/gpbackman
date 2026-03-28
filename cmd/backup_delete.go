@@ -493,7 +493,7 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 }
 func runSSHCommand(remoteCmd, host, userName string) ([]byte, error) {
 	// #nosec G204 -- arguments come from trusted cluster config.
-	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", fmt.Sprintf("%s@%s", userName, host), remoteCmd)
+	cmd := execCommand("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30", fmt.Sprintf("%s@%s", userName, host), remoteCmd)
 	return cmd.CombinedOutput()
 }
 
