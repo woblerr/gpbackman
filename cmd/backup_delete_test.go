@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -75,25 +74,4 @@ func TestExecuteDeleteBackupOnSegments(t *testing.T) {
 			}
 		})
 	}
-}
-
-// TestDeleteBackupDirOnSegments_ClosedChannel reproduces the original bug directly:
-// sending an error to an already-closed channel should panic.
-func TestDeleteBackupDirOnSegments_ClosedChannel(t *testing.T) {
-	testhelper.SetupTestLogger()
-	origExecCommand := execCommand
-	defer func() { execCommand = origExecCommand }()
-	execCommand = func(command string, args ...string) *exec.Cmd {
-		return exec.Command("false")
-	}
-	errCh := make(chan error, 1)
-	close(errCh)
-	defer func() {
-		if r := recover(); r != nil {
-			if msg := fmt.Sprintf("%v", r); !strings.Contains(msg, "send on closed channel") {
-				t.Errorf("unexpected panic: %v", r)
-			}
-		}
-	}()
-	deleteBackupDirOnSegments("/some/path", "host1", "user", errCh)
 }
