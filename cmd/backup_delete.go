@@ -423,13 +423,12 @@ func execDeleteBackupPlugin(executablePath, deleteBackupPluginCommand, pluginCon
 // ExecuteCommandsOnHosts Delete backup dir on all segment hosts in parallel.
 // The function checks that the directories exists on all segment hosts before deletion.
 func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, segPrefix string, isSingleBackupDir, ignoreErrors bool, configs []gpbckpconfig.SegmentConfig, maxParallelProcesses int) error {
-	var once sync.Once
 	limit := make(chan bool, maxParallelProcesses)
-	wg := &sync.WaitGroup{}
-	errCh := make(chan error, len(configs))
 	currentUser, _ := operating.System.CurrentUser()
 	userName := currentUser.Username
 	// Check that the directory exists on all segment hosts.
+	checkErrCh := make(chan error, len(configs))
+	wg := &sync.WaitGroup{}
 	for _, config := range configs {
 		wg.Add(1)
 		limit <- true
@@ -440,7 +439,7 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 		go func(backupPath, host string) {
 			defer func() { <-limit }()
 			defer wg.Done()
-			checkBackupDirExistsOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, userName, errCh)
+			checkBackupDirExistsOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, userName, checkErrCh)
 		}(backupPath, config.Hostname)
 	}
 	// We should block the main function and wait for the WaitGroup to complete.
@@ -451,20 +450,18 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 	// and deletion occurs for another.
 	//
 	// Don't use code like
-	// go func() { wg.Wait(); once.Do(func() { close(errCh) }) }()
+	// go func() { wg.Wait(); close(checkErrCh) }()
 	//
 	wg.Wait()
-	// Fix error like "panic: close of closed channel".
-	once.Do(func() {
-		close(errCh)
-	})
-	for err := range errCh {
+	close(checkErrCh)
+	for err := range checkErrCh {
 		if err != nil && !ignoreErrors {
 			return err
 		}
 	}
 	// If all checks passed, delete the directory on all segment hosts.
-	// Reset the wait group.
+	// Use a fresh channel and wait group for the delete phase.
+	deleteErrCh := make(chan error, len(configs))
 	wg = &sync.WaitGroup{}
 	for _, config := range configs {
 		wg.Add(1)
@@ -476,15 +473,12 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 		go func(backupPath, host string) {
 			defer func() { <-limit }()
 			defer wg.Done()
-			deleteBackupDirOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, userName, errCh)
+			deleteBackupDirOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, userName, deleteErrCh)
 		}(backupPath, config.Hostname)
 	}
 	wg.Wait()
-	// Fix error like "panic: close of closed channel".
-	once.Do(func() {
-		close(errCh)
-	})
-	for err := range errCh {
+	close(deleteErrCh)
+	for err := range deleteErrCh {
 		if err != nil && !ignoreErrors {
 			return err
 		}
