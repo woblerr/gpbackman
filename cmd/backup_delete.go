@@ -8,9 +8,6 @@ import (
 	"os/exec"
 	"strconv"
 	"sync"
-	"time"
-
-	"golang.org/x/crypto/ssh"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gp-common-go-libs/operating"
@@ -430,10 +427,8 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 	limit := make(chan bool, maxParallelProcesses)
 	wg := &sync.WaitGroup{}
 	errCh := make(chan error, len(configs))
-	sshClientConf, err := getSSHConfig()
-	if err != nil {
-		return err
-	}
+	currentUser, _ := operating.System.CurrentUser()
+	userName := currentUser.Username
 	// Check that the directory exists on all segment hosts.
 	for _, config := range configs {
 		wg.Add(1)
@@ -445,7 +440,7 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 		go func(backupPath, host string) {
 			defer func() { <-limit }()
 			defer wg.Done()
-			checkBackupDirExistsOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, sshClientConf, errCh)
+			checkBackupDirExistsOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, userName, errCh)
 		}(backupPath, config.Hostname)
 	}
 	// We should block the main function and wait for the WaitGroup to complete.
@@ -481,7 +476,7 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 		go func(backupPath, host string) {
 			defer func() { <-limit }()
 			defer wg.Done()
-			deleteBackupDirOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, sshClientConf, errCh)
+			deleteBackupDirOnSegments(gpbckpconfig.BackupDirPath(backupPath, backupName), host, userName, errCh)
 		}(backupPath, config.Hostname)
 	}
 	wg.Wait()
@@ -496,23 +491,16 @@ func executeDeleteBackupOnSegments(backupDir, backupDataBackupDir, backupName, s
 	}
 	return nil
 }
-func checkBackupDirExistsOnSegments(path, host string, sshConf *ssh.ClientConfig, errCh chan error) {
-	connection, err := ssh.Dial("tcp", host+":22", sshConf)
-	if err != nil {
-		errCh <- err
-		return
-	}
-	defer connection.Close()
+func runSSHCommand(remoteCmd, host, userName string) ([]byte, error) {
+	// #nosec G204 -- arguments come from trusted cluster config.
+	cmd := execCommand("ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30", fmt.Sprintf("%s@%s", userName, host), remoteCmd)
+	return cmd.CombinedOutput()
+}
 
-	session, err := connection.NewSession()
-	if err != nil {
-		errCh <- err
-		return
-	}
-	defer session.Close()
+func checkBackupDirExistsOnSegments(path, host, userName string, errCh chan error) {
 	command := fmt.Sprintf("test -d %s", path)
 	gplog.Debug("%s", textmsg.InfoTextCommandExecution(command, "on host", host))
-	if err := session.Run(command); err != nil {
+	if _, err := runSSHCommand(command, host, userName); err != nil {
 		gplog.Error("%s", textmsg.ErrorTextCommandExecutionFailed(err, command, "on host", host))
 		errCh <- textmsg.ErrorNotFoundBackupDirIn(fmt.Sprintf("%s on host %s", path, host))
 		return
@@ -520,53 +508,13 @@ func checkBackupDirExistsOnSegments(path, host string, sshConf *ssh.ClientConfig
 	gplog.Debug("%s", textmsg.InfoTextCommandExecutionSucceeded(command, "on host", host))
 }
 
-func deleteBackupDirOnSegments(path, host string, sshConf *ssh.ClientConfig, errCh chan error) {
-	connection, err := ssh.Dial("tcp", host+":22", sshConf)
-	if err != nil {
-		errCh <- err
-		return
-	}
-	defer connection.Close()
-
-	session, err := connection.NewSession()
-	if err != nil {
-		errCh <- err
-		return
-	}
-	defer session.Close()
+func deleteBackupDirOnSegments(path, host, userName string, errCh chan error) {
 	command := fmt.Sprintf("rm -rf %s", path)
 	gplog.Debug("%s", textmsg.InfoTextCommandExecution(command, "on host", host))
-	if err := session.Run(command); err != nil {
+	if _, err := runSSHCommand(command, host, userName); err != nil {
 		gplog.Error("%s", textmsg.ErrorTextCommandExecutionFailed(err, command, "on host", host))
 		errCh <- err
 		return
 	}
 	gplog.Debug("%s", textmsg.InfoTextCommandExecutionSucceeded(command, "on host", host))
-}
-
-func getSSHConfig() (*ssh.ClientConfig, error) {
-	currentUser, _ := operating.System.CurrentUser()
-	key, err := os.ReadFile(currentUser.HomeDir + "/.ssh/id_rsa")
-	if err != nil {
-		return nil, err
-	}
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return nil, err
-	}
-	// sshConfig is a configuration object for establishing an SSH connection.
-	// It contains the user's username, authentication method using public keys,
-	// and a host key callback that ignores insecure host keys.
-	sshConfig := &ssh.ClientConfig{
-		User: currentUser.Username,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		// Disable known_hosts check.
-		// This check also disables in gpbackup utility.
-		// #nosec G106
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         30 * time.Second,
-	}
-	return sshConfig, nil
 }
