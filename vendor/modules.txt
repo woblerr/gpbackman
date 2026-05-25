@@ -14,8 +14,8 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/greenplum-db/gp-common-go-libs v1.0.15
-## explicit; go 1.19
+# github.com/greenplum-db/gp-common-go-libs v1.0.22
+## explicit; go 1.21
 github.com/greenplum-db/gp-common-go-libs/cluster
 github.com/greenplum-db/gp-common-go-libs/dbconn
 github.com/greenplum-db/gp-common-go-libs/gplog

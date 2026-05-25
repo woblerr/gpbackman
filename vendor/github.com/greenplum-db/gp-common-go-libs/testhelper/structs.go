@@ -5,9 +5,11 @@ package testhelper
  */
 
 import (
+	"context"
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/jmoiron/sqlx"
+	"time"
 )
 
 type TestDriver struct {
@@ -58,6 +60,7 @@ type TestExecutor struct {
 	LocalError    error
 	LocalErrors   []error
 	LocalCommands []string
+	LocalContexts []context.Context
 
 	ClusterOutput   *cluster.RemoteOutput
 	ClusterOutputs  []*cluster.RemoteOutput
@@ -95,7 +98,49 @@ func (executor *TestExecutor) ExecuteLocalCommand(commandStr string) (string, er
 	return executor.LocalOutput, nil
 }
 
+func (executor *TestExecutor) ExecuteLocalCommandWithContext(commandStr string, ctx context.Context) (string, error) {
+	executor.NumExecutions++
+	executor.NumLocalExecutions++
+	executor.LocalCommands = append(executor.LocalCommands, commandStr)
+	executor.LocalContexts = append(executor.LocalContexts, ctx)
+	if (executor.LocalOutputs == nil && executor.LocalErrors != nil) || (executor.LocalOutputs != nil && executor.LocalErrors == nil) {
+		gplog.Fatal(nil, "If one of LocalOutputs or LocalErrors is set, both must be set")
+	} else if executor.LocalOutputs != nil && executor.LocalErrors != nil && len(executor.LocalOutputs) != len(executor.LocalErrors) {
+		gplog.Fatal(nil, "Found %d LocalOutputs and %d LocalErrors, but one output and one error must be set for each call", len(executor.LocalOutputs), len(executor.LocalErrors))
+	}
+	if executor.LocalOutputs != nil {
+		if executor.NumLocalExecutions <= len(executor.LocalOutputs) {
+			return executor.LocalOutputs[executor.NumLocalExecutions-1], executor.LocalErrors[executor.NumLocalExecutions-1]
+		} else if executor.UseLastOutput {
+			return executor.LocalOutputs[len(executor.LocalOutputs)-1], executor.LocalErrors[len(executor.LocalErrors)-1]
+		} else if executor.UseDefaultOutput {
+			return executor.LocalOutput, executor.LocalError
+		}
+		gplog.Fatal(nil, "ExecuteLocalCommandWithContext called %d times, but only %d outputs and errors provided", executor.NumLocalExecutions, len(executor.LocalOutputs))
+	} else if executor.ErrorOnExecNum == 0 || executor.NumLocalExecutions == executor.ErrorOnExecNum {
+		return executor.LocalOutput, executor.LocalError
+	}
+	return executor.LocalOutput, nil
+}
+
 func (executor *TestExecutor) ExecuteClusterCommand(scope cluster.Scope, commandList []cluster.ShellCommand) *cluster.RemoteOutput {
+	executor.NumExecutions++
+	executor.NumClusterExecutions++
+	executor.ClusterCommands = append(executor.ClusterCommands, commandList)
+	if executor.ClusterOutputs != nil {
+		if executor.NumClusterExecutions <= len(executor.ClusterOutputs) {
+			return executor.ClusterOutputs[executor.NumClusterExecutions-1]
+		} else if executor.UseLastOutput {
+			return executor.ClusterOutputs[len(executor.ClusterOutputs)-1]
+		} else if executor.UseDefaultOutput {
+			return executor.ClusterOutput
+		}
+		gplog.Fatal(nil, "ExecuteClusterCommand called %d times, but only %d ClusterOutputs provided", executor.NumClusterExecutions, len(executor.ClusterOutputs))
+	}
+	return executor.ClusterOutput
+}
+
+func (executor *TestExecutor) ExecuteClusterCommandWithRetries(scope cluster.Scope, commandList []cluster.ShellCommand, maxAttempts int, retrySleep time.Duration) *cluster.RemoteOutput {
 	executor.NumExecutions++
 	executor.NumClusterExecutions++
 	executor.ClusterCommands = append(executor.ClusterCommands, commandList)
