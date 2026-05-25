@@ -1,6 +1,6 @@
 ARG REPO_BUILD_TAG="unknown"
 
-FROM golang:1.24-bookworm AS builder
+FROM golang:1.25-bookworm AS builder
 ARG REPO_BUILD_TAG
 COPY . /build
 WORKDIR /build
