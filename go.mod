@@ -1,9 +1,9 @@
 module github.com/woblerr/gpbackman
 
-go 1.24.0
+go 1.25.0
 
 require (
-	github.com/greenplum-db/gp-common-go-libs v1.0.15
+	github.com/greenplum-db/gp-common-go-libs v1.0.22
 	github.com/greenplum-db/gpbackup v0.0.0-20240215213028-2782cd0fbd9b
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/jmoiron/sqlx v1.4.0
