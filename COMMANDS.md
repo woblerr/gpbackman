@@ -63,7 +63,8 @@ For non local backups the following logic are applied:
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-If the --history-db option is not specified, the history database will be searched in the current directory.
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
 Usage:
   gpbackman backup-clean [flags]
@@ -79,6 +80,7 @@ Flags:
       --plugin-config string      the full path to plugin config file
 
 Global Flags:
+      --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
       --history-db string          full path to the gpbackup_history.db file
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
@@ -188,7 +190,8 @@ For non local backups the following logic are applied:
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-If the --history-db option is not specified, the history database will be searched in the current directory.
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
 Usage:
   gpbackman backup-delete [flags]
@@ -204,6 +207,7 @@ Flags:
       --timestamp stringArray    the backup timestamp for deleting, could be specified multiple times
 
 Global Flags:
+      --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
       --history-db string          full path to the gpbackup_history.db file
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
@@ -304,7 +308,8 @@ To display the "object filtering details" column for all backups without using -
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-If the --history-db option is not specified, the history database will be searched in the current directory.
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
 Usage:
   gpbackman backup-info [flags]
@@ -321,6 +326,7 @@ Flags:
       --type string        backup type filter (full, incremental, data-only, metadata-only)
 
 Global Flags:
+      --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
       --history-db string          full path to the gpbackup_history.db file
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
@@ -516,7 +522,8 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-If the --history-db option is not specified, the history database will be searched in the current directory.
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
 Usage:
   gpbackman history-clean [flags]
@@ -527,6 +534,7 @@ Flags:
       --older-than-days uint      delete information about backups older than the given number of days
 
 Global Flags:
+      --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
       --history-db string          full path to the gpbackup_history.db file
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
@@ -581,7 +589,8 @@ Can be specified only once. The full path to the file is required.
 The gpbackup_history.yaml file location can be set using the --history-file option.
 Can be specified multiple times. The full path to the file is required.
 
-If the --history-db option is not specified, the history database will be searched in the current directory.
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
 Usage:
   gpbackman history-migrate [flags]
@@ -591,6 +600,7 @@ Flags:
       --history-file stringArray   full path to the gpbackup_history.yaml file, could be specified multiple times
 
 Global Flags:
+      --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
       --history-db string          full path to the gpbackup_history.db file
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
@@ -658,7 +668,8 @@ It is not necessary to use the --plugin-report-file-path flag for the following 
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-If the --history-db option is not specified, the history database will be searched in the current directory.
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
 Usage:
   gpbackman report-info [flags]
@@ -671,6 +682,7 @@ Flags:
       --timestamp string                 the backup timestamp for report displaying
 
 Global Flags:
+      --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
       --history-db string          full path to the gpbackup_history.db file
       --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
       --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")

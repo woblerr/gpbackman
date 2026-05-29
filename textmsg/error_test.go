@@ -316,6 +316,12 @@ func TestErrorFunctionsOneoArg(t *testing.T) {
 			errFunc: ErrorSeveralFoundBackupDirIn,
 			want:    "several backup directory found in TestValue",
 		},
+		{
+			name:    "ErrorHistoryDBFileNotFound",
+			value:   "TestValue",
+			errFunc: ErrorHistoryDBFileNotFound,
+			want:    "History db file not found: TestValue",
+		},
 	}
 	for _, tt := range tests {
 		err := tt.errFunc(tt.value)
@@ -340,6 +346,13 @@ func TestErrorFunctionsOneoArgAndErr(t *testing.T) {
 			err:     testErr,
 			errFunc: ErrorFindBackupDirIn,
 			want:    "can not find backup directory in TestValue, error: test error",
+		},
+		{
+			name:    "ErrorUnableStatHistoryDB",
+			value:   "TestValue",
+			err:     testErr,
+			errFunc: ErrorUnableStatHistoryDB,
+			want:    "Unable to stat history db TestValue. Error: test error",
 		},
 	}
 	for _, tt := range tests {

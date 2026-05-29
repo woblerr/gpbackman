@@ -19,6 +19,7 @@ const (
 
 	// Flags.
 	historyDBFlagName            = "history-db"
+	autoLoadHistoryDBFlagName    = "auto-load-history-db"
 	historyFilesFlagName         = "history-file"
 	logFileFlagName              = "log-file"
 	logLevelConsoleFlagName      = "log-level-console"
@@ -57,4 +58,10 @@ var (
 	beforeTimestamp string
 	// Timestamp to delete all backups after.
 	afterTimestamp string
+
+	// GP6 exports MASTER_DATA_DIRECTORY, while GP7 exports COORDINATOR_DATA_DIRECTORY.
+	historyDBEnvVars = []string{
+		"MASTER_DATA_DIRECTORY",
+		"COORDINATOR_DATA_DIRECTORY",
+	}
 )

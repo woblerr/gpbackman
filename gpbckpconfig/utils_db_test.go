@@ -1,6 +1,95 @@
 package gpbckpconfig
 
-import "testing"
+import (
+	"database/sql"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/woblerr/gpbackman/textmsg"
+)
+
+func TestOpenHistoryDBMissingFile(t *testing.T) {
+	missingPath := filepath.Join(t.TempDir(), "missing_history.db")
+	db, err := OpenHistoryDB(missingPath)
+	if err == nil {
+		t.Fatalf("Expected OpenHistoryDB to fail for a missing file")
+	}
+	if db != nil {
+		t.Fatalf("Expected nil database handle for a missing file")
+	}
+	if want := textmsg.ErrorHistoryDBFileNotFound(missingPath).Error(); err.Error() != want {
+		t.Errorf("Unexpected error:\n%v\nwant:\n%v", err, want)
+	}
+	if _, statErr := os.Stat(missingPath); !os.IsNotExist(statErr) {
+		t.Fatalf("Expected missing history DB to stay absent, stat error: %v", statErr)
+	}
+}
+
+func TestOpenHistoryDBExistingFile(t *testing.T) {
+	historyDBPath := filepath.Join(t.TempDir(), "gpbackup_history.db")
+	seedDB, err := sql.Open("sqlite3", "file:"+historyDBPath+"?mode=rwc")
+	if err != nil {
+		t.Fatalf("Failed to create seed SQLite DB: %v", err)
+	}
+	if err = seedDB.Ping(); err != nil {
+		t.Fatalf("Failed to ping seed SQLite DB: %v", err)
+	}
+	if err = seedDB.Close(); err != nil {
+		t.Fatalf("Failed to close seed SQLite DB: %v", err)
+	}
+
+	db, err := OpenHistoryDB(historyDBPath)
+	if err != nil {
+		t.Fatalf("Expected OpenHistoryDB to open existing DB, got: %v", err)
+	}
+	if db == nil {
+		t.Fatalf("Expected non-nil database handle")
+	}
+	if err = db.Ping(); err != nil {
+		t.Fatalf("Failed to ping opened SQLite DB: %v", err)
+	}
+	if err = db.Close(); err != nil {
+		t.Fatalf("Failed to close opened SQLite DB: %v", err)
+	}
+}
+
+func TestOpenHistoryDBExistingRelativeFile(t *testing.T) {
+	oldWorkingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to read current directory: %v", err)
+	}
+	if err = os.Chdir(t.TempDir()); err != nil {
+		t.Fatalf("Failed to switch to temp directory: %v", err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(oldWorkingDir); chdirErr != nil {
+			t.Fatalf("Failed to restore current directory: %v", chdirErr)
+		}
+	}()
+
+	seedDB, err := sql.Open("sqlite3", "file:gpbackup_history.db?mode=rwc")
+	if err != nil {
+		t.Fatalf("Failed to create seed SQLite DB: %v", err)
+	}
+	if err = seedDB.Ping(); err != nil {
+		t.Fatalf("Failed to ping seed SQLite DB: %v", err)
+	}
+	if err = seedDB.Close(); err != nil {
+		t.Fatalf("Failed to close seed SQLite DB: %v", err)
+	}
+
+	db, err := OpenHistoryDB("gpbackup_history.db")
+	if err != nil {
+		t.Fatalf("Expected OpenHistoryDB to open relative DB path, got: %v", err)
+	}
+	if err = db.Ping(); err != nil {
+		t.Fatalf("Failed to ping opened SQLite DB: %v", err)
+	}
+	if err = db.Close(); err != nil {
+		t.Fatalf("Failed to close opened SQLite DB: %v", err)
+	}
+}
 
 func TestGetBackupNameQuery(t *testing.T) {
 	tests := []struct {

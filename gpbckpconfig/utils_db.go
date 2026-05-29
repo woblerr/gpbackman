@@ -2,19 +2,38 @@ package gpbckpconfig
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/greenplum-db/gpbackup/history"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
-// OpenHistoryDB Opens the history backup database.
+// OpenHistoryDB opens an existing gpbackup_history.db SQLite database.
 func OpenHistoryDB(historyDBPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", historyDBPath)
+	if _, err := os.Stat(historyDBPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, textmsg.ErrorHistoryDBFileNotFound(historyDBPath)
+		}
+		return nil, textmsg.ErrorUnableStatHistoryDB(historyDBPath, err)
+	}
+	db, err := sql.Open("sqlite3", historyDBSQLiteURI(historyDBPath))
 	if err != nil {
 		return nil, err
 	}
 	return db, nil
+}
+
+func historyDBSQLiteURI(historyDBPath string) string {
+	if filepath.IsAbs(historyDBPath) {
+		dbURI := url.URL{Scheme: "file", Path: historyDBPath, RawQuery: "mode=rw"}
+		return dbURI.String()
+	}
+	return fmt.Sprintf("file:%s?mode=rw", historyDBPath)
 }
 
 // GetBackupDataDB Read backup data from history database and return BackupConfig struct.

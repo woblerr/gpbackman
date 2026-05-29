@@ -26,7 +26,8 @@ Can be specified only once. The full path to the file is required.
 The gpbackup_history.yaml file location can be set using the --history-file option.
 Can be specified multiple times. The full path to the file is required.
 
-If the --history-db option is not specified, the history database will be searched in the current directory.`,
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		// No need to check historyDB existence.
@@ -73,7 +74,7 @@ func doMigrateHistory() {
 }
 
 func migrateHistory() error {
-	hDB, err := history.InitializeHistoryDatabase(getHistoryDBPath(rootHistoryDB))
+	hDB, err := history.InitializeHistoryDatabase(getHistoryDBPath(rootHistoryDB, rootAutoLoadHistoryDB))
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableInitHistoryDB(err))
 		return err
