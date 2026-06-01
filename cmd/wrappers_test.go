@@ -61,6 +61,11 @@ func TestGetHistoryDBPath(t *testing.T) {
 			want:               historyDBNameConst,
 		},
 		{
+			name:              "Auto Load Without Env Vars",
+			autoLoadHistoryDB: true,
+			want:              historyDBNameConst,
+		},
+		{
 			name:              "Master Data Directory",
 			autoLoadHistoryDB: true,
 			masterDataDir:     "/master/data",
