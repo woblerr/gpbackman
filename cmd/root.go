@@ -12,10 +12,11 @@ import (
 
 // Flags for the gpbackman command (rootCmd)
 var (
-	rootHistoryDB       string
-	rootLogFile         string
-	rootLogLevelConsole string
-	rootLogLevelFile    string
+	rootHistoryDB         string
+	rootAutoLoadHistoryDB bool
+	rootLogFile           string
+	rootLogLevelConsole   string
+	rootLogLevelFile      string
 )
 
 var rootCmd = &cobra.Command{
@@ -30,6 +31,12 @@ func init() {
 		historyDBFlagName,
 		"",
 		"full path to the gpbackup_history.db file",
+	)
+	rootCmd.PersistentFlags().BoolVar(
+		&rootAutoLoadHistoryDB,
+		autoLoadHistoryDBFlagName,
+		false,
+		"resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset",
 	)
 	rootCmd.PersistentFlags().StringVar(
 		&rootLogFile,
@@ -68,6 +75,12 @@ func getVersion() string {
 // These flag checks are applied for all commands:
 func doRootFlagValidation(flags *pflag.FlagSet, checkFileExists bool) {
 	var err error
+	// Check that history-db and auto-load-history-db flags are not used together.
+	err = checkCompatibleFlags(flags, historyDBFlagName, autoLoadHistoryDBFlagName)
+	if err != nil {
+		gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, historyDBFlagName, autoLoadHistoryDBFlagName))
+		execOSExit(exitErrorCode)
+	}
 	// If history-db flag is specified and full path.
 	// The existence of the file is checked by condition from each specific command.
 	// Not all commands (see history-migrate command, report-info command flags) require a history db file to exist.

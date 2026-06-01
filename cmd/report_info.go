@@ -57,7 +57,8 @@ It is not necessary to use the --plugin-report-file-path flag for the following 
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
-If the --history-db option is not specified, the history database will be searched in the current directory.`,
+If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
@@ -153,7 +154,7 @@ func doReportInfo() {
 }
 
 func reportInfo() error {
-	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB))
+	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB, rootAutoLoadHistoryDB))
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
 		return err
@@ -208,7 +209,7 @@ func reportInfoPluginFunc(backupData gpbckpconfig.BackupConfig, pluginConfigPath
 			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupPath("report", backupData.Timestamp, err))
 			return err
 		}
-			gplog.Debug("%s", textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile))
+		gplog.Debug("%s", textmsg.InfoTextCommandExecution(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile))
 		stdout, stderr, err := execReportInfo(pluginConfig.ExecutablePath, restoreDataPluginCommand, pluginConfigPath, reportFile)
 		if stderr != "" {
 			gplog.Error("%s", stderr)

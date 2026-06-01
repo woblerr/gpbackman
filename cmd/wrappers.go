@@ -61,12 +61,20 @@ func setLogLevelFile(level string) error {
 	return nil
 }
 
-func getHistoryDBPath(historyDBPath string) string {
-	var historyDBName = historyDBNameConst
+func getHistoryDBPath(historyDBPath string, autoLoadHistoryDB bool) string {
 	if historyDBPath != "" {
 		return historyDBPath
 	}
-	return historyDBName
+	if autoLoadHistoryDB {
+		for _, envVar := range historyDBEnvVars {
+			if dataDir := os.Getenv(envVar); dataDir != "" {
+				resolvedHistoryDBPath := filepath.Join(dataDir, historyDBNameConst)
+				gplog.Debug("History db path resolved from %s: %s", envVar, resolvedHistoryDBPath)
+				return resolvedHistoryDBPath
+			}
+		}
+	}
+	return historyDBNameConst
 }
 
 func getHistoryFilePath(historyFilePath string) string {

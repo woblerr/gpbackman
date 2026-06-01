@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,38 +33,102 @@ func TestGetHistoryFilePath(t *testing.T) {
 }
 
 func TestGetHistoryDBPath(t *testing.T) {
+	testhelper.SetupTestLogger()
+
 	tests := []struct {
-		name            string
-		historyFilePath string
-		want            string
+		name               string
+		historyDBPath      string
+		autoLoadHistoryDB  bool
+		masterDataDir      string
+		coordinatorDataDir string
+		want               string
 	}{
-		{"Empty Path", "", historyDBNameConst},
-		{"Non Empty Path", "path/to/" + historyDBNameConst, "path/to/" + historyDBNameConst},
+		{
+			name:          "Empty Path",
+			historyDBPath: "",
+			want:          historyDBNameConst,
+		},
+		{
+			name:          "Non Empty Path",
+			historyDBPath: "path/to/" + historyDBNameConst,
+			want:          "path/to/" + historyDBNameConst,
+		},
+		{
+			name:               "Env Vars Ignored Without Auto Load",
+			autoLoadHistoryDB:  false,
+			masterDataDir:      "/master/data",
+			coordinatorDataDir: "/coordinator/data",
+			want:               historyDBNameConst,
+		},
+		{
+			name:              "Auto Load Without Env Vars",
+			autoLoadHistoryDB: true,
+			want:              historyDBNameConst,
+		},
+		{
+			name:              "Master Data Directory",
+			autoLoadHistoryDB: true,
+			masterDataDir:     "/master/data",
+			want:              filepath.Join("/master/data", historyDBNameConst),
+		},
+		{
+			name:               "Coordinator Data Directory",
+			autoLoadHistoryDB:  true,
+			coordinatorDataDir: "/coordinator/data",
+			want:               filepath.Join("/coordinator/data", historyDBNameConst),
+		},
+		{
+			name:               "Master Data Directory Has Priority",
+			autoLoadHistoryDB:  true,
+			masterDataDir:      "/master/data",
+			coordinatorDataDir: "/coordinator/data",
+			want:               filepath.Join("/master/data", historyDBNameConst),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getHistoryDBPath(tt.historyFilePath); got != tt.want {
+			t.Setenv("MASTER_DATA_DIRECTORY", tt.masterDataDir)
+			t.Setenv("COORDINATOR_DATA_DIRECTORY", tt.coordinatorDataDir)
+			if got := getHistoryDBPath(tt.historyDBPath, tt.autoLoadHistoryDB); got != tt.want {
 				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestIsBackupActive(t *testing.T) {
-	tests := []struct {
-		name            string
-		historyFilePath string
-		want            string
-	}{
-		{"Empty Path", "", historyDBNameConst},
-		{"Non Empty Path", "path/to/" + historyDBNameConst, "path/to/" + historyDBNameConst},
+func TestRootAutoLoadHistoryDBFlag(t *testing.T) {
+	flag := rootCmd.PersistentFlags().Lookup(autoLoadHistoryDBFlagName)
+	if flag == nil {
+		t.Fatalf("Expected %s flag to be registered", autoLoadHistoryDBFlagName)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getHistoryDBPath(tt.historyFilePath); got != tt.want {
-				t.Errorf("\nVariables do not match:\n%v\nwant:\n%v", got, tt.want)
-			}
-		})
+	if flag.DefValue != "false" {
+		t.Errorf("\nDefault value does not match:\n%v\nwant:\n%v", flag.DefValue, "false")
+	}
+	if !strings.Contains(flag.Usage, "MASTER_DATA_DIRECTORY") ||
+		!strings.Contains(flag.Usage, "COORDINATOR_DATA_DIRECTORY") {
+		t.Errorf("Flag usage does not mention both data directory environment variables: %s", flag.Usage)
+	}
+}
+
+func TestRootHelpIncludesAutoLoadHistoryDBFlag(t *testing.T) {
+	var output bytes.Buffer
+	rootCmd.SetOut(&output)
+	rootCmd.SetErr(&output)
+	defer rootCmd.SetOut(os.Stdout)
+	defer rootCmd.SetErr(os.Stderr)
+
+	if err := rootCmd.Help(); err != nil {
+		t.Fatalf("Expected root help to render, got: %v", err)
+	}
+	helpText := output.String()
+	for _, value := range []string{
+		"--auto-load-history-db",
+		"MASTER_DATA_DIRECTORY",
+		"COORDINATOR_DATA_DIRECTORY",
+	} {
+		if !strings.Contains(helpText, value) {
+			t.Errorf("Expected help output to contain %q, got:\n%s", value, helpText)
+		}
 	}
 }
 
@@ -165,6 +231,52 @@ func TestCheckCompatibleFlags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDoRootFlagValidationRejectsHistoryDBWithAutoLoadHistoryDB(t *testing.T) {
+	testhelper.SetupTestLogger()
+
+	oldExecOSExit := execOSExit
+	oldRootHistoryDB := rootHistoryDB
+	defer func() {
+		execOSExit = oldExecOSExit
+		rootHistoryDB = oldRootHistoryDB
+	}()
+
+	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flags.String(historyDBFlagName, "", "")
+	flags.Bool(autoLoadHistoryDBFlagName, false, "")
+
+	rootHistoryDB = "/tmp/gpbackup_history.db"
+	if err := flags.Set(historyDBFlagName, rootHistoryDB); err != nil {
+		t.Fatalf("Failed to set %s flag: %v", historyDBFlagName, err)
+	}
+	if err := flags.Set(autoLoadHistoryDBFlagName, "true"); err != nil {
+		t.Fatalf("Failed to set %s flag: %v", autoLoadHistoryDBFlagName, err)
+	}
+
+	type exitPanic struct {
+		code int
+	}
+	execOSExit = func(code int) {
+		panic(exitPanic{code: code})
+	}
+
+	defer func() {
+		value := recover()
+		if value == nil {
+			t.Fatalf("Expected doRootFlagValidation to exit")
+		}
+		exit, ok := value.(exitPanic)
+		if !ok {
+			panic(value)
+		}
+		if exit.code != exitErrorCode {
+			t.Fatalf("Unexpected exit code:\n%v\nwant:\n%v", exit.code, exitErrorCode)
+		}
+	}()
+
+	doRootFlagValidation(flags, false)
 }
 
 func TestCheckBackupCanBeUsed(t *testing.T) {

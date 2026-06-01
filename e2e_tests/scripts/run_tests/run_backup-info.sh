@@ -103,6 +103,32 @@ test_full_local_include_table_details() {
     fi
 }
 
+# Test 11: Count all backups using --auto-load-history-db and MASTER_DATA_DIRECTORY
+test_count_all_backups_auto_load_master() {
+    local want=12
+    local got=$(
+        (
+            export MASTER_DATA_DIRECTORY="${DATA_DIR}"
+            unset COORDINATOR_DATA_DIRECTORY
+            get_backup_info total_backups_auto_load_master --auto-load-history-db
+        ) | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l
+    )
+    assert_equals "${want}" "${got}"
+}
+
+# Test 12: Count all backups using --auto-load-history-db and COORDINATOR_DATA_DIRECTORY
+test_count_all_backups_auto_load_coordinator() {
+    local want=12
+    local got=$(
+        (
+            unset MASTER_DATA_DIRECTORY
+            export COORDINATOR_DATA_DIRECTORY="${DATA_DIR}"
+            get_backup_info total_backups_auto_load_coordinator --auto-load-history-db
+        ) | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l
+    )
+    assert_equals "${want}" "${got}"
+}
+
 run_test "${COMMAND}" 1 test_count_all_backups
 run_test "${COMMAND}" 2 test_count_full_backups
 run_test "${COMMAND}" 3 test_count_incremental_backups
@@ -113,5 +139,7 @@ run_test "${COMMAND}" 7 test_count_exclude_schema_incremental_backups
 run_test "${COMMAND}" 8 test_backup_chain_include_tables
 run_test "${COMMAND}" 9 test_backup_chain_incremental_exclude
 run_test "${COMMAND}" 10 test_full_local_include_table_details
+run_test "${COMMAND}" 11 test_count_all_backups_auto_load_master
+run_test "${COMMAND}" 12 test_count_all_backups_auto_load_coordinator
 
 log_all_tests_passed "${COMMAND}"
