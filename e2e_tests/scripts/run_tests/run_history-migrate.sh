@@ -7,6 +7,8 @@ set -Eeuo pipefail
 # 3) Duplicate migration into the same DB -> must fail with UNIQUE constraint.
 # 4) Migrate all YAML files into a fresh empty DB in /tmp -> expect 14 backups total.
 # 5) Migrate all YAML files into an existing DB (excluding already migrated full_local) -> expect 12 base + 14 = 26 total; duplicates skipped.
+# 6) Migrate gpbackup_history_full_local.yaml into an empty DB resolved from MASTER_DATA_DIRECTORY -> expect 2 backups.
+# 7) Migrate gpbackup_history_full_local.yaml into an empty DB resolved from COORDINATOR_DATA_DIRECTORY -> expect 2 backups.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
@@ -99,10 +101,44 @@ test_migrate_all_into_existing_db(){
     assert_equals "${want}" "${got}"
 }
 
+# Test 6: Single file into empty DB resolved by --auto-load-history-db and MASTER_DATA_DIRECTORY
+# Expect 2 backups from file
+test_migrate_single_auto_load_master_into_empty_db(){
+    local workdir=$(prepare_workdir test6)
+    cp "${SRC_DIR}/${TEST_FILE_FULL_LOCAL}" "${workdir}/"
+    (
+        export MASTER_DATA_DIRECTORY="${workdir}"
+        unset COORDINATOR_DATA_DIRECTORY
+        run_command "single_auto_load_master_into_empty_db" --history-file "${workdir}/${TEST_FILE_FULL_LOCAL}" --auto-load-history-db
+    )
+    local db="${workdir}/gpbackup_history.db"
+    local want=2
+    local got=$(get_backup_info total_full_backups --history-db "${db}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    assert_equals "${want}" "${got}"
+}
+
+# Test 7: Single file into empty DB resolved by --auto-load-history-db and COORDINATOR_DATA_DIRECTORY
+# Expect 2 backups from file
+test_migrate_single_auto_load_coordinator_into_empty_db(){
+    local workdir=$(prepare_workdir test7)
+    cp "${SRC_DIR}/${TEST_FILE_FULL_LOCAL}" "${workdir}/"
+    (
+        unset MASTER_DATA_DIRECTORY
+        export COORDINATOR_DATA_DIRECTORY="${workdir}"
+        run_command "single_auto_load_coordinator_into_empty_db" --history-file "${workdir}/${TEST_FILE_FULL_LOCAL}" --auto-load-history-db
+    )
+    local db="${workdir}/gpbackup_history.db"
+    local want=2
+    local got=$(get_backup_info total_full_backups --history-db "${db}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    assert_equals "${want}" "${got}"
+}
+
 run_test "${COMMAND}" 1 test_migrate_single_into_empty_db
 run_test "${COMMAND}" 2 test_migrate_single_into_existing_db
 run_test "${COMMAND}" 3 test_migrate_duplicate_into_existing_db_fail
 run_test "${COMMAND}" 4 test_migrate_all_into_empty_db
 run_test "${COMMAND}" 5 test_migrate_all_into_existing_db
+run_test "${COMMAND}" 6 test_migrate_single_auto_load_master_into_empty_db
+run_test "${COMMAND}" 7 test_migrate_single_auto_load_coordinator_into_empty_db
 
 log_all_tests_passed "${COMMAND}"
