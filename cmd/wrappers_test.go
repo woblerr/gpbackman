@@ -33,6 +33,8 @@ func TestGetHistoryFilePath(t *testing.T) {
 }
 
 func TestGetHistoryDBPath(t *testing.T) {
+	testhelper.SetupTestLogger()
+
 	tests := []struct {
 		name               string
 		historyDBPath      string

@@ -68,7 +68,9 @@ func getHistoryDBPath(historyDBPath string, autoLoadHistoryDB bool) string {
 	if autoLoadHistoryDB {
 		for _, envVar := range historyDBEnvVars {
 			if dataDir := os.Getenv(envVar); dataDir != "" {
-				return filepath.Join(dataDir, historyDBNameConst)
+				historyDBPath := filepath.Join(dataDir, historyDBNameConst)
+				gplog.Debug("History db path resolved from %s: %s", envVar, historyDBPath)
+				return historyDBPath
 			}
 		}
 	}
