@@ -320,7 +320,7 @@ func TestErrorFunctionsOneoArg(t *testing.T) {
 			name:    "ErrorHistoryDBFileNotFound",
 			value:   "TestValue",
 			errFunc: ErrorHistoryDBFileNotFound,
-			want:    "History db file not found: TestValue",
+			want:    "history db file not found: TestValue",
 		},
 	}
 	for _, tt := range tests {
@@ -352,7 +352,7 @@ func TestErrorFunctionsOneoArgAndErr(t *testing.T) {
 			value:   "TestValue",
 			err:     testErr,
 			errFunc: ErrorUnableStatHistoryDB,
-			want:    "Unable to stat history db TestValue. Error: test error",
+			want:    "unable to stat history db TestValue, error: test error",
 		},
 	}
 	for _, tt := range tests {

@@ -27,11 +27,11 @@ func ErrorTextUnableInitHistoryDB(err error) string {
 }
 
 func ErrorHistoryDBFileNotFound(path string) error {
-	return fmt.Errorf("History db file not found: %s", path)
+	return fmt.Errorf("history db file not found: %s", path)
 }
 
 func ErrorUnableStatHistoryDB(path string, err error) error {
-	return fmt.Errorf("Unable to stat history db %s. Error: %v", path, err)
+	return fmt.Errorf("unable to stat history db %s, error: %v", path, err)
 }
 
 // Errors that occur when working with a history db.
