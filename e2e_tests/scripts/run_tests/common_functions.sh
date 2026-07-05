@@ -31,6 +31,50 @@ run_gpbackman() {
     }
 }
 
+run_gpbackman_capture() {
+    local subcmd="${1}"; shift
+    local label="${1}"; shift
+    echo "[INFO] Running ${subcmd}: ${label}"
+    local output
+    if ! output=$(${BIN_DIR}/gpbackman "${subcmd}" "$@" 2>&1); then
+        printf '%s\n' "${output}"
+        echo "[ERROR] ${subcmd} ${label} failed"
+        exit 1
+    fi
+    printf '%s\n' "${output}"
+}
+
+run_command_capture() {
+    local label="${1}"; shift
+    local -a default_args=()
+    if declare -p COMMAND_DEFAULT_ARGS >/dev/null 2>&1; then
+        default_args=("${COMMAND_DEFAULT_ARGS[@]}")
+    fi
+    if [ "${#default_args[@]}" -gt 0 ]; then
+        run_gpbackman_capture "${COMMAND}" "${label}" "${default_args[@]}" "$@"
+    else
+        run_gpbackman_capture "${COMMAND}" "${label}" "$@"
+    fi
+}
+
+assert_output_contains() {
+    local output="${1}"
+    local expected="${2}"
+    case "${output}" in
+        *"${expected}"*) ;;
+        *)
+            echo "[ERROR] Expected output to contain: ${expected}"
+            printf '%s\n' "${output}"
+            exit 1
+            ;;
+    esac
+}
+
+assert_history_sync_disabled_output() {
+    local output="${1}"
+    assert_output_contains "${output}" "Skipping history db sync to standby coordinator: disabled by --no-history-sync-standby"
+}
+
 get_backup_info() {
     local label="${1}"; shift
     run_gpbackman "backup-info" "${label}" --deleted --failed "$@"

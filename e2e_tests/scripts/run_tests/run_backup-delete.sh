@@ -4,10 +4,11 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
 COMMAND="backup-delete"
+COMMAND_DEFAULT_ARGS=(--history-db "${DATA_DIR}/gpbackup_history.db")
 
 run_command(){
     local label="${1}"; shift
-    run_gpbackman "${COMMAND}" "${label}" --history-db ${DATA_DIR}/gpbackup_history.db "$@"
+    run_gpbackman "${COMMAND}" "${label}" "${COMMAND_DEFAULT_ARGS[@]}" "$@"
 }
 
 get_backup_info_for_timestamp(){
@@ -84,9 +85,34 @@ test_delete_nonexistent_backup() {
     fi
 }
 
+# Test 5: Delete local data-only backup with standby history sync disabled
+test_delete_local_data_only_no_history_sync_standby() {
+    local timestamp=$(get_backup_info "get_local_data_only" --history-db ${DATA_DIR}/gpbackup_history.db --type data-only | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep -v plugin | head -1 | awk '{print $1}')
+
+    if [ -z "${timestamp}" ]; then
+        echo "[ERROR] Could not find data-only local backup timestamp"
+        exit 1
+    fi
+
+    local output
+    output=$(run_command_capture "delete_local_data_only_no_history_sync_standby" --timestamp "${timestamp}" --no-history-sync-standby)
+    assert_history_sync_disabled_output "${output}"
+
+    local deleted_backup=$(get_backup_info_for_timestamp "${timestamp}")
+    local date_deleted=$(echo "${deleted_backup}" | grep "${timestamp}" | awk -F'|' '{print $NF}' | xargs)
+
+    if [ -n "${date_deleted}" ]; then
+        echo "[INFO] Backup ${timestamp} successfully marked as deleted with standby history sync disabled"
+    else
+        echo "[ERROR] Backup should be marked as deleted"
+        exit 1
+    fi
+}
+
 run_test "${COMMAND}" 1 test_delete_local_full
 run_test "${COMMAND}" 2 test_delete_s3_incremental
 run_test "${COMMAND}" 3 test_delete_s3_full_cascade
 run_test "${COMMAND}" 4 test_delete_nonexistent_backup
+run_test "${COMMAND}" 5 test_delete_local_data_only_no_history_sync_standby
 
 log_all_tests_passed "${COMMAND}"

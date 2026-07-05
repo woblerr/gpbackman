@@ -21,6 +21,8 @@ RUN apk add --no-cache --update \
         bash \
         shadow \
         ca-certificates \
+        openssh-client \
+        rsync \
         su-exec \
         tzdata \
     && ln -s /sbin/su-exec /usr/local/bin/gosu \

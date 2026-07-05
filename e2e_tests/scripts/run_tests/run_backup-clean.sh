@@ -19,10 +19,11 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
 COMMAND="backup-clean"
+COMMAND_DEFAULT_ARGS=(--history-db "${DATA_DIR}/gpbackup_history.db")
 
 run_command() {
     local label="${1}"; shift
-    run_gpbackman "${COMMAND}" "${label}" --history-db ${DATA_DIR}/gpbackup_history.db "$@"
+    run_gpbackman "${COMMAND}" "${label}" "${COMMAND_DEFAULT_ARGS[@]}" "$@"
 }
 
 # Test 1: Clean local backups older than timestamp (--before-timestamp)
@@ -65,9 +66,20 @@ test_clean_s3_backups_before_timestamp() {
     assert_equals "${want}" "${got}"
 }
 
+# Test 5: Run a no-op cleanup with standby history sync disabled
+test_clean_no_history_sync_standby_noop() {
+    local want=12
+    local output
+    output=$(run_command_capture "clean_no_history_sync_standby_noop" --before-timestamp 19000101000000 --no-history-sync-standby)
+    assert_history_sync_disabled_output "${output}"
+    local got=$(count_deleted_backups)
+    assert_equals "${want}" "${got}"
+}
+
 run_test "${COMMAND}" 1 test_clean_local_backups_before_timestamp
 run_test "${COMMAND}" 2 test_clean_local_backups_after_timestamp
 run_test "${COMMAND}" 3 test_clean_s3_backups_after_timestamp
 run_test "${COMMAND}" 4 test_clean_s3_backups_before_timestamp
+run_test "${COMMAND}" 5 test_clean_no_history_sync_standby_noop
 
 log_all_tests_passed "${COMMAND}"
