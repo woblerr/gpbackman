@@ -12,8 +12,9 @@ import (
 
 // Flags for the gpbackman history-clean command (historyCleanCmd)
 var (
-	historyCleanBeforeTimestamp string
-	historyCleanOlderThanDays   uint
+	historyCleanBeforeTimestamp      string
+	historyCleanOlderThanDays        uint
+	historyCleanNoHistorySyncStandby bool
 )
 
 var historyCleanCmd = &cobra.Command{
@@ -31,7 +32,10 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
-Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.`,
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
+
+After successful cleanup, gpBackMan syncs the cluster gpbackup_history.db to an up standby coordinator when sync conditions are met.
+Pass --no-history-sync-standby to disable this sync.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
@@ -53,6 +57,12 @@ func init() {
 		beforeTimestampFlagName,
 		"",
 		"delete information about backups older than the given timestamp",
+	)
+	historyCleanCmd.PersistentFlags().BoolVar(
+		&historyCleanNoHistorySyncStandby,
+		noHistorySyncStandbyFlagName,
+		false,
+		"disable gpbackup_history.db sync to the standby coordinator",
 	)
 	historyCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThanDaysFlagName)
 }
@@ -80,17 +90,14 @@ func doCleanHistoryFlagValidation(flags *pflag.FlagSet) {
 
 func doCleanHistory() {
 	logHeadersDebug()
-	err := cleanHistory()
-	if err != nil {
-		execOSExit(exitErrorCode)
-	}
+	runHistoryMutationWithStandbySync(cleanHistory, historyCleanNoHistorySyncStandby)
 }
 
-func cleanHistory() error {
+func cleanHistory() (string, error) {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB, rootAutoLoadHistoryDB))
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
-		return err
+		return "", err
 	}
 	defer func() {
 		closeErr := hDB.Close()
@@ -100,9 +107,9 @@ func cleanHistory() error {
 	}()
 	err = historyCleanDB(beforeTimestamp, hDB)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return "", nil
 }
 
 func historyCleanDB(cutOffTimestamp string, hDB *sql.DB) error {

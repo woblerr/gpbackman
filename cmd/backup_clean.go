@@ -14,13 +14,14 @@ import (
 
 // Flags for the gpbackman backup-clean command (backupCleanCmd)
 var (
-	backupCleanBeforeTimestamp   string
-	backupCleanAfterTimestamp    string
-	backupCleanPluginConfigFile  string
-	backupCleanBackupDir         string
-	backupCleanOlderThanDays     uint
-	backupCleanParallelProcesses int
-	backupCleanCascade           bool
+	backupCleanBeforeTimestamp      string
+	backupCleanAfterTimestamp       string
+	backupCleanPluginConfigFile     string
+	backupCleanBackupDir            string
+	backupCleanOlderThanDays        uint
+	backupCleanParallelProcesses    int
+	backupCleanCascade              bool
+	backupCleanNoHistorySyncStandby bool
 )
 
 var backupCleanCmd = &cobra.Command{
@@ -58,7 +59,10 @@ For non local backups the following logic are applied:
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
-Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.`,
+Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
+
+After successful deletion, gpBackMan syncs the cluster gpbackup_history.db to an up standby coordinator when sync conditions are met.
+Pass --no-history-sync-standby to disable this sync.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		doRootFlagValidation(cmd.Flags(), checkFileExistsConst)
@@ -110,6 +114,12 @@ func init() {
 		parallelProcessesFlagName,
 		1,
 		"the number of parallel processes to delete local backups",
+	)
+	backupCleanCmd.PersistentFlags().BoolVar(
+		&backupCleanNoHistorySyncStandby,
+		noHistorySyncStandbyFlagName,
+		false,
+		"disable gpbackup_history.db sync to the standby coordinator",
 	)
 	backupCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThanDaysFlagName, afterTimestampFlagName)
 }
@@ -179,17 +189,14 @@ func doCleanBackupFlagValidation(flags *pflag.FlagSet) {
 
 func doCleanBackup() {
 	logHeadersDebug()
-	err := cleanBackup()
-	if err != nil {
-		execOSExit(exitErrorCode)
-	}
+	runHistoryMutationWithStandbySync(cleanBackup, backupCleanNoHistorySyncStandby)
 }
 
-func cleanBackup() error {
+func cleanBackup() (string, error) {
 	hDB, err := gpbckpconfig.OpenHistoryDB(getHistoryDBPath(rootHistoryDB, rootAutoLoadHistoryDB))
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableActionHistoryDB("open", err))
-		return err
+		return "", err
 	}
 	defer func() {
 		closeErr := hDB.Close()
@@ -201,58 +208,61 @@ func cleanBackup() error {
 		pluginConfig, err := utils.ReadPluginConfig(backupCleanPluginConfigFile)
 		if err != nil {
 			gplog.Error("%s", textmsg.ErrorTextUnableReadPluginConfigFile(err))
-			return err
+			return "", err
 		}
-		err = backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, afterTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
+		clusterDBName, err := backupCleanDBPlugin(backupCleanCascade, beforeTimestamp, afterTimestamp, backupCleanPluginConfigFile, pluginConfig, hDB)
 		if err != nil {
-			return err
+			return "", err
 		}
+		return clusterDBName, nil
 	} else {
-		err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, afterTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, hDB)
+		clusterDBName, err := backupCleanDBLocal(backupCleanCascade, beforeTimestamp, afterTimestamp, backupCleanBackupDir, backupCleanParallelProcesses, hDB)
 		if err != nil {
-			return err
+			return "", err
 		}
+		return clusterDBName, nil
 	}
-	return nil
 }
 
-func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) error {
+func backupCleanDBPlugin(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, pluginConfigPath string, pluginConfig *utils.PluginConfig, hDB *sql.DB) (string, error) {
 	backupList, err := fetchBackupNamesForDeletion(cutOffTimestamp, cutOffAfterTimestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
-		return err
+		return "", err
 	}
 	if len(backupList) > 0 {
 		gplog.Debug("%s", textmsg.InfoTextBackupDeleteList(backupList))
 		// Execute deletion for each backup.
 		// Use backupDeleteDBPlugin function from backup-delete command.
 		// Don't use force deletes and ignore errors for mass deletion.
-		err = backupDeleteDBPlugin(backupList, deleteCascade, false, false, pluginConfigPath, pluginConfig, hDB)
+		clusterDBName, err := backupDeleteDBPlugin(backupList, deleteCascade, false, false, pluginConfigPath, pluginConfig, hDB)
 		if err != nil {
-			return err
+			return "", err
 		}
+		return clusterDBName, nil
 	} else {
 		gplog.Info("%s", textmsg.InfoTextNothingToDo())
 	}
-	return nil
+	return "", nil
 }
 
-func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, backupDir string, maxParallelProcesses int, hDB *sql.DB) error {
+func backupCleanDBLocal(deleteCascade bool, cutOffTimestamp, cutOffAfterTimestamp, backupDir string, maxParallelProcesses int, hDB *sql.DB) (string, error) {
 	backupList, err := fetchBackupNamesForDeletion(cutOffTimestamp, cutOffAfterTimestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
-		return err
+		return "", err
 	}
 	if len(backupList) > 0 {
 		gplog.Debug("%s", textmsg.InfoTextBackupDeleteList(backupList))
-		err = backupDeleteDBLocal(backupList, backupDir, deleteCascade, false, false, maxParallelProcesses, hDB)
+		clusterDBName, err := backupDeleteDBLocal(backupList, backupDir, deleteCascade, false, false, maxParallelProcesses, hDB)
 		if err != nil {
-			return err
+			return "", err
 		}
+		return clusterDBName, nil
 	} else {
 		gplog.Info("%s", textmsg.InfoTextNothingToDo())
 	}
-	return nil
+	return "", nil
 }
 
 // Get the list of backup names for deletion.

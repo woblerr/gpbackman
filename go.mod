@@ -3,18 +3,19 @@ module github.com/woblerr/gpbackman
 go 1.25.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/greenplum-db/gp-common-go-libs v1.0.22
 	github.com/greenplum-db/gpbackup v0.0.0-20240215213028-2782cd0fbd9b
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
+	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/vfs v1.0.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
@@ -29,7 +30,6 @@ require (
 	github.com/jackc/pgx/v4 v4.18.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/gomega v1.27.10 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

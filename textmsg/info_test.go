@@ -39,6 +39,18 @@ func TestInfoTextFunctionAndArg(t *testing.T) {
 			function: InfoTextSegmentPrefix,
 			want:     "Segment Prefix: TestValue",
 		},
+		{
+			name:     "Test InfoTextHistoryStandbySyncStart",
+			value:    "/data/gpbackup_history.db",
+			function: InfoTextHistoryStandbySyncStart,
+			want:     "Start history db sync to standby coordinator: /data/gpbackup_history.db",
+		},
+		{
+			name:     "Test InfoTextHistoryStandbySyncSkipped",
+			value:    "no up standby coordinator found",
+			function: InfoTextHistoryStandbySyncSkipped,
+			want:     "Skipping history db sync to standby coordinator: no up standby coordinator found",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,6 +82,13 @@ func TestInfoTextFunctionAndTwoArgs(t *testing.T) {
 			value2:   "/test/path",
 			function: InfoTextMigrateHistoryFile,
 			want:     "Start file migration to history database: /test/path",
+		},
+		{
+			name:     "Test InfoTextHistoryStandbySyncSuccess",
+			value1:   "standby-host",
+			value2:   "/data/gpbackup_history.db",
+			function: InfoTextHistoryStandbySyncSuccess,
+			want:     "History db sync to standby coordinator completed: standby-host:/data/gpbackup_history.db",
 		},
 	}
 	for _, tt := range tests {

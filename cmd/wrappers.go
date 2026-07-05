@@ -234,8 +234,7 @@ func getBackupMasterDirClusterInfo(dbName string) string {
 		return ""
 	}
 	defer db.Close()
-	sqlQuery := "SELECT datadir FROM gp_segment_configuration WHERE content = -1 AND role = 'p';"
-	queryResult, err := gpbckpconfig.ExecuteQueryLocalClusterConn[string](db, sqlQuery)
+	queryResult, err := gpbckpconfig.GetPrimaryCoordinatorDataDirLocalClusterConn(db)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupDirLocalClusterConn(err))
 		return ""

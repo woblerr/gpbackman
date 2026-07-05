@@ -20,6 +20,7 @@ const (
 	// Flags.
 	historyDBFlagName            = "history-db"
 	autoLoadHistoryDBFlagName    = "auto-load-history-db"
+	noHistorySyncStandbyFlagName = "no-history-sync-standby"
 	historyFilesFlagName         = "history-file"
 	logFileFlagName              = "log-file"
 	logLevelConsoleFlagName      = "log-level-console"
