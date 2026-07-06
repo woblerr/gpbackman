@@ -29,7 +29,7 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 		tmpDir = rawTmpDir
 	}
 	primaryDataDir := filepath.Join(tmpDir, "primary")
-	if err := os.Mkdir(primaryDataDir, 0700); err != nil {
+	if err := os.Mkdir(primaryDataDir, 0o700); err != nil {
 		t.Fatalf("Failed to create primary data dir: %v", err)
 	}
 	sourceDBPath := filepath.Join(primaryDataDir, historyDBNameConst)
@@ -40,7 +40,7 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 	db, mock := createHistoryStandbySyncMockDB(t)
 	defer db.Close()
 	expectHistoryStandbySyncPrimaryDataDirQuery(mock, primaryDataDir)
-	expectHistoryStandbySyncStandbyQuery(mock, "sdw-standby", standbyDataDir)
+	expectHistoryStandbySyncStandbyQuery(mock, standbyDataDir)
 
 	setHistoryStandbySyncRootFlags(t, sourceDBPath, false)
 	setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
@@ -49,7 +49,7 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 		}
 		return db, nil
 	})
-	setHistoryStandbySyncCurrentUser(t, "gpadmin")
+	setHistoryStandbySyncCurrentUser(t)
 	calls := setHistoryStandbySyncExecCommand(t, []historyStandbySyncExecResponse{
 		{exitCode: 0},
 		{exitCode: 0},
@@ -109,7 +109,7 @@ func TestSyncHistoryStandbyReturnsSnapshotError(t *testing.T) {
 	db, mock := createHistoryStandbySyncMockDB(t)
 	defer db.Close()
 	expectHistoryStandbySyncPrimaryDataDirQuery(mock, primaryDataDir)
-	expectHistoryStandbySyncStandbyQuery(mock, "sdw-standby", filepath.Join(t.TempDir(), "standby"))
+	expectHistoryStandbySyncStandbyQuery(mock, filepath.Join(t.TempDir(), "standby"))
 
 	setHistoryStandbySyncRootFlags(t, sourceDBPath, false)
 	setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
@@ -140,13 +140,13 @@ func TestSyncHistoryStandbyReturnsTransferError(t *testing.T) {
 	db, mock := createHistoryStandbySyncMockDB(t)
 	defer db.Close()
 	expectHistoryStandbySyncPrimaryDataDirQuery(mock, primaryDataDir)
-	expectHistoryStandbySyncStandbyQuery(mock, "sdw-standby", filepath.Join(t.TempDir(), "standby"))
+	expectHistoryStandbySyncStandbyQuery(mock, filepath.Join(t.TempDir(), "standby"))
 
 	setHistoryStandbySyncRootFlags(t, sourceDBPath, false)
 	setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
 		return db, nil
 	})
-	setHistoryStandbySyncCurrentUser(t, "gpadmin")
+	setHistoryStandbySyncCurrentUser(t)
 	setHistoryStandbySyncExecCommand(t, []historyStandbySyncExecResponse{
 		{exitCode: 1, output: "rsync failed"},
 		{exitCode: 0},
@@ -214,12 +214,12 @@ func TestSyncHistoryStandbySkipsDefaultSourceSelectionBeforeDiscovery(t *testing
 					t.Fatalf("Failed to get working dir: %v", err)
 				}
 				t.Cleanup(func() {
-					if err := os.Chdir(oldWorkingDir); err != nil {
-						t.Fatalf("Failed to restore working dir: %v", err)
+					if chdirErr := os.Chdir(oldWorkingDir); chdirErr != nil {
+						t.Fatalf("Failed to restore working dir: %v", chdirErr)
 					}
 				})
-				if err := os.Chdir(primaryDataDir); err != nil {
-					t.Fatalf("Failed to change working dir: %v", err)
+				if chdirErr := os.Chdir(primaryDataDir); chdirErr != nil {
+					t.Fatalf("Failed to change working dir: %v", chdirErr)
 				}
 			},
 		},
@@ -527,11 +527,11 @@ func TestCheckHistoryStandbySyncSourcePathEligible(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	primaryDataDir := filepath.Join(tmpDir, "primary")
-	if err := os.Mkdir(primaryDataDir, 0700); err != nil {
+	if err := os.Mkdir(primaryDataDir, 0o700); err != nil {
 		t.Fatalf("Failed to create primary data dir: %v", err)
 	}
 	clusterHistoryDBPath := filepath.Join(primaryDataDir, historyDBNameConst)
-	if err := os.WriteFile(clusterHistoryDBPath, []byte("history"), 0600); err != nil {
+	if err := os.WriteFile(clusterHistoryDBPath, []byte("history"), 0o600); err != nil {
 		t.Fatalf("Failed to create history db file: %v", err)
 	}
 	symlinkPath := filepath.Join(tmpDir, "history-link.db")
@@ -585,23 +585,23 @@ func TestCheckHistoryStandbySyncSourcePathEligibleDefaultWorkingDirectory(t *tes
 	}
 	primaryDataDir := filepath.Join(tmpDir, "primary")
 	workingDir := filepath.Join(tmpDir, "work")
-	if err := os.Mkdir(primaryDataDir, 0700); err != nil {
-		t.Fatalf("Failed to create primary data dir: %v", err)
+	if mkdirErr := os.Mkdir(primaryDataDir, 0o700); mkdirErr != nil {
+		t.Fatalf("Failed to create primary data dir: %v", mkdirErr)
 	}
-	if err := os.Mkdir(workingDir, 0700); err != nil {
-		t.Fatalf("Failed to create working dir: %v", err)
+	if mkdirErr := os.Mkdir(workingDir, 0o700); mkdirErr != nil {
+		t.Fatalf("Failed to create working dir: %v", mkdirErr)
 	}
 	oldWorkingDir, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get working dir: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := os.Chdir(oldWorkingDir); err != nil {
-			t.Fatalf("Failed to restore working dir: %v", err)
+		if chdirErr := os.Chdir(oldWorkingDir); chdirErr != nil {
+			t.Fatalf("Failed to restore working dir: %v", chdirErr)
 		}
 	})
-	if err := os.Chdir(workingDir); err != nil {
-		t.Fatalf("Failed to change working dir: %v", err)
+	if chdirErr := os.Chdir(workingDir); chdirErr != nil {
+		t.Fatalf("Failed to change working dir: %v", chdirErr)
 	}
 
 	got, normalizedSource, normalizedCluster, err := checkHistoryStandbySyncSourcePathEligible(historyDBNameConst, primaryDataDir)
@@ -624,11 +624,11 @@ func TestCheckHistoryStandbySyncSourcePathEligibleResolvesExistingParentSymlinkF
 
 	tmpDir := t.TempDir()
 	realPrimaryDataDir := filepath.Join(tmpDir, "real-primary")
-	if err := os.Mkdir(realPrimaryDataDir, 0700); err != nil {
+	if err := os.Mkdir(realPrimaryDataDir, 0o700); err != nil {
 		t.Fatalf("Failed to create real primary data dir: %v", err)
 	}
 	sourceDBPath := filepath.Join(realPrimaryDataDir, historyDBNameConst)
-	if err := os.WriteFile(sourceDBPath, []byte("history"), 0600); err != nil {
+	if err := os.WriteFile(sourceDBPath, []byte("history"), 0o600); err != nil {
 		t.Fatalf("Failed to create source history db file: %v", err)
 	}
 	linkedPrimaryDataDir := filepath.Join(tmpDir, "linked-primary")
@@ -730,8 +730,8 @@ func TestDiscoverHistoryStandbySyncTarget(t *testing.T) {
 				tmpDir = rawTmpDir
 			}
 			primaryDataDir := filepath.Join(tmpDir, "primary")
-			if err := os.Mkdir(primaryDataDir, 0700); err != nil {
-				t.Fatalf("Failed to create primary data dir: %v", err)
+			if mkdirErr := os.Mkdir(primaryDataDir, 0o700); mkdirErr != nil {
+				t.Fatalf("Failed to create primary data dir: %v", mkdirErr)
 			}
 			t.Setenv("MASTER_DATA_DIRECTORY", "")
 			if tt.autoLoad {
@@ -751,7 +751,7 @@ func TestDiscoverHistoryStandbySyncTarget(t *testing.T) {
 				if tt.queryStandbyErr != nil {
 					expectHistoryStandbySyncStandbyError(mock, tt.queryStandbyErr)
 				} else {
-					expectHistoryStandbySyncStandbyQuery(mock, "sdw-standby", filepath.Join(tmpDir, "standby"))
+					expectHistoryStandbySyncStandbyQuery(mock, filepath.Join(tmpDir, "standby"))
 				}
 			}
 			setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
@@ -830,7 +830,7 @@ func TestDiscoverHistoryStandbySyncTargetDiscoveryFailures(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			primaryDataDir := filepath.Join(tmpDir, "primary")
-			if err := os.Mkdir(primaryDataDir, 0700); err != nil {
+			if err := os.Mkdir(primaryDataDir, 0o700); err != nil {
 				t.Fatalf("Failed to create primary data dir: %v", err)
 			}
 
@@ -853,7 +853,7 @@ func TestCreateHistoryStandbySyncSnapshotCreatesValidVacuumIntoSnapshot(t *testi
 	tmpDir := t.TempDir()
 	sourceDBPath := filepath.Join(tmpDir, "source.db")
 	createHistoryStandbySyncTempSQLiteDB(t, sourceDBPath)
-	if err := os.Chmod(sourceDBPath, 0640); err != nil {
+	if err := os.Chmod(sourceDBPath, 0o640); err != nil {
 		t.Fatalf("Failed to set source db permissions: %v", err)
 	}
 
@@ -905,7 +905,7 @@ func TestCreateHistoryStandbySyncSnapshotFailsIfTargetExists(t *testing.T) {
 	createHistoryStandbySyncTempSQLiteDB(t, sourceDBPath)
 
 	snapshotPath := setHistoryStandbySyncSnapshotPathHooks(t, tmpDir)
-	if err := os.WriteFile(snapshotPath, []byte("existing snapshot"), 0600); err != nil {
+	if err := os.WriteFile(snapshotPath, []byte("existing snapshot"), 0o600); err != nil {
 		t.Fatalf("Failed to create existing snapshot file: %v", err)
 	}
 
@@ -1012,7 +1012,7 @@ func TestWithHistoryStandbySyncSnapshotCleansUpAfterSyncSuccessOrFailure(t *test
 func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 	testhelper.SetupTestLogger()
 
-	setHistoryStandbySyncCurrentUser(t, "gpadmin")
+	setHistoryStandbySyncCurrentUser(t)
 	snapshotPath := "/tmp/gpbackup_history_20260703000000_000000000_42.db.snap"
 	target := &historyStandbySyncTarget{
 		standbyHost:          "sdw-standby",
@@ -1053,7 +1053,7 @@ func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 func TestSyncHistoryStandbySnapshotToStandbyCleansRemoteTempAfterInstallFailure(t *testing.T) {
 	testhelper.SetupTestLogger()
 
-	setHistoryStandbySyncCurrentUser(t, "gpadmin")
+	setHistoryStandbySyncCurrentUser(t)
 	snapshotPath := "/tmp/gpbackup_history_20260703000000_000000000_42.db.snap"
 	target := &historyStandbySyncTarget{
 		standbyHost:          "sdw-standby",
@@ -1122,7 +1122,7 @@ func TestSyncHistoryStandbySnapshotToStandbyFailuresReturnErrorsAndDoNotExit(t *
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setHistoryStandbySyncCurrentUser(t, "gpadmin")
+			setHistoryStandbySyncCurrentUser(t)
 			setHistoryStandbySyncExecCommand(t, tt.responses)
 			exitCalled := false
 			setHistoryStandbySyncExecOSExit(t, func(code int) {
@@ -1260,10 +1260,10 @@ func createHistoryDBWithLocalReport(t *testing.T, tmpDir string) (string, string
 	timestamp := "20260703010101"
 	backupDir := filepath.Join(tmpDir, "backup-root")
 	reportPath := gpbckpconfig.ReportFilePath(backupDir, timestamp)
-	if err := os.MkdirAll(filepath.Dir(reportPath), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(reportPath), 0o700); err != nil {
 		t.Fatalf("Failed to create report directory: %v", err)
 	}
-	if err := os.WriteFile(reportPath, []byte("report contents"), 0600); err != nil {
+	if err := os.WriteFile(reportPath, []byte("report contents"), 0o600); err != nil {
 		t.Fatalf("Failed to write report file: %v", err)
 	}
 	if err := history.StoreBackupHistory(db, &history.BackupConfig{
@@ -1292,12 +1292,12 @@ type historyStandbySyncExecCall struct {
 	args    []string
 }
 
-func setHistoryStandbySyncCurrentUser(t *testing.T, userName string) {
+func setHistoryStandbySyncCurrentUser(t *testing.T) {
 	t.Helper()
 
 	oldCurrentUser := historyStandbySyncCurrentUser
 	historyStandbySyncCurrentUser = func() (string, error) {
-		return userName, nil
+		return "gpadmin", nil
 	}
 	t.Cleanup(func() {
 		historyStandbySyncCurrentUser = oldCurrentUser
@@ -1389,10 +1389,10 @@ func expectHistoryStandbySyncPrimaryDataDirError(mock sqlmock.Sqlmock, err error
 	mock.ExpectQuery(regexp.QuoteMeta(query)).WillReturnError(err)
 }
 
-func expectHistoryStandbySyncStandbyQuery(mock sqlmock.Sqlmock, hostname, dataDir string) {
+func expectHistoryStandbySyncStandbyQuery(mock sqlmock.Sqlmock, dataDir string) {
 	query := "SELECT hostname, datadir FROM gp_segment_configuration WHERE content = -1 AND role = 'm' AND status = 'u';"
 	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WillReturnRows(sqlmock.NewRows([]string{"hostname", "datadir"}).AddRow(hostname, dataDir))
+		WillReturnRows(sqlmock.NewRows([]string{"hostname", "datadir"}).AddRow("sdw-standby", dataDir))
 }
 
 func expectHistoryStandbySyncStandbyError(mock sqlmock.Sqlmock, err error) {
