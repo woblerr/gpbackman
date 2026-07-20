@@ -69,7 +69,7 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 		"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",
 		snapshotPath,
-		"gpadmin@sdw-standby:" + quoteHistoryStandbySyncRemoteShellArg(filepath.Join(standbyDataDir, filepath.Base(snapshotPath))),
+		"gpadmin@sdw-standby:" + filepath.Join(standbyDataDir, filepath.Base(snapshotPath)),
 	})
 	assertHistoryStandbySyncExecCall(t, (*calls)[1], "ssh", nil)
 }
@@ -1038,7 +1038,7 @@ func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 		"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",
 		snapshotPath,
-		"gpadmin@sdw-standby:'/data/standby/gpbackup_history_20260703000000_000000000_42.db.snap'",
+		"gpadmin@sdw-standby:/data/standby/gpbackup_history_20260703000000_000000000_42.db.snap",
 	})
 	assertHistoryStandbySyncExecCall(t, (*calls)[1], "ssh", []string{
 		"-o",
@@ -1179,11 +1179,11 @@ func TestHistoryStandbySyncCommandBuildersQuotePaths(t *testing.T) {
 	remotePath := "/data/standby dir/owner's/gpbackup_history.db"
 	quotedPath := "'/data/standby dir/owner'\"'\"'s/gpbackup_history.db'"
 
-	if got := quoteHistoryStandbySyncRemoteShellArg(remotePath); got != quotedPath {
+	if got := shellQuote(remotePath); got != quotedPath {
 		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", got, quotedPath)
 	}
-	if got := buildHistoryStandbySyncRsyncArgs("/tmp/local snapshot.db", "sdw-standby", "gpadmin", remotePath); got[4] != "gpadmin@sdw-standby:"+quotedPath {
-		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", got[4], "gpadmin@sdw-standby:"+quotedPath)
+	if got := buildHistoryStandbySyncRsyncArgs("/tmp/local snapshot.db", "sdw-standby", "gpadmin", remotePath); got[4] != "gpadmin@sdw-standby:"+remotePath {
+		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", got[4], "gpadmin@sdw-standby:"+remotePath)
 	}
 	if got := buildHistoryStandbySyncRemoteCleanupCommand(remotePath); got != "rm -f -- "+quotedPath {
 		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", got, "rm -f -- "+quotedPath)

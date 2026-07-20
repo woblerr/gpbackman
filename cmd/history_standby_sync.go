@@ -382,7 +382,7 @@ func buildHistoryStandbySyncRsyncArgs(snapshotPath, standbyHost, userName, remot
 		"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",
 		snapshotPath,
-		fmt.Sprintf("%s@%s:%s", userName, standbyHost, quoteHistoryStandbySyncRemoteShellArg(remoteTempPath)),
+		fmt.Sprintf("%s@%s:%s", userName, standbyHost, remoteTempPath),
 	}
 }
 
@@ -407,8 +407,8 @@ func installHistoryStandbySyncSnapshotOnStandby(target *historyStandbySyncTarget
 }
 
 func buildHistoryStandbySyncRemoteInstallCommand(remoteTempPath, standbyHistoryDBPath string) string {
-	quotedTempPath := quoteHistoryStandbySyncRemoteShellArg(remoteTempPath)
-	quotedHistoryDBPath := quoteHistoryStandbySyncRemoteShellArg(standbyHistoryDBPath)
+	quotedTempPath := shellQuote(remoteTempPath)
+	quotedHistoryDBPath := shellQuote(standbyHistoryDBPath)
 	return fmt.Sprintf(
 		"if [ -e %s ]; then chown --reference=%s -- %s 2>/dev/null || true; chmod --reference=%s -- %s 2>/dev/null || true; fi; mv -f -- %s %s",
 		quotedHistoryDBPath,
@@ -445,7 +445,7 @@ func cleanupHistoryStandbySyncRemoteTemp(standbyHost, userName, remoteTempPath s
 }
 
 func buildHistoryStandbySyncRemoteCleanupCommand(remoteTempPath string) string {
-	return fmt.Sprintf("rm -f -- %s", quoteHistoryStandbySyncRemoteShellArg(remoteTempPath))
+	return fmt.Sprintf("rm -f -- %s", shellQuote(remoteTempPath))
 }
 
 func historyStandbySyncSQLiteURI(dbPath, mode string) string {
@@ -455,7 +455,7 @@ func historyStandbySyncSQLiteURI(dbPath, mode string) string {
 	return dbURI.String()
 }
 
-func quoteHistoryStandbySyncRemoteShellArg(value string) string {
+func shellQuote(value string) string {
 	if value == "" {
 		return "''"
 	}
