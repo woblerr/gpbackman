@@ -17,6 +17,9 @@
 # Release dir
 /dist
 
+# ralphex
+/.ralphex
+
 # VSCode
 /.vscode
 

@@ -16,6 +16,11 @@ type SegmentConfig struct {
 	DataDir   string
 }
 
+type StandbyCoordinatorConfig struct {
+	Hostname string
+	DataDir  string
+}
+
 // NewClusterLocalClusterConn creates a new connection to the local postgres database
 // Returns an error if the connection could not be established.
 func NewClusterLocalClusterConn(dbName string) (*sqlx.DB, error) {
@@ -39,6 +44,20 @@ func NewClusterLocalClusterConn(dbName string) (*sqlx.DB, error) {
 	return sqlx.Connect("postgres", connStr)
 }
 
+func NewClusterLocalClusterConnWithDefault(dbName string) (*sqlx.DB, error) {
+	if dbName == "" {
+		dbName = GetDefaultLocalClusterDBName()
+	}
+	return NewClusterLocalClusterConn(dbName)
+}
+
+func GetDefaultLocalClusterDBName() string {
+	if dbName := operating.System.Getenv("PGDATABASE"); dbName != "" {
+		return dbName
+	}
+	return "postgres"
+}
+
 // ExecuteQueryLocalClusterConn executes a query on the local cluster connection and returns the result.
 // The function is generic and can handle different types of results based on the type parameter T.
 //
@@ -53,6 +72,7 @@ func NewClusterLocalClusterConn(dbName string) (*sqlx.DB, error) {
 // The function supports the following types for T:
 // - string: The result will be a single string value.
 // - []SegmentConfig: The result will be a slice of SegmentConfig structs.
+// - StandbyCoordinatorConfig: The result will be a single standby coordinator config.
 //
 // If the type T is not supported, the function returns an error indicating the unsupported type.
 func ExecuteQueryLocalClusterConn[T any](conn *sqlx.DB, query string) (T, error) {
@@ -72,8 +92,25 @@ func ExecuteQueryLocalClusterConn[T any](conn *sqlx.DB, query string) (T, error)
 			return result, err
 		}
 		result = any(segConfigs).(T)
+	case StandbyCoordinatorConfig:
+		var standbyConfig StandbyCoordinatorConfig
+		err := conn.Get(&standbyConfig, query)
+		if err != nil {
+			return result, err
+		}
+		result = any(standbyConfig).(T)
 	default:
 		return result, fmt.Errorf("unsupported type")
 	}
 	return result, nil
+}
+
+func GetPrimaryCoordinatorDataDirLocalClusterConn(conn *sqlx.DB) (string, error) {
+	sqlQuery := "SELECT datadir FROM gp_segment_configuration WHERE content = -1 AND role = 'p';"
+	return ExecuteQueryLocalClusterConn[string](conn, sqlQuery)
+}
+
+func GetUpStandbyCoordinatorLocalClusterConn(conn *sqlx.DB) (StandbyCoordinatorConfig, error) {
+	sqlQuery := "SELECT hostname, datadir FROM gp_segment_configuration WHERE content = -1 AND role = 'm' AND status = 'u';"
+	return ExecuteQueryLocalClusterConn[StandbyCoordinatorConfig](conn, sqlQuery)
 }

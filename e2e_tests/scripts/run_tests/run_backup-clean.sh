@@ -15,34 +15,43 @@ set -Eeuo pipefail
 # 
 # Then we delete all S3 backups older than the 5th timestamp, 
 # there should be a total of 12 deleted backups.
+#
+# Then we run a no-op cleanup with standby history sync disabled,
+# there should still be a total of 12 deleted backups.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
 COMMAND="backup-clean"
-
-run_command() {
-    local label="${1}"; shift
-    run_gpbackman "${COMMAND}" "${label}" --history-db ${DATA_DIR}/gpbackup_history.db "$@"
-}
 
 # Test 1: Clean local backups older than timestamp (--before-timestamp)
 #  Without --cascade, no dependent backups
 test_clean_local_backups_before_timestamp() {
     local want=3
     local cutoff_timestamp=$(get_cutoff_timestamp 9)
-    run_command "clean_local_before_${cutoff_timestamp}" --before-timestamp "${cutoff_timestamp}"
+    local output
+    output=$(run_command_capture "clean_local_before_${cutoff_timestamp}" --before-timestamp "${cutoff_timestamp}")
+    assert_history_sync_success_output "${output}"
     local got=$(count_deleted_backups)
     assert_equals "${want}" "${got}"
+    assert_primary_standby_deleted_backup_rows_match
 }
 
-# Test 2: Clean local backups newer than timestamp (--after-timestamp)
-# Without --cascade, no dependent backups
-test_clean_local_backups_after_timestamp() {
+# Test 2: Clean local backups newer than timestamp with standby history sync disabled
+test_clean_local_backups_after_timestamp_no_history_sync_standby() {
     local want=5
     local cutoff_timestamp=$(get_cutoff_timestamp 3)
-    run_command "clean_local_after_${cutoff_timestamp}" --after-timestamp "${cutoff_timestamp}"
+    local standby_rows_before
+    local standby_rows_after
+    local output
+
+    standby_rows_before="$(standby_deleted_backup_rows)"
+    output=$(run_command_capture "clean_local_after_${cutoff_timestamp}_no_history_sync_standby" --after-timestamp "${cutoff_timestamp}" --no-history-sync-standby)
+    assert_history_sync_disabled_output "${output}"
     local got=$(count_deleted_backups)
     assert_equals "${want}" "${got}"
+
+    standby_rows_after="$(standby_deleted_backup_rows)"
+    assert_string_equals "${standby_rows_before}" "${standby_rows_after}" "standby rows should remain unchanged when history sync is disabled"
 }
 
 # Test 3: Clean S3 backups newer than timestamp (--after-timestamp)
@@ -50,9 +59,12 @@ test_clean_local_backups_after_timestamp() {
 test_clean_s3_backups_after_timestamp() {
     local want=7
     local cutoff_timestamp=$(get_cutoff_timestamp 5)
-    run_command "clean_s3_after_${cutoff_timestamp}" --after-timestamp "${cutoff_timestamp}" --plugin-config "${PLUGIN_CFG}"
+    local output
+    output=$(run_command_capture "clean_s3_after_${cutoff_timestamp}" --after-timestamp "${cutoff_timestamp}" --plugin-config "${PLUGIN_CFG}")
+    assert_history_sync_success_output "${output}"
     local got=$(count_deleted_backups)
     assert_equals "${want}" "${got}"
+    assert_primary_standby_deleted_backup_rows_match
 }
 
 # Test 4: Clean S3 backups older than timestamp (--before-timestamp)
@@ -60,14 +72,28 @@ test_clean_s3_backups_after_timestamp() {
 test_clean_s3_backups_before_timestamp() {
     local want=12
     local cutoff_timestamp=$(get_cutoff_timestamp 5)
-    run_command "clean_s3_before_${cutoff_timestamp}" --before-timestamp "${cutoff_timestamp}" --plugin-config "${PLUGIN_CFG}" --cascade
+    local output
+    output=$(run_command_capture "clean_s3_before_${cutoff_timestamp}" --before-timestamp "${cutoff_timestamp}" --plugin-config "${PLUGIN_CFG}" --cascade)
+    assert_history_sync_success_output "${output}"
+    local got=$(count_deleted_backups)
+    assert_equals "${want}" "${got}"
+    assert_primary_standby_deleted_backup_rows_match
+}
+
+# Test 5: Run a no-op cleanup with standby history sync disabled
+test_clean_no_history_sync_standby_noop() {
+    local want=12
+    local output
+    output=$(run_command_capture "clean_no_history_sync_standby_noop" --before-timestamp 19000101000000 --no-history-sync-standby)
+    assert_history_sync_disabled_output "${output}"
     local got=$(count_deleted_backups)
     assert_equals "${want}" "${got}"
 }
 
 run_test "${COMMAND}" 1 test_clean_local_backups_before_timestamp
-run_test "${COMMAND}" 2 test_clean_local_backups_after_timestamp
+run_test "${COMMAND}" 2 test_clean_local_backups_after_timestamp_no_history_sync_standby
 run_test "${COMMAND}" 3 test_clean_s3_backups_after_timestamp
 run_test "${COMMAND}" 4 test_clean_s3_backups_before_timestamp
+run_test "${COMMAND}" 5 test_clean_no_history_sync_standby_noop
 
 log_all_tests_passed "${COMMAND}"

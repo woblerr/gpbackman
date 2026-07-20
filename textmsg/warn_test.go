@@ -1,6 +1,7 @@
 package textmsg
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -24,5 +25,13 @@ func TestWarnTextFunctionsWarnAndArg(t *testing.T) {
 				t.Errorf("\nVariables do not match:\n%s\nwant:\n%s", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestWarnTextHistoryStandbySyncFailed(t *testing.T) {
+	got := WarnTextHistoryStandbySyncFailed(errors.New("rsync failed"))
+	want := "History db sync to standby coordinator failed; standby history may be stale: rsync failed"
+	if got != want {
+		t.Errorf("\nVariables do not match:\n%s\nwant:\n%s", got, want)
 	}
 }

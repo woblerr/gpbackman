@@ -56,3 +56,15 @@ func InfoTextNothingToDo() string {
 func InfoTextMigrateHistoryFile(action, file string) string {
 	return fmt.Sprintf("%s file migration to history database: %s", action, file)
 }
+
+func InfoTextHistoryStandbySyncStart(sourceDBPath string) string {
+	return fmt.Sprintf("Start history db sync to standby coordinator: %s", sourceDBPath)
+}
+
+func InfoTextHistoryStandbySyncSuccess(standbyHost, standbyHistoryDBPath string) string {
+	return fmt.Sprintf("History db sync to standby coordinator completed: %s:%s", standbyHost, standbyHistoryDBPath)
+}
+
+func InfoTextHistoryStandbySyncSkipped(reason string) string {
+	return fmt.Sprintf("Skipping history db sync to standby coordinator: %s", reason)
+}

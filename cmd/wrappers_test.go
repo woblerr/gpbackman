@@ -132,6 +132,63 @@ func TestRootHelpIncludesAutoLoadHistoryDBFlag(t *testing.T) {
 	}
 }
 
+func TestNoHistorySyncStandbyFlagRegisteredOnSyncCommands(t *testing.T) {
+	tests := []struct {
+		name  string
+		flags *pflag.FlagSet
+	}{
+		{"Backup Clean", backupCleanCmd.PersistentFlags()},
+		{"Backup Delete", backupDeleteCmd.PersistentFlags()},
+		{"History Clean", historyCleanCmd.PersistentFlags()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flag := tt.flags.Lookup(noHistorySyncStandbyFlagName)
+			if flag == nil {
+				t.Fatalf("Expected %s flag to be registered", noHistorySyncStandbyFlagName)
+			}
+			if flag.DefValue != "false" {
+				t.Errorf("\nDefault value does not match:\n%v\nwant:\n%v", flag.DefValue, "false")
+			}
+			if !strings.Contains(flag.Usage, "standby coordinator") {
+				t.Errorf("Flag usage does not mention standby coordinator: %s", flag.Usage)
+			}
+		})
+	}
+}
+
+func TestRootHelpDoesNotIncludeNoHistorySyncStandbyFlag(t *testing.T) {
+	var output bytes.Buffer
+	rootCmd.SetOut(&output)
+	rootCmd.SetErr(&output)
+	defer rootCmd.SetOut(os.Stdout)
+	defer rootCmd.SetErr(os.Stderr)
+
+	if err := rootCmd.Help(); err != nil {
+		t.Fatalf("Expected root help to render, got: %v", err)
+	}
+	helpText := output.String()
+	if strings.Contains(helpText, "--"+noHistorySyncStandbyFlagName) {
+		t.Errorf("Expected root help output not to contain %s, got:\n%s", noHistorySyncStandbyFlagName, helpText)
+	}
+}
+
+func TestHistoryMigrateHelpDoesNotIncludeNoHistorySyncStandbyFlag(t *testing.T) {
+	var output bytes.Buffer
+	historyMigrateCmd.SetOut(&output)
+	historyMigrateCmd.SetErr(&output)
+	defer historyMigrateCmd.SetOut(os.Stdout)
+	defer historyMigrateCmd.SetErr(os.Stderr)
+
+	if err := historyMigrateCmd.Help(); err != nil {
+		t.Fatalf("Expected history-migrate help to render, got: %v", err)
+	}
+	helpText := output.String()
+	if strings.Contains(helpText, "--"+noHistorySyncStandbyFlagName) {
+		t.Errorf("Expected history-migrate help output not to contain %s, got:\n%s", noHistorySyncStandbyFlagName, helpText)
+	}
+}
+
 func TestFormatBackupDuration(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -275,6 +332,63 @@ func TestDoRootFlagValidationRejectsHistoryDBWithAutoLoadHistoryDB(t *testing.T)
 			t.Fatalf("Unexpected exit code:\n%v\nwant:\n%v", exit.code, exitErrorCode)
 		}
 	}()
+
+	doRootFlagValidation(flags, false)
+}
+
+func TestDoRootFlagValidationAllowsNoHistorySyncStandbyWithHistoryDB(t *testing.T) {
+	testhelper.SetupTestLogger()
+
+	oldExecOSExit := execOSExit
+	oldRootHistoryDB := rootHistoryDB
+	defer func() {
+		execOSExit = oldExecOSExit
+		rootHistoryDB = oldRootHistoryDB
+	}()
+
+	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flags.String(historyDBFlagName, "", "")
+	flags.Bool(autoLoadHistoryDBFlagName, false, "")
+	flags.Bool(noHistorySyncStandbyFlagName, false, "")
+
+	rootHistoryDB = "/tmp/gpbackup_history.db"
+	if err := flags.Set(historyDBFlagName, rootHistoryDB); err != nil {
+		t.Fatalf("Failed to set %s flag: %v", historyDBFlagName, err)
+	}
+	if err := flags.Set(noHistorySyncStandbyFlagName, "true"); err != nil {
+		t.Fatalf("Failed to set %s flag: %v", noHistorySyncStandbyFlagName, err)
+	}
+
+	execOSExit = func(code int) {
+		t.Fatalf("doRootFlagValidation unexpectedly exited with code %d", code)
+	}
+
+	doRootFlagValidation(flags, false)
+}
+
+func TestDoRootFlagValidationAllowsNoHistorySyncStandbyWithAutoLoadHistoryDB(t *testing.T) {
+	testhelper.SetupTestLogger()
+
+	oldExecOSExit := execOSExit
+	defer func() {
+		execOSExit = oldExecOSExit
+	}()
+
+	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flags.String(historyDBFlagName, "", "")
+	flags.Bool(autoLoadHistoryDBFlagName, false, "")
+	flags.Bool(noHistorySyncStandbyFlagName, false, "")
+
+	if err := flags.Set(autoLoadHistoryDBFlagName, "true"); err != nil {
+		t.Fatalf("Failed to set %s flag: %v", autoLoadHistoryDBFlagName, err)
+	}
+	if err := flags.Set(noHistorySyncStandbyFlagName, "true"); err != nil {
+		t.Fatalf("Failed to set %s flag: %v", noHistorySyncStandbyFlagName, err)
+	}
+
+	execOSExit = func(code int) {
+		t.Fatalf("doRootFlagValidation unexpectedly exited with code %d", code)
+	}
 
 	doRootFlagValidation(flags, false)
 }

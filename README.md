@@ -16,7 +16,8 @@ The utility provides functionality for migrating data from the old `gpbackup_his
 * delete existing backups from local storage or using storage plugins (for example, [S3 Storage Plugin](https://github.com/greenplum-db/gpbackup-s3-plugin));
 * delete all existing backups from local storage or using storage plugins older than the specified time condition;
 * clean deleted backups from the history database;
-* migrate history database from `gpbackup_history.yaml` format to `gpbackup_history.db` SQLite format.
+* migrate history database from `gpbackup_history.yaml` format to `gpbackup_history.db` SQLite format;
+* sync the cluster `gpbackup_history.db` to the standby coordinator after successful backup deletion and history cleanup.
 
 ## Commands
 ### Introduction
@@ -51,6 +52,14 @@ Flags:
 
 Use "gpbackman [command] --help" for more information about a command.
 ```
+
+### Standby history DB sync
+
+After a successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan syncs the cluster `gpbackup_history.db` to an up standby coordinator when sync conditions are met. Sync failures are logged as warnings and do not change the primary command result.
+
+Sync runs only when the resolved history database path is the cluster history database at `<primary coordinator data directory>/gpbackup_history.db`. Custom history databases and the default working-directory `gpbackup_history.db` path are skipped. The sync is also skipped when no up standby coordinator is found, or when `--no-history-sync-standby` is specified for `backup-delete`, `backup-clean`, or `history-clean`.
+
+Only `gpbackup_history.db` is synced. Report files, backup data, and any other backup artifacts are not synced by gpBackMan.
 
 ### Detail info about commands
 

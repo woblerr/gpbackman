@@ -6,11 +6,22 @@ GP_DB_NAME="demo"
 HOME_DIR="/home/gpadmin"
 SCRIPTS_DIR="${HOME_DIR}/run_tests"
 
+command_requires_standby() {
+    case "${TEST_COMMAND}" in
+        backup-delete|backup-clean|history-clean)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 wait_for_service() {
     local max_attempts=${1:-10}
 
     for i in $(seq 1 ${max_attempts}); do
-        if psql -d ${GP_DB_NAME} -t -c  "SELECT 1;" >/dev/null 2>&1; then
+        if psql -d "${GP_DB_NAME}" -t -c  "SELECT 1;" >/dev/null 2>&1; then
             echo "[INFO] Cluster ready"
             return 0
         fi
@@ -21,6 +32,23 @@ wait_for_service() {
     return 1
 }
 
+wait_for_standby_replication() {
+    local max_attempts=${1:-10}
+    local state=""
+
+    for i in $(seq 1 ${max_attempts}); do
+        if state=$(psql -d "${GP_DB_NAME}" -X -A -t -c "SELECT state FROM pg_stat_replication ORDER BY CASE WHEN application_name LIKE '%walreceiver%' THEN 0 ELSE 1 END LIMIT 1;" 2>/dev/null | xargs); then
+            if [ "${state}" = "streaming" ] || [ "${state}" = "catchup" ]; then
+                echo "[INFO] Standby replication state: ${state}"
+                return 0
+            fi
+        fi
+        echo "[INFO] Waiting standby replication (${i}/${max_attempts})"
+        sleep 10
+    done
+    echo "[ERROR] Standby replication did not become streaming or catchup within timeout"
+    return 1
+}
 
 exec_test_for_command() {
     case "${TEST_COMMAND}" in
@@ -52,6 +80,9 @@ exec_test_for_command() {
 echo "[INFO] Check Greenplum cluster"
 sleep 90
 wait_for_service
+if command_requires_standby; then
+    wait_for_standby_replication
+fi
 
 echo "[INFO] Prepare Greenplum backups"
 "${HOME_DIR}/prepare_gpdb_backups.sh"

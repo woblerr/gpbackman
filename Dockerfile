@@ -24,6 +24,8 @@ RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         ca-certificates \
         gosu \
+        openssh-client \
+        rsync \
         tzdata \
     && groupadd --gid ${GPBACKMAN_GID} ${GPBACKMAN_GROUP} \
     && useradd --shell /bin/bash -d /home/${GPBACKMAN_USER} --uid ${GPBACKMAN_UID} --gid ${GPBACKMAN_GID} -m ${GPBACKMAN_USER} \

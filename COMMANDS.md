@@ -1,3 +1,4 @@
+- [Standby history DB sync](#standby-history-db-sync)
 - [Delete all existing backups older than the specified time condition (`backup-clean`)](#delete-all-existing-backups-older-than-the-specified-time-condition-backup-clean)
   - [Examples](#examples)
     - [Delete all backups from local storage older than the specified time condition](#delete-all-backups-from-local-storage-older-than-the-specified-time-condition)
@@ -26,6 +27,16 @@
     - [Display the backup report from local storage](#display-the-backup-report-from-local-storage)
     - [Display the backup report using storage plugin](#display-the-backup-report-using-storage-plugin)
   - [Using container](#using-container-5)
+
+# Standby history DB sync
+
+After a successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan syncs the cluster `gpbackup_history.db` to an up standby coordinator when sync conditions are met. Sync failures are logged as warnings and do not mask the primary command success.
+
+The sync only runs when the resolved history database path is the cluster history database at `<primary coordinator data directory>/gpbackup_history.db`. This path can be selected with `--history-db` or with `--auto-load-history-db` when the environment points to the coordinator data directory. Custom history databases and the default working-directory `gpbackup_history.db` path are skipped.
+
+The sync is skipped when `--no-history-sync-standby` is specified for `backup-delete`, `backup-clean`, or `history-clean`, when no up standby coordinator is found, or when the source history database is not the cluster history database. Read-only commands such as `backup-info` and `report-info` do not trigger sync.
+
+Only `gpbackup_history.db` is synced. Report files, backup data, and other backup artifacts are not synced by gpBackMan.
 
 # Delete all existing backups older than the specified time condition (`backup-clean`)
 
@@ -66,6 +77,9 @@ Can be specified only once. The full path to the file is required.
 If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
 Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
+After successful deletion, gpBackMan syncs the cluster gpbackup_history.db to an up standby coordinator when sync conditions are met.
+Pass --no-history-sync-standby to disable this sync.
+
 Usage:
   gpbackman backup-clean [flags]
 
@@ -75,6 +89,7 @@ Flags:
       --before-timestamp string   delete backup sets older than the given timestamp
       --cascade                   delete all dependent backups
   -h, --help                      help for backup-clean
+      --no-history-sync-standby   disable gpbackup_history.db sync to the standby coordinator
       --older-than-days uint      delete backup sets older than the given number of days
       --parallel-processes int    the number of parallel processes to delete local backups (default 1)
       --plugin-config string      the full path to plugin config file
@@ -193,6 +208,9 @@ Can be specified only once. The full path to the file is required.
 If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
 Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
+After successful deletion, gpBackMan syncs the cluster gpbackup_history.db to an up standby coordinator when sync conditions are met.
+Pass --no-history-sync-standby to disable this sync.
+
 Usage:
   gpbackman backup-delete [flags]
 
@@ -202,6 +220,7 @@ Flags:
       --force                    try to delete, even if the backup already mark as deleted
   -h, --help                     help for backup-delete
       --ignore-errors            ignore errors when deleting backups
+      --no-history-sync-standby  disable gpbackup_history.db sync to the standby coordinator
       --parallel-processes int   the number of parallel processes to delete local backups (default 1)
       --plugin-config string     the full path to plugin config file
       --timestamp stringArray    the backup timestamp for deleting, could be specified multiple times
@@ -525,12 +544,16 @@ Can be specified only once. The full path to the file is required.
 If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
 Pass --auto-load-history-db to resolve it from MASTER_DATA_DIRECTORY first, then COORDINATOR_DATA_DIRECTORY.
 
+After successful cleanup, gpBackMan syncs the cluster gpbackup_history.db to an up standby coordinator when sync conditions are met.
+Pass --no-history-sync-standby to disable this sync.
+
 Usage:
   gpbackman history-clean [flags]
 
 Flags:
       --before-timestamp string   delete information about backups older than the given timestamp
   -h, --help                      help for history-clean
+      --no-history-sync-standby   disable gpbackup_history.db sync to the standby coordinator
       --older-than-days uint      delete information about backups older than the given number of days
 
 Global Flags:
