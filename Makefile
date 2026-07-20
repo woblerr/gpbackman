@@ -9,6 +9,9 @@ UID := $(shell id -u)
 GID := $(shell id -g)
 GPDB_CONTAINER_NAME := greenplum
 GPDB_USER := gpadmin
+E2E_DEFAULT_COMPOSE_FILE := e2e_tests/docker-compose.yml
+E2E_STANDBY_COMPOSE_FILE := e2e_tests/docker-compose.standby.yml
+E2E_STANDBY_COMMANDS := backup-delete backup-clean history-clean
 # List of all e2e test commands
 E2E_COMMANDS := backup-info report-info backup-delete backup-clean history-clean history-migrate
 
@@ -31,10 +34,10 @@ define define_e2e_test
 .PHONY: test-e2e_$(1)
 test-e2e_$(1):
 	@echo "Run end-to-end tests for $(APP_NAME) for $(1) command"
-	$$(call down_docker_compose)
-	$$(call run_docker_compose)
+	$$(call down_docker_compose_all)
+	$$(call run_docker_compose,$(1))
 	$$(call run_e2e_tests,$(1))
-	$$(call down_docker_compose)
+	$$(call down_docker_compose_all)
 endef
 
 # Generate e2e test targets for all commands
@@ -51,7 +54,7 @@ test-e2e:
 .PHONY: test-e2e-down
 test-e2e-down:
 	@echo "Stop old containers"
-	$(call down_docker_compose)
+	$(call down_docker_compose_all)
 
 .PHONY: build
 build:
@@ -98,13 +101,18 @@ docker-alpine:
 	@echo "Version $(BRANCH)-$(GIT_REV)"
 	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile.alpine --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME)-alpine .
 
-
 define run_docker_compose
-	docker compose -f e2e_tests/docker-compose.yml up -d
+	@if [ -n "$(filter $(1),$(E2E_STANDBY_COMMANDS))" ]; then \
+		chmod 600 e2e_tests/conf/ssh/id_rsa; \
+		docker compose -f $(E2E_STANDBY_COMPOSE_FILE) up -d; \
+	else \
+		docker compose -f $(E2E_DEFAULT_COMPOSE_FILE) up -d; \
+	fi
 endef
 
-define down_docker_compose
-	docker compose -f e2e_tests/docker-compose.yml down -v
+define down_docker_compose_all
+	docker compose -f $(E2E_STANDBY_COMPOSE_FILE) down -v --remove-orphans
+	docker compose -f $(E2E_DEFAULT_COMPOSE_FILE) down -v --remove-orphans
 endef
 
 define run_e2e_tests

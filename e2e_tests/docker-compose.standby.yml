@@ -1,0 +1,165 @@
+services:
+  ################################################################
+  # Prepare infra for some tests.
+  minio:
+    image: minio/minio:${IMAGE_TAG_MINIO}
+    container_name: minio
+    hostname: minio
+    environment:
+      - "MINIO_ROOT_USER"
+      - "MINIO_ROOT_PASSWORD"
+      - "MINIO_SITE_REGION"
+      - "MINIO_DOMAIN"
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - e2e
+
+  prepare_minio:
+    image: minio/mc:${IMAGE_TAG_MINIO_MC}
+    container_name: prepare_minio
+    environment:
+      - "MINIO_ROOT_USER"
+      - "MINIO_ROOT_PASSWORD"
+      - "S3_MINIO_KEY"
+      - "S3_MINIO_KEY_SECRET"
+      - "S3_MINIO_HOSTNAME"
+      - "S3_MINIO_BUCKET"
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - "./scripts/prepare/prepare_minio.sh:/prepare_minio.sh"
+    entrypoint: /prepare_minio.sh
+    networks:
+      - e2e
+
+  ################################################################
+  # Export gpbackman binary to shared volume.
+  gpbackman-export:
+    image: ${IMAGE_GPBACKMAN}
+    container_name: gpbackman-export
+    hostname: gpbackman-export
+    volumes:
+      - gpbackman_bin:/export
+    entrypoint: ["/bin/sh","-c","cp /usr/bin/gpbackman /export/gpbackman && chmod 755 /export/gpbackman && sleep infinity"]
+    networks:
+      - e2e
+
+  ################################################################
+  master:
+    image: woblerr/greenplum:${IMAGE_TAG_GREENPLUM}
+    container_name: greenplum
+    hostname: master
+    depends_on:
+      minio:
+        condition: service_healthy
+      prepare_minio:
+        condition: service_completed_successfully
+      gpbackman-export:
+        condition: service_started
+      segment1:
+        condition: service_started
+      segment2:
+        condition: service_started
+      standby:
+        condition: service_started
+    environment:
+      - "GREENPLUM_PASSWORD"
+      - "GREENPLUM_DEPLOYMENT=master"
+      - "GREENPLUM_STANDBY_HOSTNAME=standby"
+    volumes:
+      - ./conf/gpinitsystem_config_no_mirrors:/tmp/gpinitsystem_config
+      - ./conf/hostfile_gpinitsystem:/tmp/hostfile_gpinitsystem
+      - ./conf/ssh/id_rsa:/home/gpadmin/.ssh/id_rsa
+      - ./conf/ssh/id_rsa.pub:/home/gpadmin/.ssh/id_rsa.pub
+      - ./conf/gpbackup_s3_plugin.yaml:/home/gpadmin/gpbackup_s3_plugin.yaml
+      - ./scripts/prepare/gpdb_init:/docker-entrypoint-initdb.d
+      - ./scripts/prepare/prepare_gpdb_backups.sh:/home/gpadmin/prepare_gpdb_backups.sh
+      - ./scripts/run_tests:/home/gpadmin/run_tests
+      - ./src_data:/home/gpadmin/src_data
+      - gpbackman_bin:/home/gpadmin/gpbackman
+    networks:
+      - e2e
+
+  standby:
+    image: woblerr/greenplum:${IMAGE_TAG_GREENPLUM}
+    container_name: standby
+    hostname: standby
+    depends_on:
+      minio:
+        condition: service_healthy
+      prepare_minio:
+        condition: service_completed_successfully
+      gpbackman-export:
+        condition: service_started
+      segment1:
+        condition: service_started
+      segment2:
+        condition: service_started
+    environment:
+      - "GREENPLUM_DEPLOYMENT=standby"
+      - "GREENPLUM_MASTER_HOSTNAME=master"
+    volumes:
+      - ./conf/ssh/authorized_keys:/tmp/authorized_keys
+      - ./conf/hostfile_gpinitsystem:/tmp/hostfile_gpinitsystem
+      - ./conf/ssh/id_rsa:/home/gpadmin/.ssh/id_rsa
+      - ./conf/ssh/id_rsa.pub:/home/gpadmin/.ssh/id_rsa.pub
+      - gpbackman_bin:/home/gpadmin/gpbackman
+    stop_grace_period: 60s
+    networks:
+      - e2e
+
+  segment1:
+    image: woblerr/greenplum:${IMAGE_TAG_GREENPLUM}
+    container_name: segment1
+    hostname: segment1
+    command: /start_gpdb.sh "00:primary" "01:primary"
+    depends_on:
+      minio:
+        condition: service_healthy
+      prepare_minio:
+        condition: service_completed_successfully
+      gpbackman-export:
+        condition: service_started
+    environment:
+      - "GREENPLUM_DEPLOYMENT=segment"
+    volumes:
+      - ./conf/ssh/authorized_keys:/tmp/authorized_keys
+    stop_grace_period: 60s
+    networks:
+      - e2e
+
+  segment2:
+    image: woblerr/greenplum:${IMAGE_TAG_GREENPLUM}
+    container_name: segment2
+    hostname: segment2
+    command: /start_gpdb.sh "00:primary" "01:primary"
+    depends_on:
+      minio:
+        condition: service_healthy
+      prepare_minio:
+        condition: service_completed_successfully
+      gpbackman-export:
+        condition: service_started
+    environment:
+      - "GREENPLUM_DEPLOYMENT=segment"
+    volumes:
+      - ./conf/ssh/authorized_keys:/tmp/authorized_keys
+    stop_grace_period: 60s
+    networks:
+      - e2e
+
+networks:
+  e2e:
+
+volumes:
+  gpbackman_bin:

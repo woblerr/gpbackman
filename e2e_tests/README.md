@@ -1,19 +1,35 @@
 # End-to-end tests
 
-The following architecture is used to run the tests:
+The e2e suite uses two Docker Compose fixtures.
 
-* Separate containers for MinIO and nginx. Official images [minio/minio](https://hub.docker.com/r/minio/minio), [minio/mc](https://hub.docker.com/r/minio/mc) and [nginx](https://hub.docker.com/_/nginx) are used. It's necessary for S3 compatible storage for backups.
-- Separate container gpbackman-export: runs the gpbackman image and copies the binary to a shared Docker volume (gpbackman_bin) for use inside the Greenplum container.
-* Separate container for Greenplum. The [docker-greenplum image](https://github.com/woblerr/docker-greenplum) is used to run a single-node Greenplum cluster.
+- `docker-compose.yml` runs the default single-node Greenplum fixture.
+  It is used by `backup-info`, `report-info`, and `history-migrate`.
+- `docker-compose.standby.yml` runs a standby-aware Greenplum fixture.
+  It is used by `backup-delete`, `backup-clean`, and `history-clean`.
+
+Both fixtures include [minio/minio](https://hub.docker.com/r/minio/minio) and [minio/mc](https://hub.docker.com/r/minio/mc) containers for S3-compatible backup storage.
+The `gpbackman-export` container copies the built `gpbackman` binary to the shared `gpbackman_bin` volume.
+
+The Greenplum fixtures use the [docker-greenplum image](https://github.com/woblerr/docker-greenplum).
+The standby-aware fixture uses its standby startup support:
+
+- `master` is the primary coordinator service with `GREENPLUM_DEPLOYMENT=master` and `GREENPLUM_STANDBY_HOSTNAME=standby`;
+- `standby` uses `GREENPLUM_DEPLOYMENT=standby` and `GREENPLUM_MASTER_HOSTNAME=master`;
+- `segment1` and `segment2` use `GREENPLUM_DEPLOYMENT=segment`;
+- `conf/gpinitsystem_config_no_mirrors`, `conf/hostfile_gpinitsystem`, and `conf/ssh/` provide the test cluster config and SSH fixtures.
+
+The SSH fixtures are static e2e-only test material copied from the public docker-greenplum example key pattern.
+Do not reuse them outside this disposable test environment.
 
 ## Running tests
 
-Buld gpbackman image:
+Build the gpbackman image:
+
 ```bash
 make docker
 ```
 
-Run all tests (sequentially for all commands):
+Run all tests sequentially:
 
 ```bash
 make test-e2e
@@ -30,18 +46,47 @@ make test-e2e_history-clean
 make test-e2e_history-migrate
 ```
 
-Manually run a specific test (example for `backup-info`):
+`backup-delete`, `backup-clean`, and `history-clean` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes.
+
+Manually run a single-node command suite:
 
 ```bash
 docker compose -f e2e_tests/docker-compose.yml up -d
-
 docker exec greenplum bash -c 'su - gpadmin -c "/home/gpadmin/run_tests/run_test.sh backup-info"'
-
 docker compose -f e2e_tests/docker-compose.yml down -v
 ```
 
-If during manual execution the test fails, you should recreate containers.
+Manually run a standby-aware command suite:
+
+```bash
+docker compose -f e2e_tests/docker-compose.standby.yml up -d
+docker exec greenplum bash -c 'su - gpadmin -c "/home/gpadmin/run_tests/run_test.sh backup-delete"'
+docker compose -f e2e_tests/docker-compose.standby.yml down -v
+```
+
+If a manual run fails, recreate the fixture before retrying:
+
+```bash
+docker compose -f e2e_tests/docker-compose.standby.yml down -v --remove-orphans
+docker compose -f e2e_tests/docker-compose.yml down -v --remove-orphans
+```
+
+## Standby-aware checks
+
+The `backup-delete`, `backup-clean`, and `history-clean` suites run against the cluster history database at `/data/master/gpseg-1/gpbackup_history.db`.
+That path is eligible for standby history sync.
+
+The mutating suites assert:
+
+- successful commands print the standby sync success message;
+- primary and standby history produce matching `gpbackman backup-info` output after successful sync;
+- `--no-history-sync-standby` applies the primary mutation and leaves the selected standby state unchanged;
+- a fake `rsync` failure keeps the primary command successful and emits the standby sync warning.
 
 ## Notes
-- Tests are executed as `gpadmin` inside the Greenplum container. The runner waits for the cluster to become ready and then prepares the backup set before executing checks.
+
+- Tests are executed as `gpadmin` inside the `greenplum` container, which is the container name for the `master` service.
+- The runner waits for the primary cluster and, for mutating commands, standby replication state `streaming` or `catchup` before preparing backups.
 - Scripts exit with a non-zero code on failure.
+- `docker compose down -v` removes disposable e2e volumes.
+  Do not run these commands against non-test data.
