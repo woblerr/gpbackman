@@ -84,6 +84,10 @@ func syncHistoryStandby(clusterDBName string) error {
 	return nil
 }
 
+// Standby sync is allowed only for the cluster history db.
+// Explicit --history-db must still point to gpbackup_history.db under the primary data dir.
+// --auto-load-history-db is allowed only when it resolves from the coordinator data dir env.
+// The default working-directory gpbackup_history.db is treated as local/custom and is not synced.
 func getHistoryStandbySyncSourceDBPath() (string, bool, string) {
 	path := getHistoryDBPath(rootHistoryDB, rootAutoLoadHistoryDB)
 	switch {
