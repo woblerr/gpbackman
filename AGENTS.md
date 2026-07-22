@@ -88,6 +88,13 @@ make test-e2e-down
 E2E uses Docker Compose, Greenplum, MinIO, and destructive `docker compose down -v`.
 Do not run e2e tests unless the user explicitly requests or approves them.
 
+Keep e2e shell scripts simple and close to the existing style.
+Add helper functions only when they are reused or materially improve clarity.
+Avoid new bash-specific constructs unless nearby scripts already use them or the need is clear.
+Prefer `gpbackman` CLI assertions over direct `gpbackup_history.db` reads in e2e tests.
+For standby checks, run `gpbackman` on the standby host.
+Do not remove no-op or regression e2e cases without an explicit decision.
+
 ## Code Style and Patterns
 
 - Keep CLI behavior in Cobra command files under `cmd/`.
