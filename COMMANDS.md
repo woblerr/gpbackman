@@ -22,19 +22,21 @@
 - [Migrate history database (`history-migrate`)](#migrate-history-database-history-migrate)
   - [Examples](#examples-4)
   - [Using container](#using-container-4)
-- [Display the report for a specific backup (`report-info`)](#display-the-report-for-a-specific-backup-report-info)
+- [Synchronize the cluster history database to the standby coordinator (`history-sync`)](#synchronize-the-cluster-history-database-to-the-standby-coordinator-history-sync)
   - [Examples](#examples-5)
+- [Display the report for a specific backup (`report-info`)](#display-the-report-for-a-specific-backup-report-info)
+  - [Examples](#examples-6)
     - [Display the backup report from local storage](#display-the-backup-report-from-local-storage)
     - [Display the backup report using storage plugin](#display-the-backup-report-using-storage-plugin)
   - [Using container](#using-container-5)
 
 # Standby history DB sync
 
-After a successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan syncs the cluster `gpbackup_history.db` to an up standby coordinator when sync conditions are met. Sync failures are logged as warnings and do not mask the primary command success.
+The explicit `history-sync` command synchronizes the cluster `gpbackup_history.db` to an up standby coordinator. It does not have successful skips: an unavailable standby, an ineligible source, or a discovery, snapshot, validation, SSH, or rsync error is reported as an error and returns a non-zero exit status.
 
-The sync only runs when the resolved history database path is the cluster history database at `<primary coordinator data directory>/gpbackup_history.db`. This path can be selected with `--history-db` or with `--auto-load-history-db` when the environment points to the coordinator data directory. Custom history databases and the default working-directory `gpbackup_history.db` path are skipped.
+The source must resolve to the cluster history database at `<primary coordinator data directory>/gpbackup_history.db`. It can be selected with `--history-db` or with `--auto-load-history-db` when the environment points to the coordinator data directory. Custom history databases and the default working-directory `gpbackup_history.db` path are not eligible for explicit synchronization.
 
-The sync is skipped when `--no-history-sync-standby` is specified for `backup-delete`, `backup-clean`, or `history-clean`, when no up standby coordinator is found, or when the source history database is not the cluster history database. Read-only commands such as `backup-info` and `report-info` do not trigger sync.
+After successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan also attempts this sync automatically. This automatic sync is best-effort: `--no-history-sync-standby` produces an info-level skip, while no up standby and ineligible sources are debug-only skips; discovery, snapshot, validation, SSH, and rsync failures are warnings and do not mask the successful primary command. Read-only commands such as `backup-info` and `report-info` do not trigger automatic sync.
 
 Only `gpbackup_history.db` is synced. Report files, backup data, and other backup artifacts are not synced by gpBackMan.
 
@@ -652,6 +654,55 @@ docker run \
   gpbackman history-migrate \
   --history-file /data/master/gpseg-1/gpbackup_history.yaml \
   --history-db /data/master/gpseg-1/gpbackup_history.db
+```
+
+# Synchronize the cluster history database to the standby coordinator (`history-sync`)
+
+`history-sync` explicitly synchronizes the cluster `gpbackup_history.db` to an up standby coordinator.
+It accepts no positional arguments and has no command-specific flags.
+It inherits the root `--history-db` and `--auto-load-history-db` source flags, which cannot be used together.
+It does not accept `--no-history-sync-standby`; that flag controls only automatic post-mutation sync.
+
+The source must resolve to `<primary coordinator data directory>/gpbackup_history.db`.
+Use `--history-db` for that explicit path, or use `--auto-load-history-db` to resolve it from `MASTER_DATA_DIRECTORY` first, then `COORDINATOR_DATA_DIRECTORY`.
+If neither source flag is provided, the default working-directory `gpbackup_history.db` is not eligible.
+For cluster discovery, `history-sync` connects to the local cluster using `PGDATABASE`, or `postgres` when `PGDATABASE` is unset.
+The connection also honors `PGUSER`, `PGHOST`, and `PGPORT`.
+
+Synchronization requires the local `ssh` and `rsync` executables.
+The SSH connection uses the invoking OS account, independently of `PGUSER`.
+That account must exist on the standby, have non-interactive SSH access, and be allowed to create a temporary file and replace `gpbackup_history.db` in the standby coordinator data directory.
+The project Docker images include these executables.
+The deb and rpm packages declare them as dependencies.
+
+Successful completion means the history database was synchronized.
+No up standby coordinator, an ineligible or unresolved source, and any discovery, snapshot, validation, SSH, or rsync failure are errors that exit non-zero.
+
+Usage:
+```bash
+gpbackman history-sync [flags]
+```
+
+Global Flags:
+```text
+      --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
+      --history-db string          full path to the gpbackup_history.db file
+      --log-file string            full path to log file directory, if not specified, the log file will be created in the $HOME/gpAdminLogs directory
+      --log-level-console string   level for console logging (error, info, debug, verbose) (default "info")
+      --log-level-file string      level for file logging (error, info, debug, verbose) (default "info")
+```
+
+## Examples
+
+Synchronize an explicitly selected cluster history database:
+```bash
+./gpbackman history-sync \
+  --history-db /data/master/gpseg-1/gpbackup_history.db
+```
+
+Resolve the cluster history database from the coordinator environment and synchronize it:
+```bash
+./gpbackman history-sync --auto-load-history-db
 ```
 
 # Display the report for a specific backup (`report-info`)
