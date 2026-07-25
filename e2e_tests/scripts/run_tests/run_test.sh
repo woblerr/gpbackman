@@ -8,7 +8,7 @@ SCRIPTS_DIR="${HOME_DIR}/run_tests"
 
 command_requires_standby() {
     case "${TEST_COMMAND}" in
-        backup-delete|backup-clean|history-clean)
+        backup-delete|backup-clean|history-clean|history-sync)
             return 0
             ;;
         *)
@@ -69,6 +69,9 @@ exec_test_for_command() {
             ;;
         history-migrate)
             "${SCRIPTS_DIR}/run_history-migrate.sh"
+            ;;
+        history-sync)
+            "${SCRIPTS_DIR}/run_history-sync.sh"
             ;;
         *)
             echo "[ERROR] Unknown test command: ${TEST_COMMAND}"
