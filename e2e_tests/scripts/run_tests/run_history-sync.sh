@@ -32,7 +32,11 @@ test_history_sync_after_disabled_backup_delete() {
         exit 1
     fi
 
-    output=$(run_gpbackman_capture "${COMMAND}" "sync_stale_standby_auto_load" --auto-load-history-db)
+    output=$(
+        export MASTER_DATA_DIRECTORY="${DATA_DIR}"
+        unset COORDINATOR_DATA_DIRECTORY
+        run_gpbackman_capture "${COMMAND}" "sync_stale_standby_auto_load" --auto-load-history-db
+    )
     assert_history_sync_success_output "${output}"
     assert_primary_standby_backup_row_match "${timestamp}"
 }
