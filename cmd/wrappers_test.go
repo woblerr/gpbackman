@@ -100,13 +100,14 @@ func TestRootAutoLoadHistoryDBFlag(t *testing.T) {
 	flag := rootCmd.PersistentFlags().Lookup(autoLoadHistoryDBFlagName)
 	if flag == nil {
 		t.Fatalf("Expected %s flag to be registered", autoLoadHistoryDBFlagName)
-	}
-	if flag.DefValue != "false" {
-		t.Errorf("\nDefault value does not match:\n%v\nwant:\n%v", flag.DefValue, "false")
-	}
-	if !strings.Contains(flag.Usage, "MASTER_DATA_DIRECTORY") ||
-		!strings.Contains(flag.Usage, "COORDINATOR_DATA_DIRECTORY") {
-		t.Errorf("Flag usage does not mention both data directory environment variables: %s", flag.Usage)
+	} else {
+		if flag.DefValue != "false" {
+			t.Errorf("\nDefault value does not match:\n%v\nwant:\n%v", flag.DefValue, "false")
+		}
+		if !strings.Contains(flag.Usage, "MASTER_DATA_DIRECTORY") ||
+			!strings.Contains(flag.Usage, "COORDINATOR_DATA_DIRECTORY") {
+			t.Errorf("Flag usage does not mention both data directory environment variables: %s", flag.Usage)
+		}
 	}
 }
 
@@ -146,12 +147,13 @@ func TestNoHistorySyncStandbyFlagRegisteredOnSyncCommands(t *testing.T) {
 			flag := tt.flags.Lookup(noHistorySyncStandbyFlagName)
 			if flag == nil {
 				t.Fatalf("Expected %s flag to be registered", noHistorySyncStandbyFlagName)
-			}
-			if flag.DefValue != "false" {
-				t.Errorf("\nDefault value does not match:\n%v\nwant:\n%v", flag.DefValue, "false")
-			}
-			if !strings.Contains(flag.Usage, "standby coordinator") {
-				t.Errorf("Flag usage does not mention standby coordinator: %s", flag.Usage)
+			} else {
+				if flag.DefValue != "false" {
+					t.Errorf("\nDefault value does not match:\n%v\nwant:\n%v", flag.DefValue, "false")
+				}
+				if !strings.Contains(flag.Usage, "standby coordinator") {
+					t.Errorf("Flag usage does not mention standby coordinator: %s", flag.Usage)
+				}
 			}
 		})
 	}
