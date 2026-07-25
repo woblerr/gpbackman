@@ -77,7 +77,10 @@ make test-e2e_backup-delete
 make test-e2e_backup-clean
 make test-e2e_history-clean
 make test-e2e_history-migrate
+make test-e2e_history-sync
 ```
+
+The `backup-delete`, `backup-clean`, `history-clean`, and `history-sync` suites use the standby-aware fixture.
 
 Stop and remove e2e containers and volumes with:
 
@@ -119,13 +122,15 @@ Do not remove no-op or regression e2e cases without an explicit decision.
   create a new `gpbackup_history.db`, or rename `gpbackup_history.yaml` to `.migrated`.
   Manual tests must use temp or copied data unless the user explicitly points to real data.
 - Preserve standby sync semantics.
-  It runs only after successful `backup-delete`, `backup-clean`, or `history-clean` operations,
-  only when the resolved history database path is the cluster history database at
+  Explicit `history-sync` treats an ineligible source, no up standby, and discovery or transfer failures
+  as errors and exits non-zero.
+  Automatic sync runs only after successful `backup-delete`, `backup-clean`, or `history-clean` operations
+  and remains best-effort.
+  Both modes require the resolved history database path to be the cluster history database at
   `<primary coordinator data directory>/gpbackup_history.db`.
-  Custom history databases and the default working-directory `gpbackup_history.db` path are skipped.
-  The sync is also skipped when `--no-history-sync-standby` is specified, when no up standby coordinator
-  is found, or when the source history database is not the cluster history database.
-  Sync failures warn and must not mask the primary command success.
+  For automatic sync, custom and default working-directory databases are skipped,
+  `--no-history-sync-standby` disables the attempt, and no up standby is also a skip.
+  Automatic sync failures warn and must not mask the primary command success.
 - Standby sync copies only `gpbackup_history.db`.
   It does not sync reports, backup data, or other backup artifacts.
 - Keep `README.md`, `COMMANDS.md`, `e2e_tests/README.md`, and relevant e2e scripts synchronized

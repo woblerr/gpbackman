@@ -17,7 +17,8 @@ The utility provides functionality for migrating data from the old `gpbackup_his
 * delete all existing backups from local storage or using storage plugins older than the specified time condition;
 * clean deleted backups from the history database;
 * migrate history database from `gpbackup_history.yaml` format to `gpbackup_history.db` SQLite format;
-* sync the cluster `gpbackup_history.db` to the standby coordinator after successful backup deletion and history cleanup.
+* manually sync the cluster `gpbackup_history.db` to the standby coordinator;
+* automatically sync the cluster `gpbackup_history.db` after successful backup deletion and history cleanup.
 
 ## Commands
 ### Introduction
@@ -39,6 +40,7 @@ Available Commands:
   help            Help about any command
   history-clean   Clean deleted backups from the history database
   history-migrate Migrate history database
+  history-sync    Synchronize the cluster history database to the standby coordinator
   report-info     Display the report for a specific backup
 
 Flags:
@@ -55,9 +57,15 @@ Use "gpbackman [command] --help" for more information about a command.
 
 ### Standby history DB sync
 
-After a successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan syncs the cluster `gpbackup_history.db` to an up standby coordinator when sync conditions are met. Sync failures are logged as warnings and do not change the primary command result.
+Run `history-sync` to explicitly synchronize the cluster `gpbackup_history.db` to an up standby coordinator. The source must resolve to `<primary coordinator data directory>/gpbackup_history.db`; a custom database or the default working-directory database is not eligible. Explicit sync treats every non-sync outcome as an error and exits non-zero, including no up standby coordinator, an ineligible source, discovery errors, and transfer errors.
 
-Sync runs only when the resolved history database path is the cluster history database at `<primary coordinator data directory>/gpbackup_history.db`. Custom history databases and the default working-directory `gpbackup_history.db` path are skipped. The sync is also skipped when no up standby coordinator is found, or when `--no-history-sync-standby` is specified for `backup-delete`, `backup-clean`, or `history-clean`.
+For the usual cluster setup, prefer resolving the source from the coordinator data directory:
+
+```bash
+./gpbackman history-sync --auto-load-history-db
+```
+
+After a successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan also attempts the same synchronization automatically. Automatic sync is best-effort: ineligible source paths and no standby are debug-only skips, while sync failures are warnings and do not change the successful primary command result. Pass `--no-history-sync-standby` to those mutation commands to disable their automatic sync.
 
 Only `gpbackup_history.db` is synced. Report files, backup data, and any other backup artifacts are not synced by gpBackMan.
 
@@ -69,6 +77,7 @@ Description of each command:
 * [Display information about backups (`backup-info`)](./COMMANDS.md#display-information-about-backups-backup-info)
 * [Clean deleted backups from the history database (`history-clean`)](./COMMANDS.md#clean-deleted-backups-from-the-history-database-history-clean)
 * [Migrate history database (`history-migrate`)](./COMMANDS.md#migrate-history-database-history-migrate)
+* [Synchronize the cluster history database to the standby coordinator (`history-sync`)](./COMMANDS.md#synchronize-the-cluster-history-database-to-the-standby-coordinator-history-sync)
 * [Display the report for a specific backup (`report-info`)](./COMMANDS.md#display-the-report-for-a-specific-backup-report-info)
 
 ## Getting Started

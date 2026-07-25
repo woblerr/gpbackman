@@ -43,8 +43,13 @@ func syncHistoryStandbyBestEffort(clusterDBName string, noHistorySyncStandby boo
 		gplog.Info("%s", textmsg.InfoTextHistoryStandbySyncSkipped("disabled by --"+noHistorySyncStandbyFlagName))
 		return
 	}
-	if err := syncHistoryStandby(clusterDBName); err != nil {
+	skipReason, err := syncHistoryStandby(clusterDBName)
+	if err != nil {
 		gplog.Warn("%s", textmsg.WarnTextHistoryStandbySyncFailed(err))
+		return
+	}
+	if skipReason != "" {
+		gplog.Debug("%s", textmsg.InfoTextHistoryStandbySyncSkipped(skipReason))
 	}
 }
 
@@ -57,31 +62,29 @@ func runHistoryMutationWithStandbySync(work func() (string, error), noHistorySyn
 	syncHistoryStandbyBestEffort(clusterDBName, noHistorySyncStandby)
 }
 
-func syncHistoryStandby(clusterDBName string) error {
+func syncHistoryStandby(clusterDBName string) (string, error) {
 	sourceDBPath, shouldDiscover, skipReason := getHistoryStandbySyncSourceDBPath()
 	if !shouldDiscover {
-		gplog.Debug("%s", textmsg.InfoTextHistoryStandbySyncSkipped(skipReason))
-		return nil
+		return skipReason, nil
 	}
 
 	target, skipReason, err := discoverHistoryStandbySyncTarget(sourceDBPath, clusterDBName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if skipReason != "" {
-		gplog.Debug("%s", textmsg.InfoTextHistoryStandbySyncSkipped(skipReason))
-		return nil
+		return skipReason, nil
 	}
 	gplog.Info("%s", textmsg.InfoTextHistoryStandbySyncStart(target.sourceDBPath))
 
 	if err := withHistoryStandbySyncSnapshot(target.sourceDBPath, func(snapshotPath string) error {
 		return syncHistoryStandbySnapshotToStandby(target, snapshotPath)
 	}); err != nil {
-		return err
+		return "", err
 	}
 
 	gplog.Info("%s", textmsg.InfoTextHistoryStandbySyncSuccess(target.standbyHost, target.standbyHistoryDBPath))
-	return nil
+	return "", nil
 }
 
 // Standby sync is allowed only for the cluster history db.

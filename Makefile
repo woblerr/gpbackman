@@ -11,9 +11,9 @@ GPDB_CONTAINER_NAME := greenplum
 GPDB_USER := gpadmin
 E2E_DEFAULT_COMPOSE_FILE := e2e_tests/docker-compose.yml
 E2E_STANDBY_COMPOSE_FILE := e2e_tests/docker-compose.standby.yml
-E2E_STANDBY_COMMANDS := backup-delete backup-clean history-clean
+E2E_STANDBY_COMMANDS := backup-delete backup-clean history-clean history-sync
 # List of all e2e test commands
-E2E_COMMANDS := backup-info report-info backup-delete backup-clean history-clean history-migrate
+E2E_COMMANDS := backup-info report-info backup-delete backup-clean history-clean history-migrate history-sync
 
 .PHONY: test
 test:

@@ -18,6 +18,7 @@ import (
 	"github.com/greenplum-db/gpbackup/history"
 	"github.com/jmoiron/sqlx"
 	"github.com/woblerr/gpbackman/gpbckpconfig"
+	"github.com/woblerr/gpbackman/textmsg"
 )
 
 func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *testing.T) {
@@ -29,8 +30,8 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 		tmpDir = rawTmpDir
 	}
 	primaryDataDir := filepath.Join(tmpDir, "primary")
-	if err := os.Mkdir(primaryDataDir, 0o700); err != nil {
-		t.Fatalf("Failed to create primary data dir: %v", err)
+	if mkdirErr := os.Mkdir(primaryDataDir, 0o700); mkdirErr != nil {
+		t.Fatalf("Failed to create primary data dir: %v", mkdirErr)
 	}
 	sourceDBPath := filepath.Join(primaryDataDir, historyDBNameConst)
 	createHistoryStandbySyncTempSQLiteDB(t, sourceDBPath)
@@ -55,8 +56,12 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 		{exitCode: 0},
 	})
 
-	if err := syncHistoryStandby("testdb"); err != nil {
+	skipReason, err := syncHistoryStandby("testdb")
+	if err != nil {
 		t.Fatalf("Expected sync orchestration to succeed, got: %v", err)
+	}
+	if skipReason != "" {
+		t.Fatalf("Expected successful sync not to return a skip reason, got: %s", skipReason)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("Unmet SQL expectations: %v", err)
@@ -92,8 +97,12 @@ func TestSyncHistoryStandbySkipsWhenDiscoveryFindsNoTarget(t *testing.T) {
 	})
 	setHistoryStandbySyncExecCommand(t, nil)
 
-	if err := syncHistoryStandby(""); err != nil {
-		t.Fatalf("Expected skipped sync to succeed, got: %v", err)
+	skipReason, err := syncHistoryStandby("")
+	if err != nil {
+		t.Fatalf("Expected skipped sync not to return an error, got: %v", err)
+	}
+	if skipReason != "no up standby coordinator found" {
+		t.Fatalf("Unexpected skip reason: %s", skipReason)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("Unmet SQL expectations: %v", err)
@@ -117,7 +126,7 @@ func TestSyncHistoryStandbyReturnsSnapshotError(t *testing.T) {
 	})
 	setHistoryStandbySyncExecCommand(t, nil)
 
-	err := syncHistoryStandby("")
+	_, err := syncHistoryStandby("")
 	if err == nil {
 		t.Fatalf("Expected sync orchestration to fail")
 	}
@@ -152,7 +161,7 @@ func TestSyncHistoryStandbyReturnsTransferError(t *testing.T) {
 		{exitCode: 0},
 	})
 
-	err := syncHistoryStandby("")
+	_, err := syncHistoryStandby("")
 	if err == nil {
 		t.Fatalf("Expected sync orchestration to fail")
 	}
@@ -165,7 +174,7 @@ func TestSyncHistoryStandbyReturnsTransferError(t *testing.T) {
 }
 
 func TestSyncHistoryStandbyBestEffortSkipsWhenDisabled(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testStdout, _, _ := testhelper.SetupTestLogger()
 
 	setHistoryStandbySyncRootFlags(t, "/primary/gpbackup_history.db", false)
 	clusterConnCalls := 0
@@ -178,10 +187,14 @@ func TestSyncHistoryStandbyBestEffortSkipsWhenDisabled(t *testing.T) {
 	if clusterConnCalls != 0 {
 		t.Fatalf("\nCluster connection call count does not match:\n%v\nwant:\n%v", clusterConnCalls, 0)
 	}
+	wantLog := textmsg.InfoTextHistoryStandbySyncSkipped("disabled by --" + noHistorySyncStandbyFlagName)
+	if logOutput := string(testStdout.Contents()); !strings.Contains(logOutput, wantLog) {
+		t.Fatalf("Expected disabled sync log %q, got: %s", wantLog, logOutput)
+	}
 }
 
 func TestSyncHistoryStandbyBestEffortWarnsAndDoesNotExit(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testStdout, _, _ := testhelper.SetupTestLogger()
 
 	setHistoryStandbySyncRootFlags(t, "/primary/gpbackup_history.db", false)
 	setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
@@ -195,6 +208,35 @@ func TestSyncHistoryStandbyBestEffortWarnsAndDoesNotExit(t *testing.T) {
 	syncHistoryStandbyBestEffort("", false)
 	if exitCalled {
 		t.Fatalf("Expected standby sync failure not to exit the process")
+	}
+	wantLog := textmsg.WarnTextHistoryStandbySyncFailed(
+		errors.New("connect to local cluster for standby history sync discovery: discovery failed"),
+	)
+	if logOutput := string(testStdout.Contents()); !strings.Contains(logOutput, wantLog) {
+		t.Fatalf("Expected standby sync warning %q, got: %s", wantLog, logOutput)
+	}
+}
+
+func TestSyncHistoryStandbyBestEffortLogsSkipReasonAndDoesNotExit(t *testing.T) {
+	_, _, testLogfile := testhelper.SetupTestLogger()
+
+	setHistoryStandbySyncRootFlags(t, "", false)
+	setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
+		t.Fatal("History sync discovery should not run for the default source")
+		return nil, nil
+	})
+	exitCalled := false
+	setHistoryStandbySyncExecOSExit(t, func(code int) {
+		exitCalled = true
+	})
+
+	syncHistoryStandbyBestEffort("", false)
+	if exitCalled {
+		t.Fatalf("Expected skipped standby sync not to exit the process")
+	}
+	wantLog := textmsg.InfoTextHistoryStandbySyncSkipped("using default working-directory history db")
+	if logOutput := string(testLogfile.Contents()); !strings.Contains(logOutput, wantLog) {
+		t.Fatalf("Expected standby sync debug skip log %q, got: %s", wantLog, logOutput)
 	}
 }
 
@@ -244,8 +286,12 @@ func TestSyncHistoryStandbySkipsDefaultSourceSelectionBeforeDiscovery(t *testing
 				return nil, errors.New("cluster connection should not run")
 			})
 
-			if err := syncHistoryStandby(""); err != nil {
-				t.Fatalf("Expected skipped sync to succeed, got: %v", err)
+			skipReason, err := syncHistoryStandby("")
+			if err != nil {
+				t.Fatalf("Expected skipped sync not to return an error, got: %v", err)
+			}
+			if skipReason == "" {
+				t.Fatalf("Expected skipped sync to return a reason")
 			}
 			if clusterConnCalls != 0 {
 				t.Fatalf("\nCluster connection call count does not match:\n%v\nwant:\n%v", clusterConnCalls, 0)
@@ -295,8 +341,12 @@ func TestSyncHistoryStandbySkipsIneligibleExplicitSourceBeforeDiscovery(t *testi
 				return nil, errors.New("cluster connection should not run")
 			})
 
-			if err := syncHistoryStandby(""); err != nil {
-				t.Fatalf("Expected skipped sync to succeed, got: %v", err)
+			skipReason, err := syncHistoryStandby("")
+			if err != nil {
+				t.Fatalf("Expected skipped sync not to return an error, got: %v", err)
+			}
+			if skipReason == "" {
+				t.Fatalf("Expected skipped sync to return a reason")
 			}
 			if clusterConnCalls != 0 {
 				t.Fatalf("\nCluster connection call count does not match:\n%v\nwant:\n%v", clusterConnCalls, 0)

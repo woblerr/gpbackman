@@ -5,7 +5,7 @@ The e2e suite uses two Docker Compose fixtures.
 - `docker-compose.yml` runs the default single-node Greenplum fixture.
   It is used by `backup-info`, `report-info`, and `history-migrate`.
 - `docker-compose.standby.yml` runs a standby-aware Greenplum fixture.
-  It is used by `backup-delete`, `backup-clean`, and `history-clean`.
+  It is used by `backup-delete`, `backup-clean`, `history-clean`, and `history-sync`.
 
 Both fixtures include [minio/minio](https://hub.docker.com/r/minio/minio) and [minio/mc](https://hub.docker.com/r/minio/mc) containers for S3-compatible backup storage.
 The `gpbackman-export` container copies the built `gpbackman` binary to the shared `gpbackman_bin` volume.
@@ -44,9 +44,10 @@ make test-e2e_backup-delete
 make test-e2e_backup-clean
 make test-e2e_history-clean
 make test-e2e_history-migrate
+make test-e2e_history-sync
 ```
 
-`backup-delete`, `backup-clean`, and `history-clean` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes.
+`backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes.
 
 Manually run a single-node command suite:
 
@@ -64,6 +65,8 @@ docker exec greenplum bash -c 'su - gpadmin -c "/home/gpadmin/run_tests/run_test
 docker compose -f e2e_tests/docker-compose.standby.yml down -v
 ```
 
+For the explicit history-sync scenario, replace `backup-delete` with `history-sync` in the command above.
+
 If a manual run fails, recreate the fixture before retrying:
 
 ```bash
@@ -73,7 +76,7 @@ docker compose -f e2e_tests/docker-compose.yml down -v --remove-orphans
 
 ## Standby-aware checks
 
-The `backup-delete`, `backup-clean`, and `history-clean` suites run against the cluster history database at `/data/master/gpseg-1/gpbackup_history.db`.
+The `backup-delete`, `backup-clean`, `history-clean`, and `history-sync` suites run against the cluster history database at `/data/master/gpseg-1/gpbackup_history.db`.
 That path is eligible for standby history sync.
 
 The mutating suites assert:
@@ -82,6 +85,9 @@ The mutating suites assert:
 - primary and standby history produce matching `gpbackman backup-info` output after successful sync;
 - `--no-history-sync-standby` applies the primary mutation and leaves the selected standby state unchanged;
 - a fake `rsync` failure keeps the primary command successful and emits the standby sync warning.
+
+The `history-sync` suite first seeds the standby with an explicit sync, then disables automatic sync for a primary `backup-delete` so the histories differ.
+It runs `history-sync --auto-load-history-db`, verifies the explicit sync success message, and confirms the primary and standby rows match again.
 
 ## Notes
 
