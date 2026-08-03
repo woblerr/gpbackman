@@ -1,8 +1,9 @@
 SHELL := /bin/bash
 APP_NAME := gpbackman
-BRANCH_FULL := $(shell git rev-parse --abbrev-ref HEAD)
-BRANCH := $(subst /,-,$(BRANCH_FULL))
-GIT_REV := $(shell git describe --abbrev=7 --always)
+BRANCH_FULL = $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+BRANCH = $(subst /,-,$(BRANCH_FULL))
+GIT_REV = $(shell git describe --abbrev=7 --always 2>/dev/null)
+VERSION ?= $(if $(GIT_REV),$(BRANCH)-$(GIT_REV),unknown)
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 MUSL_CROSS := $(shell brew list| grep musl-cross)
 UID := $(shell id -u)
@@ -59,26 +60,26 @@ test-e2e-down:
 .PHONY: build
 build:
 	@echo "Build $(APP_NAME)"
-	CGO_ENABLED=1 go build -mod=vendor -trimpath -ldflags "-X main.version=$(BRANCH)-$(GIT_REV)" -o $(APP_NAME) $(APP_NAME).go
+	CGO_ENABLED=1 go build -mod=vendor -trimpath -ldflags "-X main.version=$(VERSION)" -o $(APP_NAME) $(APP_NAME).go
 
 .PHONY: build-linux-on-darwin
 build-linux-on-darwin:
 	@echo "Build $(APP_NAME)"
 	@make test
 	@if [ -z "$(MUSL_CROSS)" ]; then echo "musl-cross is not installed"; exit 1; fi;
-	CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++ CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-linkmode external -extldflags -static -X main.version=$(BRANCH)-$(GIT_REV)" -o $(APP_NAME) $(APP_NAME).go
+	CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++ CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-linkmode external -extldflags -static -X main.version=$(VERSION)" -o $(APP_NAME) $(APP_NAME).go
 
 .PHONY: build-darwin
 build-darwin:
 	@echo "Build $(APP_NAME)"
 	@make test
-	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-X main.version=$(BRANCH)-$(GIT_REV)" -o $(APP_NAME) $(APP_NAME).go
+	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-X main.version=$(VERSION)" -o $(APP_NAME) $(APP_NAME).go
 
 .PHONY: build-linux
 build-linux:
 	@echo "Build $(APP_NAME)"
 	@make test
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-X main.version=$(BRANCH)-$(GIT_REV)" -o $(APP_NAME) $(APP_NAME).go
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-X main.version=$(VERSION)" -o $(APP_NAME) $(APP_NAME).go
 
 .PHONY: dist
 dist:
@@ -92,14 +93,14 @@ dist:
 .PHONY: docker
 docker:
 	@echo "Build $(APP_NAME) docker container"
-	@echo "Version $(BRANCH)-$(GIT_REV)"
-	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME) .
+	@echo "Version $(VERSION)"
+	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile --build-arg REPO_BUILD_TAG=$(VERSION) -t $(APP_NAME) .
 
 .PHONY: docker-alpine
 docker-alpine:
 	@echo "Build $(APP_NAME) alpine docker container"
-	@echo "Version $(BRANCH)-$(GIT_REV)"
-	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile.alpine --build-arg REPO_BUILD_TAG=$(BRANCH)-$(GIT_REV) -t $(APP_NAME)-alpine .
+	@echo "Version $(VERSION)"
+	DOCKER_BUILDKIT=1 docker build --pull -f Dockerfile.alpine --build-arg REPO_BUILD_TAG=$(VERSION) -t $(APP_NAME)-alpine .
 
 define run_docker_compose
 	@if [ -n "$(filter $(1),$(E2E_STANDBY_COMMANDS))" ]; then \
