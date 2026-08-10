@@ -424,6 +424,7 @@ func rsyncHistoryStandbySyncSnapshot(
 
 func buildHistoryStandbySyncRsyncArgs(snapshotPath, standbyHost, userName, remoteTempPath string) []string {
 	return []string{
+		"-s",
 		"-e",
 		"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",

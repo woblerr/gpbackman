@@ -87,6 +87,7 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 		t.Fatalf("Expected local snapshot to be cleaned up, got: %v", err)
 	}
 	assertHistoryStandbySyncExecCall(t, (*calls)[0], "rsync", []string{
+		"-s",
 		"-e",
 		"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",
@@ -1179,6 +1180,7 @@ func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", filepath.Dir(remoteTempPath), target.standbyDataDir)
 	}
 	assertHistoryStandbySyncExecCall(t, (*calls)[0], "rsync", []string{
+		"-s",
 		"-e",
 		"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",
@@ -1371,14 +1373,21 @@ func TestSyncHistoryStandbyCurrentUserFailureDoesNotStartTransportTimeoutOrComma
 }
 
 func TestHistoryStandbySyncCommandBuildersQuotePaths(t *testing.T) {
-	remotePath := "/data/standby dir/owner's/gpbackup_history.db"
-	quotedPath := "'/data/standby dir/owner'\"'\"'s/gpbackup_history.db'"
+	remotePath := "/data/standby dir/owner's/$history*[1];drop/gpbackup_history.db"
+	quotedPath := "'/data/standby dir/owner'\"'\"'s/$history*[1];drop/gpbackup_history.db'"
 
 	if got := shellQuote(remotePath); got != quotedPath {
 		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", got, quotedPath)
 	}
-	if got := buildHistoryStandbySyncRsyncArgs("/tmp/local snapshot.db", "sdw-standby", "gpadmin", remotePath); got[4] != "gpadmin@sdw-standby:"+remotePath {
-		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", got[4], "gpadmin@sdw-standby:"+remotePath)
+	rsyncArgs := buildHistoryStandbySyncRsyncArgs("/tmp/local snapshot.db", "sdw-standby", "gpadmin", remotePath)
+	if len(rsyncArgs) != 6 {
+		t.Fatalf("\nRsync argument count does not match:\n%v\nwant:\n%v", len(rsyncArgs), 6)
+	}
+	if rsyncArgs[0] != "-s" {
+		t.Fatalf("Expected rsync secluded args option, got: %v", rsyncArgs)
+	}
+	if rsyncArgs[5] != "gpadmin@sdw-standby:"+remotePath {
+		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", rsyncArgs[5], "gpadmin@sdw-standby:"+remotePath)
 	}
 	if got := buildHistoryStandbySyncRemoteCleanupCommand(remotePath); got != "rm -f -- "+quotedPath {
 		t.Fatalf("\nVariables do not match:\n%v\nwant:\n%v", got, "rm -f -- "+quotedPath)

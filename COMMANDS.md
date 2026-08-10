@@ -38,6 +38,8 @@ The source must resolve to the cluster history database at `<primary coordinator
 
 After successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan also attempts this sync automatically. This automatic sync is best-effort: `--no-history-sync-standby` produces an info-level skip, while no up standby and ineligible sources are debug-only skips; discovery, snapshot, validation, SSH, and rsync failures are warnings and do not mask the successful primary command. Read-only commands such as `backup-info` and `report-info` do not trigger automatic sync.
 
+Standby synchronization requires rsync 3.0.0 or newer on both the host running gpBackMan and the standby coordinator. Non-interactive SSH access from that host to the standby coordinator must also be configured.
+
 The `history-sync`, `backup-delete`, `backup-clean`, and `history-clean` commands accept `--history-sync-standby-timeout SECONDS`. The default is 300 seconds. `SECONDS` must be an integer from 1 to 86400; fractions and duration strings such as `5m` are rejected. The 24-hour upper bound guards against accidentally oversized values; a longer timeout is not meaningful for standby history synchronization. This value is one shared budget for `rsync` and remote install, not a separate timeout for each command. It starts after SQLite snapshot creation and validation, so standby discovery, `VACUUM INTO`, and `PRAGMA quick_check` are outside the budget. Remote cleanup after a transport failure uses a separate fixed timeout of 120 seconds, independent of `--history-sync-standby-timeout`. Read-only commands do not accept this option.
 
 Only `gpbackup_history.db` is synced. Report files, backup data, and other backup artifacts are not synced by gpBackMan.
