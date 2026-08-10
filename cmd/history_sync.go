@@ -27,6 +27,12 @@ The command fails when no standby coordinator is available or when the source da
 
 func init() {
 	rootCmd.AddCommand(historySyncCmd)
+	historySyncCmd.PersistentFlags().IntVar(
+		&historyStandbySyncTimeoutSeconds,
+		historySyncStandbyTimeoutFlagName,
+		historySyncStandbyTimeoutDefault,
+		"shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400",
+	)
 }
 
 func doHistorySync() {

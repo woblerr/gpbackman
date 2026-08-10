@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -28,6 +30,101 @@ func TestHistorySyncCommandRegistration(t *testing.T) {
 		if flag := historySyncCmd.InheritedFlags().Lookup(flagName); flag == nil {
 			t.Fatalf("Expected history-sync to inherit --%s", flagName)
 		}
+	}
+}
+
+func TestHistorySyncTimeoutFlagRegisteredOnlyOnSyncCommands(t *testing.T) {
+	syncCommands := map[string]bool{
+		"history-sync":  true,
+		"backup-delete": true,
+		"backup-clean":  true,
+		"history-clean": true,
+	}
+
+	for _, command := range rootCmd.Commands() {
+		flag := command.PersistentFlags().Lookup(historySyncStandbyTimeoutFlagName)
+		if syncCommands[command.Name()] {
+			if flag == nil {
+				t.Fatalf("Expected --%s on %s", historySyncStandbyTimeoutFlagName, command.Name())
+			}
+			if flag.DefValue != "300" {
+				t.Fatalf("Unexpected timeout default on %s: %s", command.Name(), flag.DefValue)
+			}
+			delete(syncCommands, command.Name())
+			continue
+		}
+		if flag != nil {
+			t.Fatalf("Did not expect --%s on %s", historySyncStandbyTimeoutFlagName, command.Name())
+		}
+	}
+	if len(syncCommands) != 0 {
+		t.Fatalf("Expected timeout flag on commands: %v", syncCommands)
+	}
+	if flag := rootCmd.PersistentFlags().Lookup(historySyncStandbyTimeoutFlagName); flag != nil {
+		t.Fatalf("Did not expect --%s as a root flag", historySyncStandbyTimeoutFlagName)
+	}
+}
+
+func TestHistorySyncTimeoutFlagAcceptsIntegerSeconds(t *testing.T) {
+	flag := historySyncCmd.PersistentFlags().Lookup(historySyncStandbyTimeoutFlagName)
+	if flag == nil {
+		t.Fatalf("Expected --%s flag", historySyncStandbyTimeoutFlagName)
+	}
+	oldTimeoutSeconds := historyStandbySyncTimeoutSeconds
+	oldChanged := flag.Changed
+	t.Cleanup(func() {
+		historyStandbySyncTimeoutSeconds = oldTimeoutSeconds
+		flag.Changed = oldChanged
+	})
+
+	if err := historySyncCmd.PersistentFlags().Set(historySyncStandbyTimeoutFlagName, "600"); err != nil {
+		t.Fatalf("Expected integer timeout to be accepted: %v", err)
+	}
+	if historyStandbySyncTimeoutSeconds != 600 {
+		t.Fatalf("Unexpected timeout value: %d", historyStandbySyncTimeoutSeconds)
+	}
+	for _, value := range []string{"1.5", "5m"} {
+		if err := flag.Value.Set(value); err == nil {
+			t.Fatalf("Expected timeout value %q to be rejected", value)
+		}
+	}
+}
+
+func TestHistorySyncTimeoutValidation(t *testing.T) {
+	tests := []struct {
+		name      string
+		timeout   int
+		wantExits int
+	}{
+		{name: "Minimum", timeout: 1},
+		{name: "Maximum", timeout: 86400},
+		{name: "Zero", timeout: 0, wantExits: 1},
+		{name: "Negative", timeout: -1, wantExits: 1},
+		{name: "Above Maximum", timeout: 86401, wantExits: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testhelper.SetupTestLogger()
+			oldTimeoutSeconds := historyStandbySyncTimeoutSeconds
+			historyStandbySyncTimeoutSeconds = tt.timeout
+			t.Cleanup(func() {
+				historyStandbySyncTimeoutSeconds = oldTimeoutSeconds
+			})
+			exitCalls := 0
+			setHistoryStandbySyncExecOSExit(t, func(code int) {
+				if code != exitErrorCode {
+					t.Fatalf("Unexpected exit code: %d", code)
+				}
+				exitCalls++
+			})
+
+			doRootFlagValidation(historySyncCmd.Flags(), false)
+
+			if exitCalls != tt.wantExits {
+				t.Fatalf("Unexpected validation exit count: %d, want: %d", exitCalls, tt.wantExits)
+			}
+		})
 	}
 }
 
@@ -83,6 +180,11 @@ func TestHistorySyncCommandFailsForSyncErrorsAndSkipReasons(t *testing.T) {
 			name:       "Default Working Directory Source",
 			skipReason: "using default working-directory history db",
 			wantCause:  "using default working-directory history db",
+		},
+		{
+			name:      "Transport Timeout",
+			syncErr:   fmt.Errorf("standby history sync transport timed out after 300 seconds: %w", context.DeadlineExceeded),
+			wantCause: "timed out after 300 seconds",
 		},
 	}
 

@@ -121,6 +121,12 @@ func init() {
 		false,
 		"disable gpbackup_history.db sync to the standby coordinator",
 	)
+	backupCleanCmd.PersistentFlags().IntVar(
+		&historyStandbySyncTimeoutSeconds,
+		historySyncStandbyTimeoutFlagName,
+		historySyncStandbyTimeoutDefault,
+		"shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400",
+	)
 	backupCleanCmd.MarkFlagsMutuallyExclusive(beforeTimestampFlagName, olderThanDaysFlagName, afterTimestampFlagName)
 }
 

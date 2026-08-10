@@ -1,14 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -37,6 +36,22 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 	createHistoryStandbySyncTempSQLiteDB(t, sourceDBPath)
 	standbyDataDir := filepath.Join(tmpDir, "standby")
 	snapshotPath := setHistoryStandbySyncSnapshotPathHooks(t, tmpDir)
+	oldTimeoutSeconds := historyStandbySyncTimeoutSeconds
+	oldContextTimeout := historyStandbySyncContextWithTimeout
+	historyStandbySyncTimeoutSeconds = 600
+	historyStandbySyncContextWithTimeout = func(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+		if timeout != 600*time.Second {
+			t.Fatalf("Unexpected standby sync timeout: %s", timeout)
+		}
+		if _, statErr := os.Stat(snapshotPath); statErr != nil {
+			t.Fatalf("Expected validated snapshot to exist before transport timeout starts: %v", statErr)
+		}
+		return context.WithTimeout(parent, timeout)
+	}
+	t.Cleanup(func() {
+		historyStandbySyncTimeoutSeconds = oldTimeoutSeconds
+		historyStandbySyncContextWithTimeout = oldContextTimeout
+	})
 
 	db, mock := createHistoryStandbySyncMockDB(t)
 	defer db.Close()
@@ -56,7 +71,9 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 		{exitCode: 0},
 	})
 
+	started := time.Now()
 	skipReason, err := syncHistoryStandby("testdb")
+	finished := time.Now()
 	if err != nil {
 		t.Fatalf("Expected sync orchestration to succeed, got: %v", err)
 	}
@@ -71,12 +88,22 @@ func TestSyncHistoryStandbyOrchestratesDiscoverySnapshotTransferAndInstall(t *te
 	}
 	assertHistoryStandbySyncExecCall(t, (*calls)[0], "rsync", []string{
 		"-e",
-		"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30",
+		"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",
 		snapshotPath,
 		"gpadmin@sdw-standby:" + filepath.Join(standbyDataDir, filepath.Base(snapshotPath)),
 	})
 	assertHistoryStandbySyncExecCall(t, (*calls)[1], "ssh", nil)
+	if (*calls)[0].ctx != (*calls)[1].ctx {
+		t.Fatal("Expected rsync and remote install to share one context")
+	}
+	if !(*calls)[0].hasDeadline || !(*calls)[1].hasDeadline {
+		t.Fatal("Expected transport commands to have a deadline")
+	}
+	if (*calls)[0].deadline.Before(started.Add(600*time.Second)) ||
+		(*calls)[0].deadline.After(finished.Add(600*time.Second)) {
+		t.Fatalf("Unexpected transport deadline: %s", (*calls)[0].deadline)
+	}
 }
 
 func TestSyncHistoryStandbySkipsWhenDiscoveryFindsNoTarget(t *testing.T) {
@@ -167,6 +194,75 @@ func TestSyncHistoryStandbyReturnsTransferError(t *testing.T) {
 	}
 	if !containsErrorText(err, "rsync standby history snapshot") {
 		t.Fatalf("Expected rsync error, got: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("Unmet SQL expectations: %v", err)
+	}
+}
+
+func TestSyncHistoryStandbyTransportTimeoutUsesIndependentCleanupContext(t *testing.T) {
+	testhelper.SetupTestLogger()
+
+	primaryDataDir := t.TempDir()
+	sourceDBPath := filepath.Join(primaryDataDir, historyDBNameConst)
+	createHistoryStandbySyncTempSQLiteDB(t, sourceDBPath)
+	setHistoryStandbySyncSnapshotPathHooks(t, t.TempDir())
+
+	db, mock := createHistoryStandbySyncMockDB(t)
+	defer db.Close()
+	expectHistoryStandbySyncPrimaryDataDirQuery(mock, primaryDataDir)
+	expectHistoryStandbySyncStandbyQuery(mock, filepath.Join(t.TempDir(), "standby"))
+
+	setHistoryStandbySyncRootFlags(t, sourceDBPath, false)
+	setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
+		return db, nil
+	})
+	setHistoryStandbySyncCurrentUser(t)
+	oldTimeoutSeconds := historyStandbySyncTimeoutSeconds
+	oldContextTimeout := historyStandbySyncContextWithTimeout
+	historyStandbySyncTimeoutSeconds = 600
+	historyStandbySyncContextWithTimeout = func(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+		if timeout != 600*time.Second {
+			t.Fatalf("Unexpected standby sync timeout: %s", timeout)
+		}
+		return context.WithDeadline(parent, time.Now().Add(-time.Second))
+	}
+	t.Cleanup(func() {
+		historyStandbySyncTimeoutSeconds = oldTimeoutSeconds
+		historyStandbySyncContextWithTimeout = oldContextTimeout
+	})
+	calls := setHistoryStandbySyncExecCommand(t, []historyStandbySyncExecResponse{{}, {}})
+	started := time.Now()
+
+	_, err := syncHistoryStandby("")
+	finished := time.Now()
+
+	if err == nil {
+		t.Fatal("Expected standby sync transport timeout")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Expected DeadlineExceeded in error chain, got: %v", err)
+	}
+	for _, want := range []string{"rsync standby history snapshot", "timed out after 600 seconds"} {
+		if !containsErrorText(err, want) {
+			t.Fatalf("Expected timeout error to contain %q, got: %v", want, err)
+		}
+	}
+	if len(*calls) != 2 {
+		t.Fatalf("Unexpected command count: %d", len(*calls))
+	}
+	if !errors.Is((*calls)[0].ctxErr, context.DeadlineExceeded) {
+		t.Fatalf("Expected expired transport context, got: %v", (*calls)[0].ctxErr)
+	}
+	if (*calls)[1].ctx == (*calls)[0].ctx {
+		t.Fatal("Expected remote cleanup to use an independent context")
+	}
+	if (*calls)[1].ctxErr != nil || !(*calls)[1].hasDeadline {
+		t.Fatalf("Expected active cleanup context with deadline, got err=%v", (*calls)[1].ctxErr)
+	}
+	if (*calls)[1].deadline.Before(started.Add(historyStandbySyncCleanupTimeout)) ||
+		(*calls)[1].deadline.After(finished.Add(historyStandbySyncCleanupTimeout)) {
+		t.Fatalf("Unexpected cleanup deadline: %s", (*calls)[1].deadline)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("Unmet SQL expectations: %v", err)
@@ -1062,7 +1158,6 @@ func TestWithHistoryStandbySyncSnapshotCleansUpAfterSyncSuccessOrFailure(t *test
 func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 	testhelper.SetupTestLogger()
 
-	setHistoryStandbySyncCurrentUser(t)
 	snapshotPath := "/tmp/gpbackup_history_20260703000000_000000000_42.db.snap"
 	target := &historyStandbySyncTarget{
 		standbyHost:          "sdw-standby",
@@ -1074,7 +1169,7 @@ func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 		{exitCode: 0},
 	})
 
-	err := syncHistoryStandbySnapshotToStandby(target, snapshotPath)
+	err := syncHistoryStandbySnapshotToStandby(context.Background(), target, "gpadmin", snapshotPath)
 	if err != nil {
 		t.Fatalf("Expected standby sync to succeed, got: %v", err)
 	}
@@ -1085,12 +1180,14 @@ func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 	}
 	assertHistoryStandbySyncExecCall(t, (*calls)[0], "rsync", []string{
 		"-e",
-		"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30",
+		"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30",
 		"--",
 		snapshotPath,
 		"gpadmin@sdw-standby:/data/standby/gpbackup_history_20260703000000_000000000_42.db.snap",
 	})
 	assertHistoryStandbySyncExecCall(t, (*calls)[1], "ssh", []string{
+		"-o",
+		"BatchMode=yes",
 		"-o",
 		"StrictHostKeyChecking=no",
 		"-o",
@@ -1103,7 +1200,6 @@ func TestSyncHistoryStandbySnapshotToStandbyTransfersAndInstalls(t *testing.T) {
 func TestSyncHistoryStandbySnapshotToStandbyCleansRemoteTempAfterInstallFailure(t *testing.T) {
 	testhelper.SetupTestLogger()
 
-	setHistoryStandbySyncCurrentUser(t)
 	snapshotPath := "/tmp/gpbackup_history_20260703000000_000000000_42.db.snap"
 	target := &historyStandbySyncTarget{
 		standbyHost:          "sdw-standby",
@@ -1116,7 +1212,7 @@ func TestSyncHistoryStandbySnapshotToStandbyCleansRemoteTempAfterInstallFailure(
 		{exitCode: 0},
 	})
 
-	err := syncHistoryStandbySnapshotToStandby(target, snapshotPath)
+	err := syncHistoryStandbySnapshotToStandby(context.Background(), target, "gpadmin", snapshotPath)
 	if err == nil {
 		t.Fatalf("Expected standby sync to fail")
 	}
@@ -1127,6 +1223,8 @@ func TestSyncHistoryStandbySnapshotToStandbyCleansRemoteTempAfterInstallFailure(
 	assertHistoryStandbySyncExecCall(t, (*calls)[0], "rsync", nil)
 	assertHistoryStandbySyncExecCall(t, (*calls)[1], "ssh", nil)
 	assertHistoryStandbySyncExecCall(t, (*calls)[2], "ssh", []string{
+		"-o",
+		"BatchMode=yes",
 		"-o",
 		"StrictHostKeyChecking=no",
 		"-o",
@@ -1172,18 +1270,17 @@ func TestSyncHistoryStandbySnapshotToStandbyFailuresReturnErrorsAndDoNotExit(t *
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setHistoryStandbySyncCurrentUser(t)
 			setHistoryStandbySyncExecCommand(t, tt.responses)
 			exitCalled := false
 			setHistoryStandbySyncExecOSExit(t, func(code int) {
 				exitCalled = true
 			})
 
-			err := syncHistoryStandbySnapshotToStandby(&historyStandbySyncTarget{
+			err := syncHistoryStandbySnapshotToStandby(context.Background(), &historyStandbySyncTarget{
 				standbyHost:          "sdw-standby",
 				standbyDataDir:       "/data/standby",
 				standbyHistoryDBPath: "/data/standby/gpbackup_history.db",
-			}, "/tmp/gpbackup_history_20260703000000_000000000_42.db.snap")
+			}, "gpadmin", "/tmp/gpbackup_history_20260703000000_000000000_42.db.snap")
 			if err == nil {
 				t.Fatalf("Expected standby sync to fail")
 			}
@@ -1197,23 +1294,65 @@ func TestSyncHistoryStandbySnapshotToStandbyFailuresReturnErrorsAndDoNotExit(t *
 	}
 }
 
-func TestSyncHistoryStandbySnapshotToStandbyCurrentUserFailureDoesNotRunCommands(t *testing.T) {
+func TestCleanupHistoryStandbySyncRemoteTempPreservesBothErrors(t *testing.T) {
+	primaryErr := errors.New("install failed")
+	cleanupErr := errors.New("cleanup failed")
+	setHistoryStandbySyncExecCommand(t, []historyStandbySyncExecResponse{
+		{output: "rm failed", err: cleanupErr},
+	})
+
+	err := cleanupHistoryStandbySyncRemoteTempAfterError(
+		primaryErr,
+		"sdw-standby",
+		"gpadmin",
+		"/data/standby/gpbackup_history.db.snap",
+	)
+
+	if !errors.Is(err, primaryErr) {
+		t.Fatalf("Expected primary error in chain, got: %v", err)
+	}
+	if !errors.Is(err, cleanupErr) {
+		t.Fatalf("Expected cleanup error in chain, got: %v", err)
+	}
+	if !containsErrorText(err, "additionally failed to clean up remote temp file") {
+		t.Fatalf("Expected combined cleanup error, got: %v", err)
+	}
+}
+
+func TestSyncHistoryStandbyCurrentUserFailureDoesNotStartTransportTimeoutOrCommands(t *testing.T) {
 	testhelper.SetupTestLogger()
 
+	primaryDataDir := t.TempDir()
+	sourceDBPath := filepath.Join(primaryDataDir, historyDBNameConst)
+	createHistoryStandbySyncTempSQLiteDB(t, sourceDBPath)
+	setHistoryStandbySyncSnapshotPathHooks(t, t.TempDir())
+
+	db, mock := createHistoryStandbySyncMockDB(t)
+	defer db.Close()
+	expectHistoryStandbySyncPrimaryDataDirQuery(mock, primaryDataDir)
+	expectHistoryStandbySyncStandbyQuery(mock, filepath.Join(t.TempDir(), "standby"))
+	setHistoryStandbySyncRootFlags(t, sourceDBPath, false)
+	setHistoryStandbySyncNewClusterConnHook(t, func(clusterDBName string) (*sqlx.DB, error) {
+		return db, nil
+	})
+
 	oldCurrentUser := historyStandbySyncCurrentUser
+	oldContextWithTimeout := historyStandbySyncContextWithTimeout
 	historyStandbySyncCurrentUser = func() (string, error) {
 		return "", errors.New("current user failed")
 	}
+	contextStarted := false
+	historyStandbySyncContextWithTimeout = func(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+		contextStarted = true
+		return context.WithTimeout(parent, timeout)
+	}
 	t.Cleanup(func() {
 		historyStandbySyncCurrentUser = oldCurrentUser
+		historyStandbySyncContextWithTimeout = oldContextWithTimeout
 	})
 	calls := setHistoryStandbySyncExecCommand(t, nil)
 
-	err := syncHistoryStandbySnapshotToStandby(&historyStandbySyncTarget{
-		standbyHost:          "sdw-standby",
-		standbyDataDir:       "/data/standby",
-		standbyHistoryDBPath: "/data/standby/gpbackup_history.db",
-	}, "/tmp/gpbackup_history_20260703000000_000000000_42.db.snap")
+	_, err := syncHistoryStandby("")
 	if err == nil {
 		t.Fatalf("Expected standby sync to fail")
 	}
@@ -1222,6 +1361,12 @@ func TestSyncHistoryStandbySnapshotToStandbyCurrentUserFailureDoesNotRunCommands
 	}
 	if len(*calls) != 0 {
 		t.Fatalf("\nCommand call count does not match:\n%v\nwant:\n%v", len(*calls), 0)
+	}
+	if contextStarted {
+		t.Fatal("Expected transport timeout not to start before current user resolution")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("Unmet SQL expectations: %v", err)
 	}
 }
 
@@ -1335,11 +1480,16 @@ func containsErrorText(err error, want string) bool {
 type historyStandbySyncExecResponse struct {
 	exitCode int
 	output   string
+	err      error
 }
 
 type historyStandbySyncExecCall struct {
-	command string
-	args    []string
+	ctx         context.Context
+	ctxErr      error
+	deadline    time.Time
+	hasDeadline bool
+	command     string
+	args        []string
 }
 
 func setHistoryStandbySyncCurrentUser(t *testing.T) {
@@ -1357,29 +1507,36 @@ func setHistoryStandbySyncCurrentUser(t *testing.T) {
 func setHistoryStandbySyncExecCommand(t *testing.T, responses []historyStandbySyncExecResponse) *[]historyStandbySyncExecCall {
 	t.Helper()
 
-	oldCommand := execCommand
+	oldCommand := historyStandbySyncExecCommand
 	calls := make([]historyStandbySyncExecCall, 0, len(responses))
 	responseIndex := 0
-	execCommand = func(command string, args ...string) *exec.Cmd {
+	historyStandbySyncExecCommand = func(ctx context.Context, command string, args ...string) ([]byte, error) {
 		if responseIndex >= len(responses) {
 			t.Fatalf("Unexpected command: %s %v", command, args)
 		}
 		response := responses[responseIndex]
 		responseIndex++
 		copiedArgs := append([]string(nil), args...)
-		calls = append(calls, historyStandbySyncExecCall{command: command, args: copiedArgs})
+		deadline, hasDeadline := ctx.Deadline()
+		calls = append(calls, historyStandbySyncExecCall{
+			ctx:         ctx,
+			ctxErr:      ctx.Err(),
+			deadline:    deadline,
+			hasDeadline: hasDeadline,
+			command:     command,
+			args:        copiedArgs,
+		})
 
-		cmd := exec.Command(os.Args[0], "-test.run=TestHistoryStandbySyncExecHelper", "--")
-		cmd.Env = append(
-			os.Environ(),
-			"GPBACKMAN_TEST_EXEC_HELPER=1",
-			fmt.Sprintf("GPBACKMAN_TEST_EXEC_EXIT_CODE=%d", response.exitCode),
-			"GPBACKMAN_TEST_EXEC_OUTPUT="+response.output,
-		)
-		return cmd
+		if response.err != nil {
+			return []byte(response.output), response.err
+		}
+		if response.exitCode != 0 {
+			return []byte(response.output), fmt.Errorf("exit status %d", response.exitCode)
+		}
+		return []byte(response.output), nil
 	}
 	t.Cleanup(func() {
-		execCommand = oldCommand
+		historyStandbySyncExecCommand = oldCommand
 		if responseIndex != len(responses) {
 			t.Fatalf("\nCommand count does not match:\n%v\nwant:\n%v", responseIndex, len(responses))
 		}
@@ -1404,18 +1561,6 @@ func assertHistoryStandbySyncExecCall(t *testing.T, got historyStandbySyncExecCa
 			t.Fatalf("\nArgument %d does not match:\n%v\nwant:\n%v\nargs:\n%v", i, got.args[i], wantArgs[i], got.args)
 		}
 	}
-}
-
-func TestHistoryStandbySyncExecHelper(t *testing.T) {
-	if os.Getenv("GPBACKMAN_TEST_EXEC_HELPER") != "1" {
-		return
-	}
-	fmt.Fprint(os.Stdout, os.Getenv("GPBACKMAN_TEST_EXEC_OUTPUT"))
-	exitCode, err := strconv.Atoi(os.Getenv("GPBACKMAN_TEST_EXEC_EXIT_CODE"))
-	if err != nil {
-		os.Exit(1)
-	}
-	os.Exit(exitCode)
 }
 
 func createHistoryStandbySyncMockDB(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
