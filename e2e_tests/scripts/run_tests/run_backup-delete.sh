@@ -94,37 +94,44 @@ test_delete_local_data_only_no_history_sync_standby() {
     echo "[INFO] Backup ${timestamp} successfully marked as deleted with standby history sync disabled"
 }
 
-# Test 6: Delete local full backup when standby rsync fails best-effort
-test_delete_local_full_rsync_failure_best_effort() {
+# Test 6: Delete local full backup when standby rsync times out best-effort
+test_delete_local_full_rsync_timeout_best_effort() {
     local timestamp
     timestamp="$(get_active_local_backup_timestamp "full")"
     local standby_row_before
     local standby_row_after
     local fake_bin_dir
     local output
+    local elapsed
 
     standby_row_before="$(standby_backup_row_for_timestamp "${timestamp}")"
     fake_bin_dir="$(mktemp -d)"
     cat > "${fake_bin_dir}/rsync" <<'FAKE_RSYNC'
 #!/usr/bin/env bash
-echo "fake rsync failure for standby history sync" >&2
-exit 42
+exec sleep 30
 FAKE_RSYNC
     chmod 755 "${fake_bin_dir}/rsync"
 
+    SECONDS=0
     if ! output=$(
         export PATH="${fake_bin_dir}:${PATH}"
-        run_command_capture "delete_local_full_rsync_failure_best_effort" --timestamp "${timestamp}"
+        run_command_capture "delete_local_full_rsync_timeout_best_effort" --timestamp "${timestamp}" --history-sync-standby-timeout 1
     ); then
         rm -rf "${fake_bin_dir}"
         exit 1
     fi
+    elapsed="${SECONDS}"
     rm -rf "${fake_bin_dir}"
 
     assert_output_contains "${output}" "History db sync to standby coordinator failed; standby history may be stale:"
+    assert_output_contains "${output}" "timed out after 1 seconds"
     assert_primary_backup_deleted "${timestamp}"
     standby_row_after="$(standby_backup_row_for_timestamp "${timestamp}")"
-    assert_string_equals "${standby_row_before}" "${standby_row_after}" "standby row should remain unchanged when rsync fails"
+    assert_string_equals "${standby_row_before}" "${standby_row_after}" "standby row should remain unchanged when rsync times out"
+    if [ "${elapsed}" -ge 15 ]; then
+        echo "[ERROR] backup-delete timeout took ${elapsed} seconds; expected less than 15"
+        exit 1
+    fi
 }
 
 run_test "${COMMAND}" 1 test_delete_local_full
@@ -132,6 +139,6 @@ run_test "${COMMAND}" 2 test_delete_s3_incremental
 run_test "${COMMAND}" 3 test_delete_s3_full_cascade
 run_test "${COMMAND}" 4 test_delete_nonexistent_backup
 run_test "${COMMAND}" 5 test_delete_local_data_only_no_history_sync_standby
-run_test "${COMMAND}" 6 test_delete_local_full_rsync_failure_best_effort
+run_test "${COMMAND}" 6 test_delete_local_full_rsync_timeout_best_effort
 
 log_all_tests_passed "${COMMAND}"

@@ -84,10 +84,11 @@ The mutating suites assert:
 - successful commands print the standby sync success message;
 - primary and standby history produce matching `gpbackman backup-info` output after successful sync;
 - `--no-history-sync-standby` applies the primary mutation and leaves the selected standby state unchanged;
-- a fake `rsync` failure keeps the primary command successful and emits the standby sync warning.
+- a blocked fake `rsync` exceeding the configured timeout keeps the primary command successful, emits the standby sync warning, and leaves the selected standby state unchanged.
 
 The `history-sync` suite first seeds the standby with an explicit sync, then disables automatic sync for a primary `backup-delete` so the histories differ.
 It runs `history-sync --auto-load-history-db`, verifies the explicit sync success message, and confirms the primary and standby rows match again.
+It also blocks a fake `rsync`, sets a one-second timeout, and verifies that explicit sync fails with a timeout error without waiting for the fake transport to finish.
 
 ## Notes
 

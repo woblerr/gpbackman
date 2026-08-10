@@ -41,6 +41,40 @@ test_history_sync_after_disabled_backup_delete() {
     assert_primary_standby_backup_row_match "${timestamp}"
 }
 
+test_history_sync_rsync_timeout_is_strict() {
+    local fake_bin_dir
+    local output
+    local elapsed
+
+    fake_bin_dir="$(mktemp -d)"
+    cat > "${fake_bin_dir}/rsync" <<'FAKE_RSYNC'
+#!/usr/bin/env bash
+exec sleep 30
+FAKE_RSYNC
+    chmod 755 "${fake_bin_dir}/rsync"
+
+    SECONDS=0
+    if output=$(
+        export PATH="${fake_bin_dir}:${PATH}"
+        "${BIN_DIR}/gpbackman" "${COMMAND}" --history-db "${HISTORY_DB}" --history-sync-standby-timeout 1 2>&1
+    ); then
+        rm -rf "${fake_bin_dir}"
+        echo "[ERROR] Expected history-sync to fail after rsync timeout"
+        exit 1
+    fi
+    elapsed="${SECONDS}"
+    rm -rf "${fake_bin_dir}"
+
+    echo "${output}"
+    assert_output_contains "${output}" "rsync standby history snapshot"
+    assert_output_contains "${output}" "timed out after 1 seconds"
+    if [ "${elapsed}" -ge 15 ]; then
+        echo "[ERROR] history-sync timeout took ${elapsed} seconds; expected less than 15"
+        exit 1
+    fi
+}
+
 run_test "${COMMAND}" 1 test_history_sync_after_disabled_backup_delete
+run_test "${COMMAND}" 2 test_history_sync_rsync_timeout_is_strict
 
 log_all_tests_passed "${COMMAND}"
