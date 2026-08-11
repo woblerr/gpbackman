@@ -407,8 +407,10 @@ func rsyncHistoryStandbySyncSnapshot(
 		remoteTempPath,
 	)
 	output, err := historyStandbySyncExecCommand(ctx, "rsync", args...)
-	if ctxErr := ctx.Err(); ctxErr != nil {
-		err = ctxErr
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			err = ctxErr
+		}
 	}
 	if err != nil {
 		return fmt.Errorf(
@@ -521,8 +523,10 @@ func runHistoryStandbySyncSSHCommand(
 		fmt.Sprintf("%s@%s", userName, standbyHost),
 		remoteCommand,
 	)
-	if ctxErr := ctx.Err(); ctxErr != nil {
-		return output, ctxErr
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return output, ctxErr
+		}
 	}
 	return output, err
 }
