@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
@@ -75,6 +76,16 @@ func getVersion() string {
 // These flag checks are applied for all commands:
 func doRootFlagValidation(flags *pflag.FlagSet, checkFileExists bool) {
 	var err error
+	if flags.Lookup(historySyncStandbyTimeoutFlagName) != nil {
+		timeoutSeconds, timeoutErr := flags.GetInt(historySyncStandbyTimeoutFlagName)
+		if timeoutErr == nil && (timeoutSeconds <= 0 || timeoutSeconds > historySyncStandbyTimeoutMax) {
+			timeoutErr = fmt.Errorf("must be between 1 and %d seconds", historySyncStandbyTimeoutMax)
+		}
+		if timeoutErr != nil {
+			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(strconv.Itoa(timeoutSeconds), historySyncStandbyTimeoutFlagName, timeoutErr))
+			execOSExit(exitErrorCode)
+		}
+	}
 	// Check that history-db and auto-load-history-db flags are not used together.
 	err = checkCompatibleFlags(flags, historyDBFlagName, autoLoadHistoryDBFlagName)
 	if err != nil {

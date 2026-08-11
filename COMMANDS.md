@@ -38,6 +38,10 @@ The source must resolve to the cluster history database at `<primary coordinator
 
 After successful `backup-delete`, `backup-clean`, or `history-clean`, gpBackMan also attempts this sync automatically. This automatic sync is best-effort: `--no-history-sync-standby` produces an info-level skip, while no up standby and ineligible sources are debug-only skips; discovery, snapshot, validation, SSH, and rsync failures are warnings and do not mask the successful primary command. Read-only commands such as `backup-info` and `report-info` do not trigger automatic sync.
 
+Standby synchronization requires rsync 3.0.0 or newer on both the host running gpBackMan and the standby coordinator. Non-interactive SSH access from that host to the standby coordinator must also be configured.
+
+The `history-sync`, `backup-delete`, `backup-clean`, and `history-clean` commands accept `--history-sync-standby-timeout SECONDS`. The default is 300 seconds. `SECONDS` must be an integer from 1 to 86400; fractions and duration strings such as `5m` are rejected. The 24-hour upper bound guards against accidentally oversized values; a longer timeout is not meaningful for standby history synchronization. This value is one shared budget for `rsync` and remote install, not a separate timeout for each command. It starts after SQLite snapshot creation and validation, so standby discovery, `VACUUM INTO`, and `PRAGMA quick_check` are outside the budget. Remote cleanup after a transport failure uses a separate fixed timeout of 120 seconds, independent of `--history-sync-standby-timeout`. Read-only commands do not accept this option.
+
 Only `gpbackup_history.db` is synced. Report files, backup data, and other backup artifacts are not synced by gpBackMan.
 
 # Delete all existing backups older than the specified time condition (`backup-clean`)
@@ -86,15 +90,16 @@ Usage:
   gpbackman backup-clean [flags]
 
 Flags:
-      --after-timestamp string    delete backup sets newer than the given timestamp
-      --backup-dir string         the full path to backup directory for local backups
-      --before-timestamp string   delete backup sets older than the given timestamp
-      --cascade                   delete all dependent backups
-  -h, --help                      help for backup-clean
-      --no-history-sync-standby   disable gpbackup_history.db sync to the standby coordinator
-      --older-than-days uint      delete backup sets older than the given number of days
-      --parallel-processes int    the number of parallel processes to delete local backups (default 1)
-      --plugin-config string      the full path to plugin config file
+      --after-timestamp string             delete backup sets newer than the given timestamp
+      --backup-dir string                  the full path to backup directory for local backups
+      --before-timestamp string            delete backup sets older than the given timestamp
+      --cascade                            delete all dependent backups
+  -h, --help                               help for backup-clean
+      --history-sync-standby-timeout int   shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400 (default 300)
+      --no-history-sync-standby            disable gpbackup_history.db sync to the standby coordinator
+      --older-than-days uint               delete backup sets older than the given number of days
+      --parallel-processes int             the number of parallel processes to delete local backups (default 1)
+      --plugin-config string               the full path to plugin config file
 
 Global Flags:
       --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
@@ -217,15 +222,16 @@ Usage:
   gpbackman backup-delete [flags]
 
 Flags:
-      --backup-dir string        the full path to backup directory for local backups
-      --cascade                  delete all dependent backups for the specified backup timestamp
-      --force                    try to delete, even if the backup already mark as deleted
-  -h, --help                     help for backup-delete
-      --ignore-errors            ignore errors when deleting backups
-      --no-history-sync-standby  disable gpbackup_history.db sync to the standby coordinator
-      --parallel-processes int   the number of parallel processes to delete local backups (default 1)
-      --plugin-config string     the full path to plugin config file
-      --timestamp stringArray    the backup timestamp for deleting, could be specified multiple times
+      --backup-dir string                  the full path to backup directory for local backups
+      --cascade                            delete all dependent backups for the specified backup timestamp
+      --force                              try to delete, even if the backup already mark as deleted
+  -h, --help                               help for backup-delete
+      --history-sync-standby-timeout int   shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400 (default 300)
+      --ignore-errors                      ignore errors when deleting backups
+      --no-history-sync-standby            disable gpbackup_history.db sync to the standby coordinator
+      --parallel-processes int             the number of parallel processes to delete local backups (default 1)
+      --plugin-config string               the full path to plugin config file
+      --timestamp stringArray              the backup timestamp for deleting, could be specified multiple times
 
 Global Flags:
       --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
@@ -553,10 +559,11 @@ Usage:
   gpbackman history-clean [flags]
 
 Flags:
-      --before-timestamp string   delete information about backups older than the given timestamp
-  -h, --help                      help for history-clean
-      --no-history-sync-standby   disable gpbackup_history.db sync to the standby coordinator
-      --older-than-days uint      delete information about backups older than the given number of days
+      --before-timestamp string            delete information about backups older than the given timestamp
+  -h, --help                               help for history-clean
+      --history-sync-standby-timeout int   shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400 (default 300)
+      --no-history-sync-standby            disable gpbackup_history.db sync to the standby coordinator
+      --older-than-days uint               delete information about backups older than the given number of days
 
 Global Flags:
       --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
@@ -672,7 +679,8 @@ Usage:
   gpbackman history-sync [flags]
 
 Flags:
-  -h, --help   help for history-sync
+  -h, --help                               help for history-sync
+      --history-sync-standby-timeout int   shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400 (default 300)
 
 Global Flags:
       --auto-load-history-db       resolve gpbackup_history.db from $MASTER_DATA_DIRECTORY or $COORDINATOR_DATA_DIRECTORY when --history-db is unset
