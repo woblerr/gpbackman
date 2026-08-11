@@ -232,7 +232,7 @@ func TestSyncHistoryStandbyTransportTimeoutUsesIndependentCleanupContext(t *test
 		historyStandbySyncTimeoutSeconds = oldTimeoutSeconds
 		historyStandbySyncContextWithTimeout = oldContextTimeout
 	})
-	calls := setHistoryStandbySyncExecCommand(t, []historyStandbySyncExecResponse{{}, {}})
+	calls := setHistoryStandbySyncExecCommand(t, []historyStandbySyncExecResponse{{err: context.DeadlineExceeded}, {}})
 	started := time.Now()
 
 	_, err := syncHistoryStandby("")
