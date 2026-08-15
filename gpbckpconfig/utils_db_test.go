@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/woblerr/gpbackman/textmsg"
 )
 
@@ -150,30 +153,6 @@ WHERE timestamp != 'TestBackup'
 	AND restore_plan_timestamp = 'TestBackup'
 ORDER BY timestamp DESC;
 `},
-		{
-			name:     "Test getBackupNameBeforeTimestampQuery",
-			value:    "20240101120000",
-			function: getBackupNameBeforeTimestampQuery,
-			want: `
-SELECT timestamp 
-FROM backups 
-WHERE timestamp < '20240101120000' 
-	AND status != 'In Progress' 
-	AND date_deleted IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed') 
-ORDER BY timestamp DESC;
-`},
-		{
-			name:     "Test getBackupNameAfterTimestampQuery",
-			value:    "20240101120000",
-			function: getBackupNameAfterTimestampQuery,
-			want: `
-SELECT timestamp 
-FROM backups 
-WHERE timestamp > '20240101120000' 
-	AND status != 'In Progress' 
-	AND date_deleted IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed') 
-ORDER BY timestamp DESC;
-`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -184,31 +163,131 @@ ORDER BY timestamp DESC;
 	}
 }
 
-func TestGetBackupNameForCleanBeforeTimestampQuery(t *testing.T) {
+func TestBackupNameTimestampQueries(t *testing.T) {
+	const timestamp = "20240101120000"
 	tests := []struct {
-		name  string
-		value string
-		showD bool
-		want  string
+		name     string
+		function func(string, string) string
+		want     string
 	}{
 		{
-			name:  "Show backups",
-			value: "20240101120000",
-			showD: true,
-			want: `
-SELECT timestamp 
-FROM backups 
-WHERE timestamp < '20240101120000' 
-	AND date_deleted NOT IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed', 'In progress') 
-ORDER BY timestamp DESC;
-`},
+			name:     "Before timestamp without database filter",
+			function: getBackupNameBeforeTimestampQuery,
+			want: "\nSELECT timestamp \n" +
+				"FROM backups \n" +
+				"WHERE timestamp < '20240101120000' \n" +
+				"\tAND status != 'In Progress' \n" +
+				"\tAND date_deleted IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed') \n" +
+				"ORDER BY timestamp DESC;\n",
+		},
+		{
+			name:     "After timestamp without database filter",
+			function: getBackupNameAfterTimestampQuery,
+			want: "\nSELECT timestamp \n" +
+				"FROM backups \n" +
+				"WHERE timestamp > '20240101120000' \n" +
+				"\tAND status != 'In Progress' \n" +
+				"\tAND date_deleted IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed') \n" +
+				"ORDER BY timestamp DESC;\n",
+		},
+		{
+			name:     "History clean without database filter",
+			function: getBackupNameForCleanBeforeTimestampQuery,
+			want: "\nSELECT timestamp \n" +
+				"FROM backups \n" +
+				"WHERE timestamp < '20240101120000' \n" +
+				"\tAND date_deleted NOT IN ('', 'Plugin Backup Delete Failed', 'Local Delete Failed', 'In progress') \n" +
+				"ORDER BY timestamp DESC;\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getBackupNameForCleanBeforeTimestampQuery(tt.value); got != tt.want {
-				t.Errorf("getBackupNameForCleanBeforeTimestampQuery(%v, %v):\n%v\nwant:\n%v", tt.value, tt.showD, got, tt.want)
+			if got := tt.function(timestamp, ""); got != tt.want {
+				t.Fatalf("Unexpected query:\n%s\nwant:\n%s", got, tt.want)
+			}
+			if got := tt.function(timestamp, "customer's db"); got != tt.want[:len(tt.want)-len("ORDER BY timestamp DESC;\n")]+"\tAND database_name = ?\nORDER BY timestamp DESC;\n" {
+				t.Fatalf("Unexpected filtered query:\n%s", got)
 			}
 		})
+	}
+}
+
+func TestGetBackupNamesTimestampQueriesBindDatabaseName(t *testing.T) {
+	const (
+		timestamp    = "20240101120000"
+		databaseName = "customer's db"
+	)
+	tests := []struct {
+		name     string
+		query    string
+		function func(string, string, *sql.DB) ([]string, error)
+	}{
+		{
+			name:     "Before timestamp",
+			query:    getBackupNameBeforeTimestampQuery(timestamp, databaseName),
+			function: GetBackupNamesBeforeTimestamp,
+		},
+		{
+			name:     "After timestamp",
+			query:    getBackupNameAfterTimestampQuery(timestamp, databaseName),
+			function: GetBackupNamesAfterTimestamp,
+		},
+		{
+			name:     "History clean",
+			query:    getBackupNameForCleanBeforeTimestampQuery(timestamp, databaseName),
+			function: GetBackupNamesForCleanBeforeTimestamp,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("Failed to create SQL mock: %v", err)
+			}
+			t.Cleanup(func() { _ = db.Close() })
+			mock.ExpectQuery(regexp.QuoteMeta(tt.query)).WithArgs(databaseName).
+				WillReturnRows(sqlmock.NewRows([]string{"timestamp"}).AddRow("20240101110000"))
+
+			got, err := tt.function(timestamp, databaseName, db)
+			if err != nil {
+				t.Fatalf("Expected query to succeed, got: %v", err)
+			}
+			if len(got) != 1 || got[0] != "20240101110000" {
+				t.Fatalf("Unexpected backup names: %v", got)
+			}
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Fatalf("Unmet SQL expectations: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetBackupNamesBeforeTimestampFiltersDatabaseExactly(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "history.db")
+	db, err := sql.Open("sqlite3", "file:"+dbPath+"?mode=rwc")
+	if err != nil {
+		t.Fatalf("Failed to open temporary SQLite DB: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if _, err := db.Exec(`CREATE TABLE backups (timestamp TEXT, database_name TEXT, status TEXT, date_deleted TEXT)`); err != nil {
+		t.Fatalf("Failed to create backups table: %v", err)
+	}
+	for _, backup := range [][]string{
+		{"20240101110000", "Customer", "Success", ""},
+		{"20240101100000", "customer", "Success", ""},
+		{"20240101090000", "customer's db", "Success", ""},
+	} {
+		if _, err := db.Exec(`INSERT INTO backups (timestamp, database_name, status, date_deleted) VALUES (?, ?, ?, ?)`, backup[0], backup[1], backup[2], backup[3]); err != nil {
+			t.Fatalf("Failed to insert backup %q: %v", backup[0], err)
+		}
+	}
+
+	got, err := GetBackupNamesBeforeTimestamp("20240101120000", "customer", db)
+	if err != nil {
+		t.Fatalf("Expected filtered query to succeed, got: %v", err)
+	}
+	if len(got) != 1 || got[0] != "20240101100000" {
+		t.Fatalf("Expected exact case-sensitive database match, got: %v", got)
 	}
 }
 

@@ -119,7 +119,7 @@ func cleanHistory() (string, error) {
 }
 
 func historyCleanDB(cutOffTimestamp string, hDB *sql.DB) error {
-	backupList, err := gpbckpconfig.GetBackupNamesForCleanBeforeTimestamp(cutOffTimestamp, hDB)
+	backupList, err := gpbckpconfig.GetBackupNamesForCleanBeforeTimestamp(cutOffTimestamp, "", hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
 		return err
