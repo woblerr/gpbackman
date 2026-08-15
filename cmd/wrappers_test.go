@@ -160,21 +160,16 @@ func TestNoHistorySyncStandbyFlagRegisteredOnSyncCommands(t *testing.T) {
 }
 
 func TestDatabaseFlagIsScopedToCleanCommands(t *testing.T) {
-	for _, tt := range []struct {
-		name  string
-		flags *pflag.FlagSet
-		want  bool
-	}{
-		{"Root", rootCmd.PersistentFlags(), false},
-		{"Backup clean", backupCleanCmd.Flags(), true},
-		{"Backup delete", backupDeleteCmd.PersistentFlags(), false},
-		{"History clean", historyCleanCmd.PersistentFlags(), false},
-		{"History migrate", historyMigrateCmd.PersistentFlags(), false},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			got := tt.flags.Lookup(databaseFlagName) != nil
-			if got != tt.want {
-				t.Errorf("%s database flag = %v, want %v", tt.name, got, tt.want)
+	if rootCmd.PersistentFlags().Lookup(databaseFlagName) != nil {
+		t.Errorf("Root database flag must not be registered")
+	}
+	for _, command := range rootCmd.Commands() {
+		command := command
+		t.Run(command.Name(), func(t *testing.T) {
+			want := command == backupCleanCmd || command == historyCleanCmd
+			got := command.Flags().Lookup(databaseFlagName) != nil
+			if got != want {
+				t.Errorf("%s database flag = %v, want %v", command.Name(), got, want)
 			}
 		})
 	}
