@@ -269,16 +269,16 @@ func TestGetBackupNamesBeforeTimestampFiltersDatabaseExactly(t *testing.T) {
 		t.Fatalf("Failed to open temporary SQLite DB: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if _, err := db.Exec(`CREATE TABLE backups (timestamp TEXT, database_name TEXT, status TEXT, date_deleted TEXT)`); err != nil {
-		t.Fatalf("Failed to create backups table: %v", err)
+	if _, execErr := db.Exec(`CREATE TABLE backups (timestamp TEXT, database_name TEXT, status TEXT, date_deleted TEXT)`); execErr != nil {
+		t.Fatalf("Failed to create backups table: %v", execErr)
 	}
 	for _, backup := range [][]string{
 		{"20240101110000", "Customer", "Success", ""},
 		{"20240101100000", "customer", "Success", ""},
 		{"20240101090000", "customer's db", "Success", ""},
 	} {
-		if _, err := db.Exec(`INSERT INTO backups (timestamp, database_name, status, date_deleted) VALUES (?, ?, ?, ?)`, backup[0], backup[1], backup[2], backup[3]); err != nil {
-			t.Fatalf("Failed to insert backup %q: %v", backup[0], err)
+		if _, execErr := db.Exec(`INSERT INTO backups (timestamp, database_name, status, date_deleted) VALUES (?, ?, ?, ?)`, backup[0], backup[1], backup[2], backup[3]); execErr != nil {
+			t.Fatalf("Failed to insert backup %q: %v", backup[0], execErr)
 		}
 	}
 
