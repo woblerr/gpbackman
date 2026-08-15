@@ -297,6 +297,13 @@ func TestErrorFunctionsTwoArgs(t *testing.T) {
 	}
 }
 
+func TestErrorBackupDependencyDatabaseMismatch(t *testing.T) {
+	err := ErrorBackupDependencyDatabaseMismatch("20240101010101", "demo", "20240102020202", "other")
+	if got, want := err.Error(), "backup 20240101010101 expected database demo but dependent backup 20240102020202 has database other"; got != want {
+		t.Errorf("Unexpected error:\n%s\nwant:\n%s", got, want)
+	}
+}
+
 func TestErrorFunctionsOneoArg(t *testing.T) {
 	tests := []struct {
 		name    string
