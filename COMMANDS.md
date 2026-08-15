@@ -56,6 +56,8 @@ To delete backup sets older than the given number of days, use the --older-than-
 To delete backup sets newer than the given timestamp, use the --after-timestamp option.
 Only --older-than-days, --before-timestamp or --after-timestamp option must be specified.
 
+Use --database to delete backup sets only for the specified database. Without --database, cleanup considers backups for all databases in the history database.
+
 By default, the existence of dependent backups is checked and deletion process is not performed,
 unless the --cascade option is passed in.
 
@@ -94,6 +96,7 @@ Flags:
       --backup-dir string                  the full path to backup directory for local backups
       --before-timestamp string            delete backup sets older than the given timestamp
       --cascade                            delete all dependent backups
+      --database string                    delete backup sets only for the specified database
   -h, --help                               help for backup-clean
       --history-sync-standby-timeout int   shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400 (default 300)
       --no-history-sync-standby            disable gpbackup_history.db sync to the standby coordinator
@@ -117,6 +120,13 @@ Delete specific backup with specifying directory path:
 ./gpbackman backup-clean \
   --before-timestamp 20240701100000 \
   --cascade
+```
+
+Delete local backups only for database `analytics`:
+```bash
+./gpbackman backup-clean \
+  --before-timestamp 20240701100000 \
+  --database analytics
 ```
 
 Delete specific backup with specifying the number of parallel processes:
@@ -547,6 +557,8 @@ To delete information about backups older than the given timestamp, use the --be
 To delete information about backups older than the given number of days, use the --older-than-day option. 
 Only --older-than-days or --before-timestamp option must be specified, not both.
 
+Use --database to clean deleted backup history only for the specified database. Without --database, cleanup removes matching deleted backup history for all databases in the history database.
+
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
 If the --history-db option is not specified, gpbackman uses gpbackup_history.db in the current directory.
@@ -560,6 +572,7 @@ Usage:
 
 Flags:
       --before-timestamp string            delete information about backups older than the given timestamp
+      --database string                    delete backup history only for the specified database
   -h, --help                               help for history-clean
       --history-sync-standby-timeout int   shared rsync and remote install timeout in seconds; must be an integer between 1 and 86400 (default 300)
       --no-history-sync-standby            disable gpbackup_history.db sync to the standby coordinator
@@ -586,6 +599,13 @@ Delete information about deleted backups from history database older than timest
 ```bash
 ./gpbackman history-clean \
   --before-timestamp 20240101100000 \
+```
+
+Delete deleted backup history only for database `analytics`:
+```bash
+./gpbackman history-clean \
+  --before-timestamp 20240101100000 \
+  --database analytics
 ```
 
 ## Using container

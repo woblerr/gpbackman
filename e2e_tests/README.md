@@ -47,7 +47,7 @@ make test-e2e_history-migrate
 make test-e2e_history-sync
 ```
 
-`backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes.
+`backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes. The `backup-clean` and `history-clean` suites also create local backups for two databases to cover selective `--database` cleanup and standby synchronization.
 
 Manually run a single-node command suite:
 

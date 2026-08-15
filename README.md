@@ -8,6 +8,8 @@
 
 The utility works with `gpbackup_history.db` SQLite history database format. 
 
+A cluster-wide history database can contain backups for several databases. Use `backup-clean --database DATABASE` or `history-clean --database DATABASE` to apply retention to one database; without this option, both cleanup commands continue to consider all databases in the history database.
+
 The utility provides functionality for migrating data from the old `gpbackup_history.yaml` YAML format to the new one. If you are using an old `gpbackup` version that supports only YAML format, then use `gpBackMan <= v0.6.0`.
 
 **gpBackMan** provides the following features:
