@@ -56,7 +56,9 @@ To delete backup sets older than the given number of days, use the --older-than-
 To delete backup sets newer than the given timestamp, use the --after-timestamp option.
 Only --older-than-days, --before-timestamp or --after-timestamp option must be specified.
 
-Use --database to delete backup sets only for the specified database. Without --database, cleanup considers backups for all databases in the history database.
+Use --database to clean history only for the specified database. Without --database,
+cleanup includes deleted backup history for all databases in the history database.
+Database names are matched exactly and case-sensitively against backup history.
 
 By default, the existence of dependent backups is checked and deletion process is not performed,
 unless the --cascade option is passed in.
@@ -557,7 +559,9 @@ To delete information about backups older than the given timestamp, use the --be
 To delete information about backups older than the given number of days, use the --older-than-day option. 
 Only --older-than-days or --before-timestamp option must be specified, not both.
 
-Use --database to clean deleted backup history only for the specified database. Without --database, cleanup removes matching deleted backup history for all databases in the history database.
+Use --database to clean history only for the specified database. Without --database,
+cleanup includes deleted backup history for all databases in the history database.
+Database names are matched exactly and case-sensitively against backup history.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
