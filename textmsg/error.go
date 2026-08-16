@@ -160,10 +160,6 @@ func ErrorBackupDeleteCascadeOptionError() error {
 	return errors.New("use cascade option")
 }
 
-func ErrorBackupDependencyDatabaseMismatch(sourceBackup, expectedDatabase, dependencyBackup, actualDatabase string) error {
-	return fmt.Errorf("backup %s expected database %s but dependent backup %s has database %s", sourceBackup, expectedDatabase, dependencyBackup, actualDatabase)
-}
-
 func ErrorBackupLocalStorageError() error {
 	return errors.New("is a local backup")
 }

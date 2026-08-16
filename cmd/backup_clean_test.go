@@ -51,7 +51,7 @@ func TestDoCleanBackupDatabaseFlagValidation(t *testing.T) {
 		wantExit    bool
 	}{
 		{name: "Absent database flag"},
-		{name: "Non-empty database", database: "Customer's DB", setDatabase: true},
+		{name: "Non-empty database", database: `"Customer's DB"`, setDatabase: true},
 		{name: "Explicit empty database", database: "", setDatabase: true, wantExit: true},
 	}
 	for _, tt := range tests {
@@ -107,9 +107,9 @@ func TestFetchBackupNamesForDeletionFiltersDatabase(t *testing.T) {
 		database  string
 	}{
 		{"20240101090000", "demo"},
-		{"20240101100000", "Customer's DB"},
-		{"20240101110000", "customer's db"},
-		{"20240101130000", "Customer's DB"},
+		{"20240101100000", `"Customer's DB"`},
+		{"20240101110000", `"customer's db"`},
+		{"20240101130000", `"Customer's DB"`},
 	} {
 		if _, err := db.Exec(`INSERT INTO backups (timestamp, database_name, status, date_deleted) VALUES (?, ?, 'Success', '')`, backup.timestamp, backup.database); err != nil {
 			t.Fatalf("Failed to seed backup %s: %v", backup.timestamp, err)
@@ -126,19 +126,19 @@ func TestFetchBackupNamesForDeletionFiltersDatabase(t *testing.T) {
 		{
 			name:            "Before timestamp exact database",
 			beforeTimestamp: "20240101120000",
-			database:        "Customer's DB",
+			database:        `"Customer's DB"`,
 			want:            []string{"20240101100000"},
 		},
 		{
 			name:           "After timestamp exact database",
 			afterTimestamp: "20240101120000",
-			database:       "Customer's DB",
+			database:       `"Customer's DB"`,
 			want:           []string{"20240101130000"},
 		},
 		{
-			name:            "Older than days cutoff uses before timestamp",
+			name:            "Quoted database name remains distinct",
 			beforeTimestamp: "20240101120000",
-			database:        "customer's db",
+			database:        `"customer's db"`,
 			want:            []string{"20240101110000"},
 		},
 		{

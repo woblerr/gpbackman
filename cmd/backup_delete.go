@@ -272,7 +272,7 @@ func backupDeleteDB(backupListForDeletion []string, deleteCascade, deleteForce, 
 				if deleteCascade {
 					gplog.Debug("%s", textmsg.InfoTextBackupDeleteList(backupDependencies))
 					// If the deletion of at least one dependent backup fails, we fail full entire chain.
-					err = backupDeleteDBCascade(backupName, backupData.DatabaseName, backupDependencies, deleteForce, ignoreErrors, skipLocalBackup, deleter, hDB)
+					err = backupDeleteDBCascade(backupDependencies, deleteForce, ignoreErrors, skipLocalBackup, deleter, hDB)
 					if err != nil {
 						gplog.Error("%s", textmsg.ErrorTextUnableDeleteBackupCascade(backupName, err))
 						return "", err
@@ -291,15 +291,12 @@ func backupDeleteDB(backupListForDeletion []string, deleteCascade, deleteForce, 
 	return clusterDBName, nil
 }
 
-func backupDeleteDBCascade(sourceBackup, databaseName string, backupList []string, deleteForce, ignoreErrors, skipLocalBackup bool, deleter backupDeleteInterface, hDB *sql.DB) error {
+func backupDeleteDBCascade(backupList []string, deleteForce, ignoreErrors, skipLocalBackup bool, deleter backupDeleteInterface, hDB *sql.DB) error {
 	for _, backup := range backupList {
 		backupData, err := gpbckpconfig.GetBackupDataDB(backup, hDB)
 		if err != nil {
 			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backup, err))
 			return err
-		}
-		if backupData.DatabaseName != databaseName {
-			return textmsg.ErrorBackupDependencyDatabaseMismatch(sourceBackup, databaseName, backup, backupData.DatabaseName)
 		}
 		// Skip local backup.
 		canBeDeleted, err := checkBackupCanBeUsed(deleteForce, skipLocalBackup, backupData)

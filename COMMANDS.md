@@ -56,8 +56,8 @@ To delete backup sets older than the given number of days, use the --older-than-
 To delete backup sets newer than the given timestamp, use the --after-timestamp option.
 Only --older-than-days, --before-timestamp or --after-timestamp option must be specified.
 
-Use --database to clean history only for the specified database. Without --database,
-cleanup includes deleted backup history for all databases in the history database.
+Use --database to clean backup sets only for the specified database. Without --database,
+cleanup includes backup sets for all databases in the history database.
 Database names are matched exactly and case-sensitively against backup history.
 
 By default, the existence of dependent backups is checked and deletion process is not performed,

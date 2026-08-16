@@ -205,7 +205,7 @@ func TestBackupNameTimestampQueries(t *testing.T) {
 			if got := tt.function(timestamp, ""); got != tt.want {
 				t.Fatalf("Unexpected query:\n%s\nwant:\n%s", got, tt.want)
 			}
-			if got := tt.function(timestamp, "customer's db"); got != tt.want[:len(tt.want)-len("ORDER BY timestamp DESC;\n")]+"\tAND database_name = ?\nORDER BY timestamp DESC;\n" {
+			if got := tt.function(timestamp, `"customer's db"`); got != tt.want[:len(tt.want)-len("ORDER BY timestamp DESC;\n")]+"\tAND database_name = ?\nORDER BY timestamp DESC;\n" {
 				t.Fatalf("Unexpected filtered query:\n%s", got)
 			}
 		})
@@ -215,7 +215,7 @@ func TestBackupNameTimestampQueries(t *testing.T) {
 func TestGetBackupNamesTimestampQueriesBindDatabaseName(t *testing.T) {
 	const (
 		timestamp    = "20240101120000"
-		databaseName = "customer's db"
+		databaseName = `"customer's db"`
 	)
 	tests := []struct {
 		name     string
@@ -273,9 +273,9 @@ func TestGetBackupNamesBeforeTimestampFiltersDatabaseExactly(t *testing.T) {
 		t.Fatalf("Failed to create backups table: %v", execErr)
 	}
 	for _, backup := range [][]string{
-		{"20240101110000", "Customer", "Success", ""},
+		{"20240101110000", `"Customer"`, "Success", ""},
 		{"20240101100000", "customer", "Success", ""},
-		{"20240101090000", "customer's db", "Success", ""},
+		{"20240101090000", `"customer's db"`, "Success", ""},
 	} {
 		if _, execErr := db.Exec(`INSERT INTO backups (timestamp, database_name, status, date_deleted) VALUES (?, ?, ?, ?)`, backup[0], backup[1], backup[2], backup[3]); execErr != nil {
 			t.Fatalf("Failed to insert backup %q: %v", backup[0], execErr)

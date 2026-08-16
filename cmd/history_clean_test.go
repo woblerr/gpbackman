@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"database/sql"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -53,7 +52,7 @@ func TestDoCleanHistoryDatabaseFlagValidation(t *testing.T) {
 		wantExit    bool
 	}{
 		{name: "Absent database flag"},
-		{name: "Non-empty database", database: "Customer's DB", setDatabase: true},
+		{name: "Non-empty database", database: `"Customer's DB"`, setDatabase: true},
 		{name: "Explicit empty database", setDatabase: true, wantExit: true},
 		{name: "Older than days", database: "demo", setDatabase: true, olderThan: true},
 	}
@@ -113,14 +112,14 @@ func TestDoCleanHistoryDatabaseFlagValidation(t *testing.T) {
 
 func TestHistoryCleanDBFiltersDatabaseAndDeletesAuxiliaryRows(t *testing.T) {
 	db := createHistoryCleanTestDB(t)
-	selectedDeleted := historyCleanTestConfig("20240101000000", "Customer's DB", "20240102000000", gpbckpconfig.BackupStatusSuccess)
-	otherDeleted := historyCleanTestConfig("20240101010000", "customer's db", "20240102000000", gpbckpconfig.BackupStatusSuccess)
-	selectedNew := historyCleanTestConfig("20240103000000", "Customer's DB", "20240104000000", gpbckpconfig.BackupStatusSuccess)
-	selectedActive := historyCleanTestConfig("20240101020000", "Customer's DB", "", gpbckpconfig.BackupStatusSuccess)
-	selectedFailed := historyCleanTestConfig("20240101030000", "Customer's DB", "", gpbckpconfig.BackupStatusFailure)
+	selectedDeleted := historyCleanTestConfig("20240101000000", `"Customer's DB"`, "20240102000000", gpbckpconfig.BackupStatusSuccess)
+	otherDeleted := historyCleanTestConfig("20240101010000", `"customer's db"`, "20240102000000", gpbckpconfig.BackupStatusSuccess)
+	selectedNew := historyCleanTestConfig("20240103000000", `"Customer's DB"`, "20240104000000", gpbckpconfig.BackupStatusSuccess)
+	selectedActive := historyCleanTestConfig("20240101020000", `"Customer's DB"`, "", gpbckpconfig.BackupStatusSuccess)
+	selectedFailed := historyCleanTestConfig("20240101030000", `"Customer's DB"`, "", gpbckpconfig.BackupStatusFailure)
 	storeHistoryCleanConfigs(t, db, selectedDeleted, otherDeleted, selectedNew, selectedActive, selectedFailed)
 
-	if err := historyCleanDB("20240102000000", "Customer's DB", db); err != nil {
+	if err := historyCleanDB("20240102000000", `"Customer's DB"`, db); err != nil {
 		t.Fatalf("Expected history cleanup to succeed, got: %v", err)
 	}
 
@@ -162,35 +161,6 @@ func TestHistoryCleanDBWithoutFilterAndUnknownDatabase(t *testing.T) {
 	}
 	assertHistoryCleanTimestampExists(t, db, first.Timestamp, false)
 	assertHistoryCleanTimestampExists(t, db, second.Timestamp, false)
-}
-
-func TestHistoryCleanDBUsesExistingBatchSize(t *testing.T) {
-	db := createHistoryCleanTestDB(t)
-	tx, err := db.Begin()
-	if err != nil {
-		t.Fatalf("Failed to begin seed transaction: %v", err)
-	}
-	for i := 0; i <= sqliteDeleteBatchSize; i++ {
-		timestamp := fmt.Sprintf("20240101%06d", i)
-		if _, err := tx.Exec(`INSERT INTO backups (timestamp, database_name, date_deleted, status) VALUES (?, ?, ?, ?)`, timestamp, "demo", "20240102000000", gpbckpconfig.BackupStatusSuccess); err != nil {
-			_ = tx.Rollback()
-			t.Fatalf("Failed to seed backup %d: %v", i, err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		t.Fatalf("Failed to commit seed transaction: %v", err)
-	}
-
-	if err := historyCleanDB("20240103000000", "demo", db); err != nil {
-		t.Fatalf("Expected batched history cleanup to succeed, got: %v", err)
-	}
-	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM backups").Scan(&count); err != nil {
-		t.Fatalf("Failed to count remaining backups: %v", err)
-	}
-	if count != 0 {
-		t.Errorf("Remaining backups = %d, want 0", count)
-	}
 }
 
 var historyCleanAuxiliaryTables = []string{

@@ -220,11 +220,11 @@ get_backup_timestamp_for_database() {
             return value
         }
         trim($4) == database {
-            print trim($2)
+            print trim($1)
             exit
         }
     ')"
-    if [ -z "${timestamp}" ]; then
+    if ! echo "${timestamp}" | grep -Eq '^[0-9]{14}$'; then
         echo "[ERROR] Could not find backup timestamp for database: ${database}" >&2
         exit 1
     fi
