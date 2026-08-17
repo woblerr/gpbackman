@@ -59,6 +59,7 @@ Only --older-than-days, --before-timestamp or --after-timestamp option must be s
 Use --database to clean backup sets only for the specified database. Without --database,
 cleanup includes backup sets for all databases in the history database.
 Database names are matched exactly and case-sensitively against backup history.
+For database names that require quoting, include the double quotes in the --database value.
 
 By default, the existence of dependent backups is checked and deletion process is not performed,
 unless the --cascade option is passed in.
@@ -129,6 +130,13 @@ Delete local backups only for database `analytics`:
 ./gpbackman backup-clean \
   --before-timestamp 20240701100000 \
   --database analytics
+```
+
+For database `Sales DB`, include double quotes in the flag value:
+```bash
+./gpbackman backup-clean \
+  --before-timestamp 20240701100000 \
+  --database '"Sales DB"'
 ```
 
 Delete specific backup with specifying the number of parallel processes:
@@ -562,6 +570,7 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 Use --database to clean history only for the specified database. Without --database,
 cleanup includes deleted backup history for all databases in the history database.
 Database names are matched exactly and case-sensitively against backup history.
+For database names that require quoting, include the double quotes in the --database value.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.
@@ -610,6 +619,13 @@ Delete deleted backup history only for database `analytics`:
 ./gpbackman history-clean \
   --before-timestamp 20240101100000 \
   --database analytics
+```
+
+For database `Sales DB`, include double quotes in the flag value:
+```bash
+./gpbackman history-clean \
+  --before-timestamp 20240101100000 \
+  --database '"Sales DB"'
 ```
 
 ## Using container

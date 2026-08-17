@@ -33,6 +33,7 @@ Only --older-than-days or --before-timestamp option must be specified, not both.
 Use --database to clean history only for the specified database. Without --database,
 cleanup includes deleted backup history for all databases in the history database.
 Database names are matched exactly and case-sensitively against backup history.
+For database names that require quoting, include the double quotes in the --database value.
 
 The gpbackup_history.db file location can be set using the --history-db option.
 Can be specified only once. The full path to the file is required.

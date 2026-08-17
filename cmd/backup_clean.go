@@ -38,6 +38,7 @@ Only --older-than-days, --before-timestamp or --after-timestamp option must be s
 Use --database to clean backups only for the specified database. Without --database,
 cleanup includes backups for all databases in the history database.
 Database names are matched exactly and case-sensitively against backup history.
+For database names that require quoting, include the double quotes in the --database value.
 
 By default, the existence of dependent backups is checked and deletion process is not performed,
 unless the --cascade option is passed in.
