@@ -209,6 +209,76 @@ get_active_local_backup_timestamp() {
     echo "${timestamp}"
 }
 
+get_backup_timestamp_for_database() {
+    local database="${1}"
+    local timestamp
+
+    timestamp="$(get_primary_backup_info "latest_${database}_backup" --deleted --failed | backup_info_rows | awk -F'|' -v database="${database}" '
+        function trim(value) {
+            sub(/^[[:space:]]+/, "", value)
+            sub(/[[:space:]]+$/, "", value)
+            return value
+        }
+        trim($4) == database {
+            print trim($1)
+            exit
+        }
+    ')"
+    if ! echo "${timestamp}" | grep -Eq '^[0-9]{14}$'; then
+        echo "[ERROR] Could not find backup timestamp for database: ${database}" >&2
+        exit 1
+    fi
+    echo "${timestamp}"
+}
+
+create_local_backup_for_database() {
+    local database="${1}"
+
+    echo "[INFO] Creating local backup for database: ${database}" >&2
+    gpbackup --dbname "${database}" >&2 || {
+        echo "[ERROR] Could not create local backup for database: ${database}" >&2
+        exit 1
+    }
+    sleep 1
+    get_backup_timestamp_for_database "${database}"
+}
+
+create_additional_database_local_backup() {
+    local database="${1}"
+
+    createdb --maintenance-db demo "${database}" || {
+        echo "[ERROR] Could not create additional database: ${database}" >&2
+        exit 1
+    }
+    create_local_backup_for_database "${database}"
+}
+
+assert_primary_backup_active() {
+    local timestamp="${1}"
+    local row
+    local date_deleted
+
+    row="$(primary_backup_row_for_timestamp "${timestamp}")"
+    if [ -z "${row}" ]; then
+        echo "[ERROR] Active backup is missing from history: ${timestamp}"
+        exit 1
+    fi
+    date_deleted="$(echo "${row}" | awk -F'|' '{print $NF}' | xargs)"
+    if [ -n "${date_deleted}" ]; then
+        echo "[ERROR] Backup should remain active: ${timestamp}"
+        exit 1
+    fi
+}
+
+assert_primary_backup_row_absent() {
+    local timestamp="${1}"
+
+    if [ -n "$(primary_backup_row_for_timestamp "${timestamp}")" ]; then
+        echo "[ERROR] Backup should be absent from history: ${timestamp}"
+        exit 1
+    fi
+}
+
 run_test() {
     local command="${1}"
     local test_id="${2}"

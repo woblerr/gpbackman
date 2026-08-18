@@ -18,6 +18,9 @@ set -Eeuo pipefail
 #
 # Then we run a no-op cleanup with standby history sync disabled,
 # there should still be a total of 12 deleted backups.
+#
+# Then we create local backups for demo and a second database, clean only the
+# second database, and verify the selective result on primary and standby.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
 
@@ -90,10 +93,29 @@ test_clean_no_history_sync_standby_noop() {
     assert_equals "${want}" "${got}"
 }
 
+# Test 6: Clean only local backups for an additional database
+test_clean_additional_database_backups() {
+    local additional_database="cleanup_filter_backup"
+    local demo_timestamp
+    local additional_timestamp
+    local output
+
+    demo_timestamp="$(create_local_backup_for_database demo)"
+    additional_timestamp="$(create_additional_database_local_backup "${additional_database}")"
+    output=$(run_command_capture "clean_${additional_database}" --before-timestamp 99999999999999 --database "${additional_database}")
+    assert_history_sync_success_output "${output}"
+
+    assert_primary_backup_active "${demo_timestamp}"
+    assert_primary_backup_deleted "${additional_timestamp}"
+    assert_primary_standby_backup_row_match "${demo_timestamp}"
+    assert_primary_standby_backup_row_match "${additional_timestamp}"
+}
+
 run_test "${COMMAND}" 1 test_clean_local_backups_before_timestamp
 run_test "${COMMAND}" 2 test_clean_local_backups_after_timestamp_no_history_sync_standby
 run_test "${COMMAND}" 3 test_clean_s3_backups_after_timestamp
 run_test "${COMMAND}" 4 test_clean_s3_backups_before_timestamp
 run_test "${COMMAND}" 5 test_clean_no_history_sync_standby_noop
+run_test "${COMMAND}" 6 test_clean_additional_database_backups
 
 log_all_tests_passed "${COMMAND}"

@@ -42,6 +42,7 @@ const (
 	excludeFlagName                   = "exclude"
 	backupDirFlagName                 = "backup-dir"
 	parallelProcessesFlagName         = "parallel-processes"
+	databaseFlagName                  = "database"
 	ignoreErrorsFlagName              = "ignore-errors"
 	detailFlagName                    = "detail"
 

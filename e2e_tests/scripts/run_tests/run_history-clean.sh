@@ -13,6 +13,9 @@ set -Eeuo pipefail
 
 # After each deletion we cleanup history db.
 
+# Then we create and delete local backups for demo and a second database,
+# clean history only for the second database, and verify the result on primary and standby.
+
 # Then we run history cleanup with standby history sync disabled for both mutation and no-op cases.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common_functions.sh"
@@ -53,7 +56,28 @@ test_history_clean_s3_before_timestamp(){
     assert_primary_standby_deleted_backup_rows_match
 }
 
-# Test 3: Clean history records with standby history sync disabled
+# Test 3: Clean history only for an additional database
+test_history_clean_additional_database_backups(){
+    local additional_database="cleanup_filter_history"
+    local demo_timestamp
+    local additional_timestamp
+    local output
+
+    demo_timestamp="$(create_local_backup_for_database demo)"
+    additional_timestamp="$(create_additional_database_local_backup "${additional_database}")"
+    run_gpbackman "backup-delete" "delete_demo_before_database_history_clean" --history-db "${HISTORY_DB}" --timestamp "${demo_timestamp}"
+    run_gpbackman "backup-delete" "delete_${additional_database}_before_database_history_clean" --history-db "${HISTORY_DB}" --timestamp "${additional_timestamp}"
+
+    output=$(run_command_capture "clean_${additional_database}_history" --before-timestamp 99999999999999 --database "${additional_database}")
+    assert_history_sync_success_output "${output}"
+
+    assert_primary_backup_deleted "${demo_timestamp}"
+    assert_primary_backup_row_absent "${additional_timestamp}"
+    assert_primary_standby_backup_row_match "${demo_timestamp}"
+    assert_primary_standby_backup_row_match "${additional_timestamp}"
+}
+
+# Test 4: Clean history records with standby history sync disabled
 test_history_clean_no_history_sync_standby(){
     local timestamp
     timestamp="$(get_active_local_backup_timestamp "full")"
@@ -76,7 +100,7 @@ test_history_clean_no_history_sync_standby(){
     fi
 }
 
-# Test 4: Run a no-op history cleanup with standby history sync disabled
+# Test 5: Run a no-op history cleanup with standby history sync disabled
 test_history_clean_no_history_sync_standby_noop(){
     local output
     output=$(run_command_capture "clean_no_history_sync_standby_noop" --before-timestamp 19000101000000 --no-history-sync-standby)
@@ -88,7 +112,8 @@ test_history_clean_no_history_sync_standby_noop(){
 
 run_test "${COMMAND}" 1 test_history_clean_local_before_timestamp
 run_test "${COMMAND}" 2 test_history_clean_s3_before_timestamp
-run_test "${COMMAND}" 3 test_history_clean_no_history_sync_standby
-run_test "${COMMAND}" 4 test_history_clean_no_history_sync_standby_noop
+run_test "${COMMAND}" 3 test_history_clean_additional_database_backups
+run_test "${COMMAND}" 4 test_history_clean_no_history_sync_standby
+run_test "${COMMAND}" 5 test_history_clean_no_history_sync_standby_noop
 
 log_all_tests_passed "${COMMAND}"
