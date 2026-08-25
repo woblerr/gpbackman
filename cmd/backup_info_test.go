@@ -31,6 +31,7 @@ func TestBackupInfoDatabaseFlag(t *testing.T) {
 		"include the double quotes in the flag value",
 		"The --database value is used without transformation.",
 		"The --database and --detail options can be used with --timestamp.",
+		"The output can be partial or empty even if the specified timestamp exists.",
 	} {
 		if !strings.Contains(backupInfoCmd.Long, text) {
 			t.Errorf("Command help does not include %q:\n%s", text, backupInfoCmd.Long)

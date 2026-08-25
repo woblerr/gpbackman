@@ -79,6 +79,8 @@ To display a backup chain for a specific backup, use the --timestamp option.
 In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
 The deleted and failed backups are always included in this mode.
 The --database and --detail options can be used with --timestamp.
+When used with --timestamp, --database filters the backup and each dependent backup independently.
+The output can be partial or empty even if the specified timestamp exists.
 To display object filtering details in this mode, use the --detail option.
 When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
 

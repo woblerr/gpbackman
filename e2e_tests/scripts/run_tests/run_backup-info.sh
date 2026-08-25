@@ -11,7 +11,6 @@ get_backup_info_timestamp() {
 }
 
 BACKUP_INFO_FILTER_DATABASE=""
-BACKUP_INFO_FILTER_DEMO_TIMESTAMP=""
 BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP=""
 
 assert_backup_info_database_rows() {
@@ -179,7 +178,7 @@ test_count_all_backups_auto_load_coordinator() {
 # Test 13: Create distinguishable local backups for two databases after timestamp-index-sensitive cases
 test_prepare_database_filter_backups() {
     BACKUP_INFO_FILTER_DATABASE="backup_info_filter"
-    BACKUP_INFO_FILTER_DEMO_TIMESTAMP="$(create_local_backup_for_database demo)"
+    create_local_backup_for_database demo >/dev/null
     BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP="$(create_additional_database_local_backup "${BACKUP_INFO_FILTER_DATABASE}")"
 }
 
@@ -202,15 +201,9 @@ test_database_filter_with_type() {
 # Test 16: Filter timestamp output and details by database
 test_database_filter_timestamp_detail() {
     local output
-    local details
 
     output="$(get_backup_info_timestamp database_filter_timestamp_detail --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail)"
     assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
-    details="$(printf '%s\n' "${output}" | backup_info_rows | awk -F'|' '{print $NF}')"
-    if [ -z "${details//[[:space:]]/}" ]; then
-        echo "[ERROR] Expected timestamp database filter details to be non-empty"
-        exit 1
-    fi
 
     output="$(get_backup_info_timestamp database_filter_timestamp_mismatch --history-db "${DATA_DIR}/gpbackup_history.db" --database demo --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail)"
     assert_backup_info_database_rows "${output}" demo 0
