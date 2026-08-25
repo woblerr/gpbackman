@@ -25,6 +25,21 @@ func TestBackupInfoDatabaseFlag(t *testing.T) {
 		t.Errorf("Flag usage does not describe database filtering: %s", flag.Usage)
 	}
 
+	for _, text := range []string{
+		"Without the --database option, backups for all databases are displayed.",
+		"Database names are matched exactly and case-sensitively against backup history.",
+		"include the double quotes in the flag value",
+		"The --database value is used without transformation.",
+		"The --database and --detail options can be used with --timestamp.",
+	} {
+		if !strings.Contains(backupInfoCmd.Long, text) {
+			t.Errorf("Command help does not include %q:\n%s", text, backupInfoCmd.Long)
+		}
+	}
+	if !strings.Contains(backupInfoCmd.Long, "--type, --table, --schema, --exclude, --failed, --deleted") {
+		t.Errorf("Command help does not preserve timestamp incompatibilities:\n%s", backupInfoCmd.Long)
+	}
+
 	helpText := backupInfoCmd.UsageString()
 	if !strings.Contains(helpText, "--"+databaseFlagName+" string") {
 		t.Errorf("Command help does not include --%s string:\n%s", databaseFlagName, helpText)

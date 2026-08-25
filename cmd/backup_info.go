@@ -51,7 +51,11 @@ To display all backups, use --deleted and --failed options together.
 
 To display backups of a specific type, use the --type option.
 
-To display backups for a specific database, use the --database option.
+Without the --database option, backups for all databases are displayed.
+To display backups only for a specific database, use the --database option.
+Database names are matched exactly and case-sensitively against backup history.
+The --database value is used without transformation. For database names that require quoting,
+include the double quotes in the flag value, for example: --database '"Sales DB"'.
 
 To display backups that include the specified table, use the --table option. 
 The formatting rules for <schema>.<table> match those of the --include-table option in gpbackup.
@@ -74,6 +78,7 @@ The details are presented as follows, depending on the active filtering type:
 To display a backup chain for a specific backup, use the --timestamp option.
 In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
 The deleted and failed backups are always included in this mode.
+The --database and --detail options can be used with --timestamp.
 To display object filtering details in this mode, use the --detail option.
 When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
 
@@ -139,7 +144,7 @@ func init() {
 		&backupInfoDatabase,
 		databaseFlagName,
 		"",
-		"show backups only for the specified database",
+		"show backups only for the specified database (exact, case-sensitive match)",
 	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDetails,
