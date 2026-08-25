@@ -254,7 +254,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 				gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(backupName, err))
 				return err
 			}
-			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.ExcludeFilter, opts.ShowDetails, backupData, t)
+			addBackupToTable(opts.BackupTypeFilter, opts.TableNameFilter, opts.SchemaNameFilter, opts.DatabaseFilter, opts.ExcludeFilter, opts.ShowDetails, backupData, t)
 		}
 		return nil
 	}
@@ -265,7 +265,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(opts.Timestamp, err))
 		return err
 	}
-	addBackupToTable("", "", "", false, opts.ShowDetails, baseBackupData, t)
+	addBackupToTable("", "", "", opts.DatabaseFilter, false, opts.ShowDetails, baseBackupData, t)
 	backupDependenciesList, err := gpbckpconfig.GetBackupDependencies(opts.Timestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
@@ -277,7 +277,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(depTimestamp, err))
 			return err
 		}
-		addBackupToTable("", "", "", false, opts.ShowDetails, backupData, t)
+		addBackupToTable("", "", "", opts.DatabaseFilter, false, opts.ShowDetails, backupData, t)
 	}
 	return nil
 }
@@ -309,7 +309,11 @@ func initTable(t table.Writer, includeDetails bool) {
 // If errors occur, they are logged, but they are not returned.
 // The main idea is to show the maximum available information and display all errors that occur.
 // But do not fall when errors occur. So, display anyway.
-func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter string, backupExcludeFilter, includeDetails bool, backupData gpbckpconfig.BackupConfig, t table.Writer) {
+func addBackupToTable(backupTypeFilter, backupTableFilter, backupSchemaFilter, backupDatabaseFilter string, backupExcludeFilter, includeDetails bool, backupData gpbckpconfig.BackupConfig, t table.Writer) {
+	if backupDatabaseFilter != "" && backupDatabaseFilter != backupData.DatabaseName {
+		return
+	}
+
 	var matchToObjectFilter bool
 	backupDate, err := backupData.GetBackupDate()
 	if err != nil {
