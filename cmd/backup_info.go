@@ -20,6 +20,7 @@ var (
 	backupInfoTableNameFilter  string
 	backupInfoSchemaNameFilter string
 	backupInfoExcludeFilter    bool
+	backupInfoDatabase         string
 	backupInfoTimestamp        string
 	backupInfoShowDetails      bool
 )
@@ -32,6 +33,7 @@ type BackupInfoOptions struct {
 	TableNameFilter  string
 	SchemaNameFilter string
 	ExcludeFilter    bool
+	DatabaseFilter   string
 	Timestamp        string
 	ShowDetails      bool
 }
@@ -48,6 +50,8 @@ To display failed backups, use the --failed option.
 To display all backups, use --deleted and --failed options together.
 
 To display backups of a specific type, use the --type option.
+
+To display backups for a specific database, use the --database option.
 
 To display backups that include the specified table, use the --table option. 
 The formatting rules for <schema>.<table> match those of the --include-table option in gpbackup.
@@ -131,6 +135,12 @@ func init() {
 		false,
 		"show backups that exclude the specific table (format <schema>.<table>) or schema",
 	)
+	backupInfoCmd.Flags().StringVar(
+		&backupInfoDatabase,
+		databaseFlagName,
+		"",
+		"show backups only for the specified database",
+	)
 	backupInfoCmd.Flags().BoolVar(
 		&backupInfoShowDetails,
 		detailFlagName,
@@ -142,6 +152,10 @@ func init() {
 // These flag checks are applied only for backup-info commands.
 func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 	var err error
+	if flags.Changed(databaseFlagName) && backupInfoDatabase == "" {
+		gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupInfoDatabase, databaseFlagName, textmsg.ErrorEmptyDatabase()))
+		execOSExit(exitErrorCode)
+	}
 	if flags.Changed(timestampFlagName) {
 		err = gpbckpconfig.CheckTimestamp(backupInfoTimestamp)
 		if err != nil {
@@ -202,6 +216,7 @@ func backupInfo() error {
 		TableNameFilter:  backupInfoTableNameFilter,
 		SchemaNameFilter: backupInfoSchemaNameFilter,
 		ExcludeFilter:    backupInfoExcludeFilter,
+		DatabaseFilter:   backupInfoDatabase,
 		Timestamp:        backupInfoTimestamp,
 		ShowDetails:      backupInfoShowDetails,
 	}
