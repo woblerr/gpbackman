@@ -78,11 +78,8 @@ The details are presented as follows, depending on the active filtering type:
 To display a backup chain for a specific backup, use the --timestamp option.
 In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
 The deleted and failed backups are always included in this mode.
-The --database and --detail options can be used with --timestamp.
-When used with --timestamp, --database filters the backup and each dependent backup independently.
-The output can be partial or empty even if the specified timestamp exists.
-To display object filtering details in this mode, use the --detail option.
-When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
+The --detail option can be used with --timestamp to display object filtering details in this mode.
+When --timestamp is set, the following options cannot be used: --database, --type, --table, --schema, --exclude, --failed, --deleted.
 
 To display the "object filtering details" column for all backups without using --timestamp, use the --detail option.
 
@@ -169,11 +166,11 @@ func doBackupInfoFlagValidation(flags *pflag.FlagSet) {
 			gplog.Error("%s", textmsg.ErrorTextUnableValidateFlag(backupInfoTimestamp, timestampFlagName, err))
 			execOSExit(exitErrorCode)
 		}
-		// --timestamp is not compatible with --type, --table, --schema, --exclude, --failed, --deleted
+		// --timestamp is not compatible with --database, --type, --table, --schema, --exclude, --failed, --deleted
 		err = checkCompatibleFlags(flags, timestampFlagName,
-			typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName)
+			databaseFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName)
 		if err != nil {
-			gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, timestampFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName))
+			gplog.Error("%s", textmsg.ErrorTextUnableCompatibleFlags(err, timestampFlagName, databaseFlagName, typeFlagName, tableFlagName, schemaFlagName, excludeFlagName, failedFlagName, deletedFlagName))
 			execOSExit(exitErrorCode)
 		}
 	}
@@ -272,7 +269,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 		gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(opts.Timestamp, err))
 		return err
 	}
-	addBackupToTable("", "", "", opts.DatabaseFilter, false, opts.ShowDetails, baseBackupData, t)
+	addBackupToTable("", "", "", "", false, opts.ShowDetails, baseBackupData, t)
 	backupDependenciesList, err := gpbckpconfig.GetBackupDependencies(opts.Timestamp, hDB)
 	if err != nil {
 		gplog.Error("%s", textmsg.ErrorTextUnableReadHistoryDB(err))
@@ -284,7 +281,7 @@ func backupInfoDB(opts BackupInfoOptions, hDB *sql.DB, t table.Writer) error {
 			gplog.Error("%s", textmsg.ErrorTextUnableGetBackupInfo(depTimestamp, err))
 			return err
 		}
-		addBackupToTable("", "", "", opts.DatabaseFilter, false, opts.ShowDetails, backupData, t)
+		addBackupToTable("", "", "", "", false, opts.ShowDetails, backupData, t)
 	}
 	return nil
 }

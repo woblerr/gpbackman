@@ -198,15 +198,16 @@ test_database_filter_with_type() {
     assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
 }
 
-# Test 16: Filter timestamp output and details by database
-test_database_filter_timestamp_detail() {
+# Test 16: Reject the database filter with timestamp mode even when details are requested
+test_database_filter_incompatible_with_timestamp() {
     local output
 
-    output="$(get_backup_info_timestamp database_filter_timestamp_detail --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail)"
-    assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
-
-    output="$(get_backup_info_timestamp database_filter_timestamp_mismatch --history-db "${DATA_DIR}/gpbackup_history.db" --database demo --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail)"
-    assert_backup_info_database_rows "${output}" demo 0
+    if output="$(${BIN_DIR}/gpbackman backup-info --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail 2>&1)"; then
+        echo "[ERROR] Expected --database and --timestamp to be rejected"
+        echo "${output}"
+        exit 1
+    fi
+    assert_output_contains "${output}" "Unable to use the following flags together: timestamp, database, type, table, schema, exclude, failed, deleted. Error: incompatible flags"
 }
 
 # Test 17: An unknown database produces a successful empty result
@@ -233,7 +234,7 @@ run_test "${COMMAND}" 12 test_count_all_backups_auto_load_coordinator
 run_test "${COMMAND}" 13 test_prepare_database_filter_backups
 run_test "${COMMAND}" 14 test_database_filter
 run_test "${COMMAND}" 15 test_database_filter_with_type
-run_test "${COMMAND}" 16 test_database_filter_timestamp_detail
+run_test "${COMMAND}" 16 test_database_filter_incompatible_with_timestamp
 run_test "${COMMAND}" 17 test_database_filter_unknown_database
 
 log_all_tests_passed "${COMMAND}"

@@ -354,11 +354,8 @@ The details are presented as follows, depending on the active filtering type:
 To display a backup chain for a specific backup, use the --timestamp option.
 In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
 The deleted and failed backups are always included in this mode.
-The --database and --detail options can be used with --timestamp.
-When used with --timestamp, --database filters the backup and each dependent backup independently.
-The output can be partial or empty even if the specified timestamp exists.
-To display object filtering details in this mode, use the --detail option.
-When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
+The --detail option can be used with --timestamp to display object filtering details in this mode.
+When --timestamp is set, the following options cannot be used: --database, --type, --table, --schema, --exclude, --failed, --deleted.
 
 To display the "object filtering details" column for all backups without using --timestamp, use the --detail option.
 
@@ -478,10 +475,9 @@ Display active full backups only for database `analytics`:
   --type full
 ```
 
-Display a backup chain for database `analytics` with object filtering details:
+Display a backup chain with object filtering details:
 ```bash
 ./gpbackman backup-info \
-  --database analytics \
   --timestamp 20250913210921 \
   --detail
 ```

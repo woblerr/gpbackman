@@ -30,14 +30,13 @@ func TestBackupInfoDatabaseFlag(t *testing.T) {
 		"Database names are matched exactly and case-sensitively against backup history.",
 		"include the double quotes in the flag value",
 		"The --database value is used without transformation.",
-		"The --database and --detail options can be used with --timestamp.",
-		"The output can be partial or empty even if the specified timestamp exists.",
+		"The --detail option can be used with --timestamp to display object filtering details in this mode.",
 	} {
 		if !strings.Contains(backupInfoCmd.Long, text) {
 			t.Errorf("Command help does not include %q:\n%s", text, backupInfoCmd.Long)
 		}
 	}
-	if !strings.Contains(backupInfoCmd.Long, "--type, --table, --schema, --exclude, --failed, --deleted") {
+	if !strings.Contains(backupInfoCmd.Long, "--database, --type, --table, --schema, --exclude, --failed, --deleted") {
 		t.Errorf("Command help does not preserve timestamp incompatibilities:\n%s", backupInfoCmd.Long)
 	}
 
@@ -115,34 +114,70 @@ func TestDoBackupInfoDatabaseFlagValidation(t *testing.T) {
 	}
 }
 
-func TestBackupInfoDatabaseFlagCompatibleWithTimestamp(t *testing.T) {
+func TestBackupInfoFlagCompatibility(t *testing.T) {
 	testhelper.SetupTestLogger()
 
-	oldDatabase := backupInfoDatabase
-	oldTimestamp := backupInfoTimestamp
-	oldExecOSExit := execOSExit
-	backupInfoDatabase = `"Customer's DB"`
-	backupInfoTimestamp = "20240101120000"
-	t.Cleanup(func() {
-		backupInfoDatabase = oldDatabase
-		backupInfoTimestamp = oldTimestamp
-		execOSExit = oldExecOSExit
-	})
+	tests := []struct {
+		name         string
+		setDatabase  bool
+		setTimestamp bool
+		setDetail    bool
+		wantExit     bool
+	}{
+		{name: "database with detail", setDatabase: true, setDetail: true},
+		{name: "timestamp with detail", setTimestamp: true, setDetail: true},
+		{name: "database with timestamp", setDatabase: true, setTimestamp: true, wantExit: true},
+		{name: "database with timestamp and detail", setDatabase: true, setTimestamp: true, setDetail: true, wantExit: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldDatabase := backupInfoDatabase
+			oldTimestamp := backupInfoTimestamp
+			oldExecOSExit := execOSExit
+			backupInfoDatabase = `"Customer's DB"`
+			backupInfoTimestamp = "20240101120000"
+			t.Cleanup(func() {
+				backupInfoDatabase = oldDatabase
+				backupInfoTimestamp = oldTimestamp
+				execOSExit = oldExecOSExit
+			})
 
-	flags := pflag.NewFlagSet("backup-info", pflag.ContinueOnError)
-	flags.String(databaseFlagName, "", "")
-	flags.String(timestampFlagName, "", "")
-	if err := flags.Set(databaseFlagName, backupInfoDatabase); err != nil {
-		t.Fatalf("Failed to set %s: %v", databaseFlagName, err)
-	}
-	if err := flags.Set(timestampFlagName, backupInfoTimestamp); err != nil {
-		t.Fatalf("Failed to set %s: %v", timestampFlagName, err)
-	}
+			flags := pflag.NewFlagSet("backup-info", pflag.ContinueOnError)
+			flags.String(databaseFlagName, "", "")
+			flags.String(timestampFlagName, "", "")
+			flags.Bool(detailFlagName, false, "")
+			if tt.setDatabase {
+				if err := flags.Set(databaseFlagName, backupInfoDatabase); err != nil {
+					t.Fatalf("Failed to set %s: %v", databaseFlagName, err)
+				}
+			}
+			if tt.setTimestamp {
+				if err := flags.Set(timestampFlagName, backupInfoTimestamp); err != nil {
+					t.Fatalf("Failed to set %s: %v", timestampFlagName, err)
+				}
+			}
+			if tt.setDetail {
+				if err := flags.Set(detailFlagName, "true"); err != nil {
+					t.Fatalf("Failed to set %s: %v", detailFlagName, err)
+				}
+			}
 
-	execOSExit = func(code int) {
-		t.Fatalf("doBackupInfoFlagValidation unexpectedly exited with code %d", code)
+			exited := false
+			exitCode := 0
+			execOSExit = func(code int) {
+				exited = true
+				exitCode = code
+			}
+			doBackupInfoFlagValidation(flags)
+
+			if exited != tt.wantExit {
+				t.Errorf("Exit status = %v, want %v", exited, tt.wantExit)
+			}
+			if tt.wantExit && exitCode != exitErrorCode {
+				t.Errorf("Exit code = %d, want %d", exitCode, exitErrorCode)
+			}
+		})
 	}
-	doBackupInfoFlagValidation(flags)
 }
 
 func TestAddBackupToTableDatabaseFilter(t *testing.T) {
@@ -259,7 +294,7 @@ func TestBackupInfoDBDatabaseFilter(t *testing.T) {
 	}
 }
 
-func TestBackupInfoDBTimestampDatabaseFilter(t *testing.T) {
+func TestBackupInfoDBTimestamp(t *testing.T) {
 	baseTimestamp := "20240101000000"
 	historyDB := createBackupInfoTestDB(t,
 		backupInfoHistoryConfig(baseTimestamp, "demo"),
@@ -270,22 +305,18 @@ func TestBackupInfoDBTimestampDatabaseFilter(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		filter        string
 		includeDetail bool
 		wantRows      int
 	}{
-		{name: "matching base and dependency", filter: "demo", wantRows: 2},
-		{name: "quoted dependency", filter: `"Customer's DB"`, wantRows: 1},
-		{name: "database mismatch", filter: "unknown", wantRows: 0},
-		{name: "detail keeps matching rows", filter: "demo", includeDetail: true, wantRows: 2},
+		{name: "base and dependencies", wantRows: 4},
+		{name: "detail keeps all rows", includeDetail: true, wantRows: 4},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			backupTable := table.NewWriter()
 			err := backupInfoDB(BackupInfoOptions{
-				DatabaseFilter: tt.filter,
-				Timestamp:      baseTimestamp,
-				ShowDetails:    tt.includeDetail,
+				Timestamp:   baseTimestamp,
+				ShowDetails: tt.includeDetail,
 			}, historyDB, backupTable)
 			if err != nil {
 				t.Fatalf("backupInfoDB() error = %v", err)
@@ -297,11 +328,10 @@ func TestBackupInfoDBTimestampDatabaseFilter(t *testing.T) {
 	}
 }
 
-func TestBackupInfoDBTimestampDatabaseFilterPreservesMissingTimestampError(t *testing.T) {
+func TestBackupInfoDBTimestampPreservesMissingTimestampError(t *testing.T) {
 	historyDB := createBackupInfoTestDB(t, backupInfoHistoryConfig("20240101000000", "demo"))
 	err := backupInfoDB(BackupInfoOptions{
-		DatabaseFilter: "unknown",
-		Timestamp:      "20240101999999",
+		Timestamp: "20240101999999",
 	}, historyDB, table.NewWriter())
 	if err == nil {
 		t.Fatal("backupInfoDB() error = nil, want missing timestamp error")
