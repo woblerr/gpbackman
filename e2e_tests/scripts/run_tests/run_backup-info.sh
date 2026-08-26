@@ -190,11 +190,11 @@ test_database_filter() {
     assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
 }
 
-# Test 15: Combine the database filter with --type full
+# Test 15: Combine the database filter with --type metadata-only
 test_database_filter_with_type() {
     local output
 
-    output="$(get_backup_info database_filter_with_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --type full)"
+    output="$(get_backup_info database_filter_with_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --type metadata-only)"
     assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
 }
 
