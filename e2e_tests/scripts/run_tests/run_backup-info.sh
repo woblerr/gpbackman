@@ -10,7 +10,6 @@ get_backup_info_timestamp() {
     run_gpbackman "backup-info" "${label}"  "$@"
 }
 
-BACKUP_INFO_FILTER_DATABASE=""
 BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP=""
 
 assert_backup_info_database_rows() {
@@ -58,9 +57,10 @@ assert_backup_info_database_rows() {
 
 # Test 1: Count all backups in history database
 test_count_all_backups() {
-    local want=12
-    local got=$(get_backup_info total_backups  --history-db ${DATA_DIR}/gpbackup_history.db | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
-    assert_equals "${want}" "${got}"
+    local output
+
+    output="$(get_backup_info total_backups --history-db "${HISTORY_DB}")"
+    assert_backup_info_database_rows "${output}" "${E2E_PRIMARY_DB}" 12
 }
 
 # Test 2: Count all full backups
@@ -177,32 +177,31 @@ test_count_all_backups_auto_load_coordinator() {
 
 # Test 13: Create distinguishable local backups for two databases after timestamp-index-sensitive cases
 test_prepare_database_filter_backups() {
-    BACKUP_INFO_FILTER_DATABASE="backup_info_filter"
-    create_local_backup_for_database demo >/dev/null
-    BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP="$(create_additional_database_local_backup "${BACKUP_INFO_FILTER_DATABASE}")"
+    create_local_backup_for_database "${E2E_PRIMARY_DB}" >/dev/null
+    BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP="$(create_local_backup_for_database "${E2E_FILTER_DB}")"
 }
 
 # Test 14: Filter backup-info rows by an exact database name
 test_database_filter() {
     local output
 
-    output="$(get_backup_info database_filter --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}")"
-    assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
+    output="$(get_backup_info database_filter --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}")"
+    assert_backup_info_database_rows "${output}" "${E2E_FILTER_DB}" 1
 }
 
-# Test 15: Combine the database filter with --type metadata-only
+# Test 15: Combine the database filter with --type full
 test_database_filter_with_type() {
     local output
 
-    output="$(get_backup_info database_filter_with_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --type metadata-only)"
-    assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
+    output="$(get_backup_info database_filter_with_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}" --type full)"
+    assert_backup_info_database_rows "${output}" "${E2E_FILTER_DB}" 1
 }
 
 # Test 16: Reject the database filter with timestamp mode even when details are requested
 test_database_filter_incompatible_with_timestamp() {
     local output
 
-    if output="$(${BIN_DIR}/gpbackman backup-info --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail 2>&1)"; then
+    if output="$(${BIN_DIR}/gpbackman backup-info --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail 2>&1)"; then
         echo "[ERROR] Expected --database and --timestamp to be rejected"
         echo "${output}"
         exit 1

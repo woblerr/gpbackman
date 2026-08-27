@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+HOME_DIR="/home/gpadmin"
+
+# shellcheck source=/dev/null
+source "${HOME_DIR}/e2e_databases.sh"
+
 # Backup sequence overview:
 # 1.  full_local               : Full LOCAL backup (all tables)
 # 2.  full_local_include_table : Full LOCAL backup including only sch1.tbl_a
@@ -17,14 +22,13 @@ set -Eeuo pipefail
 # 13. data_only_local          : Data-only LOCAL backup (no metadata)
 # 14. full_local               : Final full LOCAL backup (all tables)
 
-DB_NAME="demo"
 PLUGIN_CFG=/home/gpadmin/gpbackup_s3_plugin.yaml
 COMMON_PLUGIN_FLAGS=(--plugin-config "$PLUGIN_CFG")
 
 run_backup(){
   local label="$1"; shift
   echo "[INFO] Running backup: $label"
-  gpbackup --dbname ${DB_NAME} "$@" || { echo "[ERROR] Backup $label failed"; exit 1; }
+  gpbackup --dbname "${E2E_PRIMARY_DB}" "$@" || { echo "[ERROR] Backup $label failed"; exit 1; }
   sleep 10
 }
 
@@ -50,8 +54,8 @@ run_backup full_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --include-table sch
 run_backup full_s3_exclude_schema "${COMMON_PLUGIN_FLAGS[@]}" --exclude-schema sch1 --leaf-partition-data
 
 # Insert data
-psql -d demo -c "INSERT INTO sch2.tbl_c SELECT i, i FROM generate_series(1,100000) i;"
-psql -d demo -c "INSERT INTO sch2.tbl_d SELECT i, i FROM generate_series(1,100000) AS i;"
+psql -d "${E2E_PRIMARY_DB}" -c "INSERT INTO sch2.tbl_c SELECT i, i FROM generate_series(1,100000) i;"
+psql -d "${E2E_PRIMARY_DB}" -c "INSERT INTO sch2.tbl_d SELECT i, i FROM generate_series(1,100000) AS i;"
 
 # Incremental S3 no filters
 run_backup incr_s3 "${COMMON_PLUGIN_FLAGS[@]}" --incremental --leaf-partition-data
@@ -60,7 +64,7 @@ run_backup incr_s3 "${COMMON_PLUGIN_FLAGS[@]}" --incremental --leaf-partition-da
 run_backup incr_s3_include_table "${COMMON_PLUGIN_FLAGS[@]}" --incremental --include-table sch2.tbl_c --include-table sch2.tbl_d --leaf-partition-data
 
 # Insert data
-psql -d demo -c "INSERT INTO sch2.tbl_c SELECT i, i FROM generate_series(1,100000) i;"
+psql -d "${E2E_PRIMARY_DB}" -c "INSERT INTO sch2.tbl_c SELECT i, i FROM generate_series(1,100000) i;"
 
 # Incremental S3 exclude-schema sch1
 run_backup incr_s3_exclude_schema "${COMMON_PLUGIN_FLAGS[@]}" --incremental --exclude-schema sch1 --leaf-partition-data
