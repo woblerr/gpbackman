@@ -195,6 +195,9 @@ test_database_filter_with_type() {
 
     output="$(get_backup_info database_filter_with_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}" --type full)"
     assert_backup_info_database_rows "${output}" "${E2E_FILTER_DB}" 1
+
+    output="$(get_backup_info database_filter_with_nonmatching_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}" --type metadata-only)"
+    assert_backup_info_database_rows "${output}" "${E2E_FILTER_DB}" 0
 }
 
 # Test 16: Reject the database filter with timestamp mode even when details are requested

@@ -11,14 +11,13 @@ source "${DATABASE_CONFIG}"
 database_exists() {
     local database="$1"
 
-    psql \
+    printf '%s\n' "SELECT 1 FROM pg_database WHERE datname = :'database_name';" | psql \
         --dbname postgres \
         --no-psqlrc \
         --tuples-only \
         --no-align \
         --set ON_ERROR_STOP=1 \
-        --set database_name="${database}" \
-        --command "SELECT 1 FROM pg_database WHERE datname = :'database_name';"
+        --set database_name="${database}"
 }
 
 assert_primary_table_nonempty() {
@@ -26,15 +25,14 @@ assert_primary_table_nonempty() {
     local table="$2"
     local result
 
-    if ! result=$(psql \
+    if ! result=$(printf '%s\n' 'SELECT 1 FROM :"schema_name".:"table_name" LIMIT 1;' | psql \
         --dbname "${E2E_PRIMARY_DB}" \
         --no-psqlrc \
         --tuples-only \
         --no-align \
         --set ON_ERROR_STOP=1 \
         --set schema_name="${schema}" \
-        --set table_name="${table}" \
-        --command 'SELECT 1 FROM :"schema_name".:"table_name" LIMIT 1;' 2>&1); then
+        --set table_name="${table}" 2>&1); then
         echo "[ERROR] Required table ${schema}.${table} is missing from ${E2E_PRIMARY_DB} or cannot be queried"
         echo "${result}"
         return 1
