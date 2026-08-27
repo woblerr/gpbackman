@@ -49,6 +49,8 @@ make test-e2e_history-sync
 
 `backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes. The `backup-clean` and `history-clean` suites also create local backups for two databases to cover selective `--database` cleanup and standby synchronization.
 
+The `backup-info` suite creates local backups for `demo` and an additional database after its timestamp-sensitive cases to cover exact `--database` filtering in normal, combined, detail, and empty-result output, plus rejection with `--timestamp`.
+
 Manually run a single-node command suite:
 
 ```bash

@@ -10,6 +10,52 @@ get_backup_info_timestamp() {
     run_gpbackman "backup-info" "${label}"  "$@"
 }
 
+BACKUP_INFO_FILTER_DATABASE=""
+BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP=""
+
+assert_backup_info_database_rows() {
+    local output="${1}"
+    local expected_database="${2}"
+    local expected_count="${3}"
+    local rows
+    local actual_count
+    local matching_count
+
+    rows="$(printf '%s\n' "${output}" | backup_info_rows | awk -F'|' -v database="${expected_database}" '
+        function trim(value) {
+            sub(/^[[:space:]]+/, "", value)
+            sub(/[[:space:]]+$/, "", value)
+            return value
+        }
+        { print trim($4) }
+    ')"
+    if [ -n "${rows}" ]; then
+        actual_count="$(printf '%s\n' "${rows}" | wc -l)"
+    else
+        actual_count=0
+    fi
+    if [ "${actual_count}" -ne "${expected_count}" ]; then
+        echo "[ERROR] Expected ${expected_count} backup-info rows for database ${expected_database}, got ${actual_count}"
+        echo "${output}"
+        exit 1
+    fi
+
+    matching_count="$(printf '%s\n' "${output}" | backup_info_rows | awk -F'|' -v database="${expected_database}" '
+        function trim(value) {
+            sub(/^[[:space:]]+/, "", value)
+            sub(/[[:space:]]+$/, "", value)
+            return value
+        }
+        trim($4) == database { count++ }
+        END { print count + 0 }
+    ')"
+    if [ "${matching_count}" -ne "${actual_count}" ]; then
+        echo "[ERROR] backup-info returned rows for a different database"
+        echo "${output}"
+        exit 1
+    fi
+}
+
 # Test 1: Count all backups in history database
 test_count_all_backups() {
     local want=12
@@ -129,6 +175,50 @@ test_count_all_backups_auto_load_coordinator() {
     assert_equals "${want}" "${got}"
 }
 
+# Test 13: Create distinguishable local backups for two databases after timestamp-index-sensitive cases
+test_prepare_database_filter_backups() {
+    BACKUP_INFO_FILTER_DATABASE="backup_info_filter"
+    create_local_backup_for_database demo >/dev/null
+    BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP="$(create_additional_database_local_backup "${BACKUP_INFO_FILTER_DATABASE}")"
+}
+
+# Test 14: Filter backup-info rows by an exact database name
+test_database_filter() {
+    local output
+
+    output="$(get_backup_info database_filter --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}")"
+    assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
+}
+
+# Test 15: Combine the database filter with --type metadata-only
+test_database_filter_with_type() {
+    local output
+
+    output="$(get_backup_info database_filter_with_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --type metadata-only)"
+    assert_backup_info_database_rows "${output}" "${BACKUP_INFO_FILTER_DATABASE}" 1
+}
+
+# Test 16: Reject the database filter with timestamp mode even when details are requested
+test_database_filter_incompatible_with_timestamp() {
+    local output
+
+    if output="$(${BIN_DIR}/gpbackman backup-info --history-db "${DATA_DIR}/gpbackup_history.db" --database "${BACKUP_INFO_FILTER_DATABASE}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail 2>&1)"; then
+        echo "[ERROR] Expected --database and --timestamp to be rejected"
+        echo "${output}"
+        exit 1
+    fi
+    assert_output_contains "${output}" "Unable to use the following flags together: timestamp, database, type, table, schema, exclude, failed, deleted. Error: incompatible flags"
+}
+
+# Test 17: An unknown database produces a successful empty result
+test_database_filter_unknown_database() {
+    local output
+    local unknown_database="backup_info_unknown"
+
+    output="$(get_backup_info unknown_database_filter --history-db "${DATA_DIR}/gpbackup_history.db" --database "${unknown_database}")"
+    assert_backup_info_database_rows "${output}" "${unknown_database}" 0
+}
+
 run_test "${COMMAND}" 1 test_count_all_backups
 run_test "${COMMAND}" 2 test_count_full_backups
 run_test "${COMMAND}" 3 test_count_incremental_backups
@@ -141,5 +231,10 @@ run_test "${COMMAND}" 9 test_backup_chain_incremental_exclude
 run_test "${COMMAND}" 10 test_full_local_include_table_details
 run_test "${COMMAND}" 11 test_count_all_backups_auto_load_master
 run_test "${COMMAND}" 12 test_count_all_backups_auto_load_coordinator
+run_test "${COMMAND}" 13 test_prepare_database_filter_backups
+run_test "${COMMAND}" 14 test_database_filter
+run_test "${COMMAND}" 15 test_database_filter_with_type
+run_test "${COMMAND}" 16 test_database_filter_incompatible_with_timestamp
+run_test "${COMMAND}" 17 test_database_filter_unknown_database
 
 log_all_tests_passed "${COMMAND}"

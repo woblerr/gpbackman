@@ -327,6 +327,12 @@ To display all backups, use --deleted and --failed options together.
 
 To display backups of a specific type, use the --type option.
 
+Without the --database option, backups for all databases are displayed.
+To display backups only for a specific database, use the --database option.
+Database names are matched exactly and case-sensitively against backup history.
+The --database value is used without transformation. For database names that require quoting,
+include the double quotes in the flag value, for example: --database '"Sales DB"'.
+
 To display backups that include the specified table, use the --table option. 
 The formatting rules for <schema>.<table> match those of the --include-table option in gpbackup.
 
@@ -348,8 +354,8 @@ The details are presented as follows, depending on the active filtering type:
 To display a backup chain for a specific backup, use the --timestamp option.
 In this mode, the backup with the specified timestamp and all of its dependent backups will be displayed.
 The deleted and failed backups are always included in this mode.
-To display object filtering details in this mode, use the --detail option.
-When --timestamp is set, the following options cannot be used: --type, --table, --schema, --exclude, --failed, --deleted.
+The --detail option can be used with --timestamp to display object filtering details in this mode.
+When --timestamp is set, the following options cannot be used: --database, --type, --table, --schema, --exclude, --failed, --deleted.
 
 To display the "object filtering details" column for all backups without using --timestamp, use the --detail option.
 
@@ -362,6 +368,7 @@ Usage:
   gpbackman backup-info [flags]
 
 Flags:
+      --database string    show backups only for the specified database (exact, case-sensitive match)
       --deleted            show deleted backups
       --detail             show object filtering details
       --exclude            show backups that exclude the specific table (format <schema>.<table>) or schema
@@ -453,6 +460,26 @@ Display info for active full backups from `gpbackup_history.db`:
  20230722100000 | Sat Jul 22 2023 10:00:00 | Success | demo     | full |                  | gpbackup_s3_plugin | 00:25:17 |              
  20230623101115 | Fri Jun 23 2023 10:11:15 | Success | demo     | full | include-table    | gpbackup_s3_plugin | 01:01:00 |              
  20230523101115 | Tue May 23 2023 10:11:15 | Success | demo     | full | include-schema   | gpbackup_s3_plugin | 01:01:00 |              
+```
+
+Display active backups only for database `analytics`:
+```bash
+./gpbackman backup-info \
+  --database analytics
+```
+
+Display active full backups only for database `analytics`:
+```bash
+./gpbackman backup-info \
+  --database analytics \
+  --type full
+```
+
+Display a backup chain with object filtering details:
+```bash
+./gpbackman backup-info \
+  --timestamp 20250913210921 \
+  --detail
 ```
 
 Find all backups, including deleted ones, containing the `test1` schema.
