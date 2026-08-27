@@ -248,16 +248,6 @@ create_local_backup_for_database() {
     get_backup_timestamp_for_database "${database}"
 }
 
-create_additional_database_local_backup() {
-    local database="${1}"
-
-    createdb --maintenance-db "${E2E_PRIMARY_DB}" "${database}" || {
-        echo "[ERROR] Could not create additional database: ${database}" >&2
-        exit 1
-    }
-    create_local_backup_for_database "${database}"
-}
-
 assert_primary_backup_active() {
     local timestamp="${1}"
     local row
@@ -275,11 +265,54 @@ assert_primary_backup_active() {
     fi
 }
 
+assert_standby_backup_active() {
+    local timestamp="${1}"
+    local row
+    local date_deleted
+
+    row="$(standby_backup_row_for_timestamp "${timestamp}")"
+    if [ -z "${row}" ]; then
+        echo "[ERROR] Active backup is missing from standby history: ${timestamp}"
+        exit 1
+    fi
+    date_deleted="$(echo "${row}" | awk -F'|' '{print $NF}' | xargs)"
+    if [ -n "${date_deleted}" ]; then
+        echo "[ERROR] Backup should remain active in standby history: ${timestamp}"
+        exit 1
+    fi
+}
+
+assert_standby_backup_deleted() {
+    local timestamp="${1}"
+    local row
+    local date_deleted
+
+    row="$(standby_backup_row_for_timestamp "${timestamp}")"
+    if [ -z "${row}" ]; then
+        echo "[ERROR] Deleted backup is missing from standby history: ${timestamp}"
+        exit 1
+    fi
+    date_deleted="$(echo "${row}" | awk -F'|' '{print $NF}' | xargs)"
+    if [ -z "${date_deleted}" ]; then
+        echo "[ERROR] Backup should be marked as deleted in standby history: ${timestamp}"
+        exit 1
+    fi
+}
+
 assert_primary_backup_row_absent() {
     local timestamp="${1}"
 
     if [ -n "$(primary_backup_row_for_timestamp "${timestamp}")" ]; then
         echo "[ERROR] Backup should be absent from history: ${timestamp}"
+        exit 1
+    fi
+}
+
+assert_standby_backup_row_absent() {
+    local timestamp="${1}"
+
+    if [ -n "$(standby_backup_row_for_timestamp "${timestamp}")" ]; then
+        echo "[ERROR] Backup should be absent from standby history: ${timestamp}"
         exit 1
     fi
 }
