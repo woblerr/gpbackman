@@ -2,9 +2,11 @@
 set -Eeuo pipefail
 
 TEST_COMMAND=${1:-}
-GP_DB_NAME="demo"
 HOME_DIR="/home/gpadmin"
 SCRIPTS_DIR="${HOME_DIR}/run_tests"
+
+# shellcheck source=/dev/null
+source "${HOME_DIR}/e2e_databases.sh"
 
 command_requires_standby() {
     case "${TEST_COMMAND}" in
@@ -21,14 +23,18 @@ wait_for_service() {
     local max_attempts=${1:-10}
 
     for i in $(seq 1 ${max_attempts}); do
-        if psql -d "${GP_DB_NAME}" -t -c  "SELECT 1;" >/dev/null 2>&1; then
+        if psql -d "${E2E_PRIMARY_DB}" -t -c "SELECT 1;" >/dev/null 2>&1; then
             echo "[INFO] Cluster ready"
             return 0
         fi
         echo "[INFO] Waiting cluster startup (${i}/${max_attempts})"
         sleep 10
     done
-    echo "[ERROR] Cluster failed to start within timeout"
+    if [ "$(psql -d postgres -X -A -t --set database_name="${E2E_PRIMARY_DB}" -c "SELECT 1 FROM pg_database WHERE datname = :'database_name';" 2>/dev/null || true)" != "1" ]; then
+        echo "[ERROR] Required primary database ${E2E_PRIMARY_DB} is missing"
+    else
+        echo "[ERROR] Cluster failed to start within timeout"
+    fi
     return 1
 }
 
@@ -37,7 +43,7 @@ wait_for_standby_replication() {
     local state=""
 
     for i in $(seq 1 ${max_attempts}); do
-        if state=$(psql -d "${GP_DB_NAME}" -X -A -t -c "SELECT state FROM pg_stat_replication ORDER BY CASE WHEN application_name LIKE '%walreceiver%' THEN 0 ELSE 1 END LIMIT 1;" 2>/dev/null | xargs); then
+        if state=$(psql -d "${E2E_PRIMARY_DB}" -X -A -t -c "SELECT state FROM pg_stat_replication ORDER BY CASE WHEN application_name LIKE '%walreceiver%' THEN 0 ELSE 1 END LIMIT 1;" 2>/dev/null | xargs); then
             if [ "${state}" = "streaming" ] || [ "${state}" = "catchup" ]; then
                 echo "[INFO] Standby replication state: ${state}"
                 return 0
@@ -86,6 +92,9 @@ wait_for_service
 if command_requires_standby; then
     wait_for_standby_replication
 fi
+
+echo "[INFO] Bootstrap E2E databases"
+"${HOME_DIR}/bootstrap_e2e_databases.sh"
 
 echo "[INFO] Prepare Greenplum backups"
 "${HOME_DIR}/prepare_gpdb_backups.sh"
