@@ -66,8 +66,8 @@ test_count_all_backups() {
 # Test 2: Count all full backups
 test_count_full_backups() {
     local want=7
-    local got1=$(get_backup_info total_full_backups --history-db ${DATA_DIR}/gpbackup_history.db | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep full | wc -l)
-    local got2=$(get_backup_info filter_full_backups --history-db ${DATA_DIR}/gpbackup_history.db --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got1=$(get_backup_info total_full_backups --history-db ${HISTORY_DB} | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep full | wc -l)
+    local got2=$(get_backup_info filter_full_backups --history-db ${HISTORY_DB} --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals_both "${want}" "${got1}" "${got2}"
 }
 
@@ -76,22 +76,22 @@ test_count_full_backups() {
 # from the output with the --type full flag
 test_count_incremental_backups() {
     local want=3
-    local got1=$(get_backup_info total_incremental_backups  --history-db ${DATA_DIR}/gpbackup_history.db | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep incremental | wc -l)
-    local got2=$(get_backup_info filter_incremental_backups --history-db ${DATA_DIR}/gpbackup_history.db --type incremental | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got1=$(get_backup_info total_incremental_backups  --history-db ${HISTORY_DB} | grep -E "${TIMESTAMP_GREP_PATTERN}" | grep incremental | wc -l)
+    local got2=$(get_backup_info filter_incremental_backups --history-db ${HISTORY_DB} --type incremental | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals_both "${want}" "${got1}" "${got2}"
 }
 
 # Test 4: Count backups that include table sch2.tbl_c
 test_count_include_table_backups() {
     local want=2
-    local got=$(get_backup_info total_include_table_backups --history-db ${DATA_DIR}/gpbackup_history.db --table sch2.tbl_c | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info total_include_table_backups --history-db ${HISTORY_DB} --table sch2.tbl_c | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
 }
 
 # Test 5: Count backups that exclude schema sch1
 test_count_exclude_schema_backups() {
     local want=2
-    local got=$(get_backup_info total_exclude_schema_backups --history-db ${DATA_DIR}/gpbackup_history.db --schema sch1 --exclude | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info total_exclude_schema_backups --history-db ${HISTORY_DB} --schema sch1 --exclude | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
 }
 
@@ -99,14 +99,14 @@ test_count_exclude_schema_backups() {
 # Use --type full to filter only full backups
 test_count_include_table_full_backups() {
     local want=1
-    local got=$(get_backup_info total_include_table_full_backups --history-db ${DATA_DIR}/gpbackup_history.db --table sch2.tbl_c --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info total_include_table_full_backups --history-db ${HISTORY_DB} --table sch2.tbl_c --type full | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
 }
 
 # Test 7: Count incremental backups that exclude schema sch1
 test_count_exclude_schema_incremental_backups() {
     local want=1
-    local got=$(get_backup_info total_exclude_schema_incremental_backups --history-db ${DATA_DIR}/gpbackup_history.db --schema sch1 --exclude --type incremental | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info total_exclude_schema_incremental_backups --history-db ${HISTORY_DB} --schema sch1 --exclude --type incremental | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
 }
 
@@ -114,9 +114,9 @@ test_count_exclude_schema_incremental_backups() {
 test_backup_chain_include_tables() {
     local want=2
     local cutoff_timestamp=$(get_cutoff_timestamp 7)
-    local got=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${HISTORY_DB} --timestamp "${cutoff_timestamp}" --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
-    local got_details=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
+    local got_details=$(get_backup_info_timestamp backup_chain_include_tables --history-db ${HISTORY_DB} --timestamp "${cutoff_timestamp}" --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
     if [[ -z "${got_details//[[:space:]]/}" ]]; then
         echo "[ERROR] Expected details column to be non-empty"
         exit 1
@@ -128,9 +128,9 @@ test_backup_chain_include_tables() {
 test_backup_chain_incremental_exclude() {
     local want=1
     local cutoff_timestamp=$(get_cutoff_timestamp 3)
-    local got=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${HISTORY_DB} --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
-    local got_details=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${DATA_DIR}/gpbackup_history.db --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
+    local got_details=$(get_backup_info_timestamp backup_chain_incremental_exclude --history-db ${HISTORY_DB} --timestamp "${cutoff_timestamp}" | grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
     if [[ ! -z "${got_details//[[:space:]]/}" ]]; then
         echo "[ERROR] Expected details column to be empty"
         exit 1
@@ -140,9 +140,9 @@ test_backup_chain_incremental_exclude() {
 # Test 10: Check full local backup with include table sch1.tbl_a and object filtering details
 test_full_local_include_table_details() {
     local want=1
-    local got=$(get_backup_info full_local_include_table_details --history-db ${DATA_DIR}/gpbackup_history.db --table sch1.tbl_a --type full --detail | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
+    local got=$(get_backup_info full_local_include_table_details --history-db ${HISTORY_DB} --table sch1.tbl_a --type full --detail | grep -E "${TIMESTAMP_GREP_PATTERN}" | wc -l)
     assert_equals "${want}" "${got}"
-    local got_details=$(get_backup_info full_local_include_table_details --history-db ${DATA_DIR}/gpbackup_history.db --table sch1.tbl_a --type full --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
+    local got_details=$(get_backup_info full_local_include_table_details --history-db ${HISTORY_DB} --table sch1.tbl_a --type full --detail| grep -E "${TIMESTAMP_GREP_PATTERN}" | awk -F'|' '{print $NF}')
     if [[ -z "${got_details//[[:space:]]/}" ]]; then
         echo "[ERROR] Expected details column to be non-empty"
         exit 1
@@ -185,7 +185,7 @@ test_prepare_database_filter_backups() {
 test_database_filter() {
     local output
 
-    output="$(get_backup_info database_filter --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}")"
+    output="$(get_backup_info database_filter --history-db "${HISTORY_DB}" --database "${E2E_FILTER_DB}")"
     assert_backup_info_database_rows "${output}" "${E2E_FILTER_DB}" 1
 }
 
@@ -193,10 +193,10 @@ test_database_filter() {
 test_database_filter_with_type() {
     local output
 
-    output="$(get_backup_info database_filter_with_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}" --type full)"
+    output="$(get_backup_info database_filter_with_type --history-db "${HISTORY_DB}" --database "${E2E_FILTER_DB}" --type full)"
     assert_backup_info_database_rows "${output}" "${E2E_FILTER_DB}" 1
 
-    output="$(get_backup_info database_filter_with_nonmatching_type --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}" --type metadata-only)"
+    output="$(get_backup_info database_filter_with_nonmatching_type --history-db "${HISTORY_DB}" --database "${E2E_FILTER_DB}" --type metadata-only)"
     assert_backup_info_database_rows "${output}" "${E2E_FILTER_DB}" 0
 }
 
@@ -204,7 +204,7 @@ test_database_filter_with_type() {
 test_database_filter_incompatible_with_timestamp() {
     local output
 
-    if output="$(${BIN_DIR}/gpbackman backup-info --history-db "${DATA_DIR}/gpbackup_history.db" --database "${E2E_FILTER_DB}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail 2>&1)"; then
+    if output="$(${BIN_DIR}/gpbackman backup-info --history-db "${HISTORY_DB}" --database "${E2E_FILTER_DB}" --timestamp "${BACKUP_INFO_FILTER_ADDITIONAL_TIMESTAMP}" --detail 2>&1)"; then
         echo "[ERROR] Expected --database and --timestamp to be rejected"
         echo "${output}"
         exit 1
@@ -217,7 +217,7 @@ test_database_filter_unknown_database() {
     local output
     local unknown_database="backup_info_unknown"
 
-    output="$(get_backup_info unknown_database_filter --history-db "${DATA_DIR}/gpbackup_history.db" --database "${unknown_database}")"
+    output="$(get_backup_info unknown_database_filter --history-db "${HISTORY_DB}" --database "${unknown_database}")"
     assert_backup_info_database_rows "${output}" "${unknown_database}" 0
 }
 

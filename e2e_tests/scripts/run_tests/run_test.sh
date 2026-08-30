@@ -30,11 +30,7 @@ wait_for_service() {
         echo "[INFO] Waiting cluster startup (${i}/${max_attempts})"
         sleep 10
     done
-    if [ "$(printf '%s\n' "SELECT 1 FROM pg_database WHERE datname = :'database_name';" | psql -d postgres -X -A -t --set database_name="${E2E_PRIMARY_DB}" 2>/dev/null || true)" != "1" ]; then
-        echo "[ERROR] Required primary database ${E2E_PRIMARY_DB} is missing"
-    else
-        echo "[ERROR] Cluster failed to start within timeout"
-    fi
+    echo "[ERROR] Cluster failed to start within timeout"
     return 1
 }
 

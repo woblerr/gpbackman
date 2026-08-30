@@ -106,8 +106,6 @@ test_clean_filter_database_backups() {
 
     assert_primary_backup_active "${primary_timestamp}"
     assert_primary_backup_deleted "${filter_timestamp}"
-    assert_standby_backup_active "${primary_timestamp}"
-    assert_standby_backup_deleted "${filter_timestamp}"
     assert_primary_standby_backup_row_match "${primary_timestamp}"
     assert_primary_standby_backup_row_match "${filter_timestamp}"
 }

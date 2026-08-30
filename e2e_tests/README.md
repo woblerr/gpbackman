@@ -21,18 +21,14 @@ The standby-aware fixture uses its standby startup support:
 The SSH fixtures are static e2e-only test material copied from the public docker-greenplum example key pattern.
 Do not reuse them outside this disposable test environment.
 
-## Fixture databases
+## Test databases
 
-After primary readiness, both Compose fixtures contain two non-empty databases configured in `conf/e2e_databases.sh`:
+Both Compose files use the same two databases, defined in `conf/e2e_databases.sh`:
 
-- `demo` is the primary test database.
-  Greenplum initdb runs `scripts/prepare/gpdb_init/tables_init.sql` from the `/docker-entrypoint-initdb.d` mount to create and populate its `sch1` and `sch2` tables.
-- `e2e_filter` is the database-filter test database.
-  It is not initialized through `/docker-entrypoint-initdb.d`.
-  The separately mounted `scripts/prepare/bootstrap_e2e_databases.sh` creates it when absent and idempotently resets `public.e2e_data` to 100 rows from `scripts/prepare/e2e_filter_init.sql`.
+- `demo` is the default cluster database; `scripts/prepare/gpdb_init/tables_init.sql` creates and populates its `sch1` and `sch2` tables during init.
+- `e2e_filter` is created and reset to 100 rows by `scripts/prepare/bootstrap_e2e_databases.sh` from `scripts/prepare/e2e_filter_init.sql`.
 
-The runner validates that `demo` and its required tables are non-empty, prepares `e2e_filter`, and verifies its row count before creating backups.
-Both the single-node and standby-aware primary services mount the shared database config and bootstrap files at the same container paths.
+The runner verifies `demo` tables are non-empty and `e2e_filter` has 100 rows before creating backups.
 
 ## Running tests
 
@@ -60,17 +56,9 @@ make test-e2e_history-migrate
 make test-e2e_history-sync
 ```
 
-`backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes.
-The shared preparation always creates exactly 12 backups, all for `demo`.
+`backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare 12 backups for `demo`, run the full suite for that command, and remove disposable volumes.
 
-After its timestamp-sensitive cases, the `backup-info` suite creates one fresh local backup each for the existing `demo` and `e2e_filter` databases.
-It verifies exact `e2e_filter` selection in normal and combined type-filter output, rejection with `--timestamp`, and a successful empty result for an unknown database.
-
-The `backup-clean` suite also creates one fresh local backup for each standard database, then cleans only `e2e_filter`.
-It independently verifies through `gpbackman backup-info` on primary and standby that the `demo` backup remains active and the `e2e_filter` backup is marked deleted, then compares the corresponding primary and standby rows.
-
-The `history-clean` suite creates the same fresh backup pair and deletes both through `gpbackman backup-delete` before cleaning only `e2e_filter` history.
-It independently verifies on primary and standby that the deleted `demo` row remains and the `e2e_filter` row is absent, then compares the corresponding primary and standby results.
+The `backup-info`, `backup-clean`, and `history-clean` suites additionally create one local backup each for `demo` and `e2e_filter` to cover selective `--database` filtering and cleanup.
 
 Manually run a single-node command suite:
 
@@ -116,7 +104,7 @@ It also blocks a fake `rsync`, sets a one-second timeout, and verifies that expl
 ## Notes
 
 - Tests are executed as `gpadmin` inside the `greenplum` container, which is the container name for the `master` service.
-- The runner waits for the primary cluster and, for mutating commands, standby replication state `streaming` or `catchup`, then bootstraps the fixture databases before preparing backups.
+- The runner waits for the primary cluster and, for mutating commands, standby replication state `streaming` or `catchup`, then bootstraps the test databases before preparing backups.
 - Scripts exit with a non-zero code on failure.
 - `docker compose down -v` removes disposable e2e volumes.
   Do not run these commands against non-test data.
