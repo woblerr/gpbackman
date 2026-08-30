@@ -70,7 +70,10 @@ services:
       - "GREENPLUM_PASSWORD"
     volumes:
       - ./conf/gpbackup_s3_plugin.yaml:/home/gpadmin/gpbackup_s3_plugin.yaml
+      - ./conf/e2e_databases.sh:/home/gpadmin/e2e_databases.sh
       - ./scripts/prepare/gpdb_init:/docker-entrypoint-initdb.d
+      - ./scripts/prepare/bootstrap_e2e_databases.sh:/home/gpadmin/bootstrap_e2e_databases.sh
+      - ./scripts/prepare/e2e_filter_init.sql:/home/gpadmin/e2e_filter_init.sql
       - ./scripts/prepare/prepare_gpdb_backups.sh:/home/gpadmin/prepare_gpdb_backups.sh
       - ./scripts/run_tests:/home/gpadmin/run_tests
       - ./src_data:/home/gpadmin/src_data

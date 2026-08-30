@@ -21,6 +21,15 @@ The standby-aware fixture uses its standby startup support:
 The SSH fixtures are static e2e-only test material copied from the public docker-greenplum example key pattern.
 Do not reuse them outside this disposable test environment.
 
+## Test databases
+
+Both Compose files use the same two databases, defined in `conf/e2e_databases.sh`:
+
+- `demo` is the default cluster database; `scripts/prepare/gpdb_init/tables_init.sql` creates and populates its `sch1` and `sch2` tables during init.
+- `e2e_filter` is created and reset to 100 rows by `scripts/prepare/bootstrap_e2e_databases.sh` from `scripts/prepare/e2e_filter_init.sql`.
+
+The runner verifies `demo` tables are non-empty and `e2e_filter` has 100 rows before creating backups.
+
 ## Running tests
 
 Build the gpbackman image:
@@ -47,9 +56,9 @@ make test-e2e_history-migrate
 make test-e2e_history-sync
 ```
 
-`backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare backups, run the full suite for that command, and remove disposable volumes. The `backup-clean` and `history-clean` suites also create local backups for two databases to cover selective `--database` cleanup and standby synchronization.
+`backup-delete`, `backup-clean`, `history-clean`, and `history-sync` each start a fresh standby-aware cluster, prepare 12 backups for `demo`, run the full suite for that command, and remove disposable volumes.
 
-The `backup-info` suite creates local backups for `demo` and an additional database after its timestamp-sensitive cases to cover exact `--database` filtering in normal, combined, detail, and empty-result output, plus rejection with `--timestamp`.
+The `backup-info`, `backup-clean`, and `history-clean` suites additionally create one local backup each for `demo` and `e2e_filter` to cover selective `--database` filtering and cleanup.
 
 Manually run a single-node command suite:
 
@@ -95,7 +104,7 @@ It also blocks a fake `rsync`, sets a one-second timeout, and verifies that expl
 ## Notes
 
 - Tests are executed as `gpadmin` inside the `greenplum` container, which is the container name for the `master` service.
-- The runner waits for the primary cluster and, for mutating commands, standby replication state `streaming` or `catchup` before preparing backups.
+- The runner waits for the primary cluster and, for mutating commands, standby replication state `streaming` or `catchup`, then bootstraps the test databases before preparing backups.
 - Scripts exit with a non-zero code on failure.
 - `docker compose down -v` removes disposable e2e volumes.
   Do not run these commands against non-test data.

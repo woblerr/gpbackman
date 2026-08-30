@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+HOME_DIR="/home/gpadmin"
+
+# shellcheck source=/dev/null
+source "${HOME_DIR}/e2e_databases.sh"
+
 BIN_DIR="/home/gpadmin/gpbackman"
 DATA_DIR="/data/master/gpseg-1"
 HISTORY_DB="${DATA_DIR}/gpbackup_history.db"
@@ -241,16 +246,6 @@ create_local_backup_for_database() {
     }
     sleep 1
     get_backup_timestamp_for_database "${database}"
-}
-
-create_additional_database_local_backup() {
-    local database="${1}"
-
-    createdb --maintenance-db demo "${database}" || {
-        echo "[ERROR] Could not create additional database: ${database}" >&2
-        exit 1
-    }
-    create_local_backup_for_database "${database}"
 }
 
 assert_primary_backup_active() {
